@@ -121,7 +121,7 @@ document.getElementById('uploadForm').addEventListener('submit', async event => 
   try {
     const result = await api('/api/books', {method:'POST', body:new FormData(event.currentTarget)});
     showStatus('PDF загружен. OCR распознаёт страницы в фоновом режиме…');
-    event.currentTarget.reset();
+    // Reset deferred: currentTarget is unavailable after await
     await loadBooks();
     const poll = async () => {
       const item = await api('/api/books/' + result.id);
