@@ -32,7 +32,7 @@ small{color:#666}.notice{font-size:12px}.hidden{display:none!important}
 </header>
 <section class="panel">
   <h2>1. Добавить сканированный PDF</h2>
-  <form id="uploadForm">
+  <div class="grid"><label>Пароль администратора<input id="teacherPassword" type="password" autocomplete="current-password" placeholder="Введите пароль из Render"></label><button type="button" id="loginBtn" onclick="login()">Войти</button></div><form id="uploadForm">
     <div class="grid">
       <label>Название учебника<input name="title" required placeholder="Например, Standard Course HSK 1"></label>
       <label>Уровень<select name="level"><option>HSK 1</option><option>HSK 2</option><option>HSK 3</option><option>HSK 4</option><option>HSK 5</option><option>HSK 6</option><option>HSK 7–9</option></select></label>
@@ -70,8 +70,8 @@ let latestDraft = null;
 
 async function api(url, options = {}) {
   if (!teacherToken) {
-    const password = prompt('Пароль преподавателя для загрузки и редактирования уроков:');
-    if (!password) throw new Error('Вход отменён.');
+    const password = document.getElementById('teacherPassword').value;
+    if (!password) throw new Error('Введите пароль администратора в поле выше.');
     teacherToken = 'Basic ' + btoa('teacher:' + password);
     sessionStorage.setItem('chao_teacher_token', teacherToken);
   }
@@ -80,14 +80,14 @@ async function api(url, options = {}) {
   const response = await fetch(url, {...options, headers});
   if (response.status === 401) {
     sessionStorage.removeItem('chao_teacher_token'); teacherToken = '';
-    throw new Error('Неверный пароль. Обновите страницу и войдите снова.');
+    throw new Error('Неверный пароль. Проверьте поле и нажмите «Войти» ещё раз.');
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.detail || ('Ошибка ' + response.status));
   return data;
 }
 
-function showStatus(message) { document.getElementById('status').textContent = message; }
+function showStatus(message) { document.getElementById('status').textContent = message; } async function login() { try { await api('/api/books'); showStatus('Вход выполнен. Можно загружать PDF.'); } catch (error) { showStatus(error.message); } }
 function addBookButton(book) {
   const row = document.createElement('div'); row.className = 'book-row';
   const description = document.createElement('span');
