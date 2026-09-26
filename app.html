@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chao HSK 5 Studio | Риторика и Язык</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --desk-bg: #E4DFD5;
+            --paper-white: #FFFEFA;
+            --ink-black: #1A1817;
+            --ink-gray: #55514B;
+            --hsk5-teal: #1F5F61;
+            --hsk5-teal-light: #EBF4F4;
+            --hsk5-border: #CBD9D9;
+            --book-line: #DDD2BE;
+            --book-shadow: 0 8px 24px rgba(0,0,0,0.07), 0 2px 6px rgba(0,0,0,0.04);
+            --recording-red: #D9453B;
+            --chao-purple: #7E69AB;
+            --chao-purple-light: #F4F1FA;
+            --success-green: #2E7D5A;
+            --success-light: #EBF7F0;
+            --tea-gold: #B87333;
+            --tea-light: #FFF8F0;
+            --card-radius: 16px;
+        }
+        body.dark-mode {
+            --desk-bg: #121110;
+            --paper-white: #1E1C1A;
+            --ink-black: #EAE6DF;
+            --ink-gray: #A39E96;
+            --hsk5-teal: #429B9E;
+            --hsk5-teal-light: #162E2F;
+            --hsk5-border: #33302C;
+            --book-line: #3A3632;
+            --book-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.2);
+            --recording-red: #E55B51;
+            --chao-purple: #9D84D2;
+            --chao-purple-light: #2A2438;
+            --success-green: #3D9E75;
+            --success-light: #1A3326;
+            --tea-gold: #E5A86D;
+            --tea-light: #2B2119;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--desk-bg);
+            color: var(--ink-black);
+            font-family: 'Inter', sans-serif;
+            padding: 12px;
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .chinese-serif { font-family: 'Noto Serif SC', 'Songti SC', SimSun, serif; }
+        .chinese-sans { font-family: 'Noto Sans SC', 'PingFang SC', sans-serif; }
+        .toolbar {
+            max-width: 1600px; margin: 0 auto 12px; display: flex; flex-wrap: wrap;
+            justify-content: space-between; align-items: center; gap: 8px;
+            background: var(--paper-white); padding: 8px 16px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid var(--hsk5-border);
+        }
+        .brand-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .logo-tag { background: var(--hsk5-teal); color: #fff; font-weight: 700; font-size: 12px; padding: 4px 8px; border-radius: 6px; }
+        
+        .reward-badge { 
+            background: var(--hsk5-teal-light); border: 1px solid var(--hsk5-teal); color: var(--hsk5-teal); 
+            padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; 
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px; 
+            min-width: 110px; text-align: center;
+        }
+        
+        .timer-badge-header {
+            background: var(--desk-bg); border: 1px solid var(--hsk5-border); color: var(--ink-black);
+            padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px; 
+            min-width: 95px; text-align: center; cursor: pointer; transition: 0.2s;
+        }
+        .timer-badge-header:hover { border-color: var(--hsk5-teal); background: var(--hsk5-teal-light); color: var(--hsk5-teal); }
+        .lesson-dropdown, .page-dropdown {
+            padding: 6px 12px; border: 1px solid var(--hsk5-border); border-radius: 8px;
+            font-size: 13px; color: var(--hsk5-teal); background: var(--paper-white); font-weight: 600; cursor: pointer; outline: none;
+            max-width: 280px; text-overflow: ellipsis;
+        }
+        .page-dropdown { max-width: 200px; }
+        .api-input {
+            padding: 6px 10px; border: 1px solid var(--hsk5-border); border-radius: 8px;
+            font-size: 12px; color: var(--ink-black); background: var(--paper-white); outline: none;
+            font-family: monospace; width: 150px;
+        }
+        .theme-toggle-btn {
+            background: var(--hsk5-teal-light); border: 1px solid var(--hsk5-border); color: var(--ink-black);
+            border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; gap: 4px; transition: all 0.2s ease;
+        }
+        .theme-toggle-btn:hover { border-color: var(--hsk5-teal); }
+        .main-stage {
+            max-width: 1600px; margin: 0 auto; display: grid;
+            grid-template-columns: 1.35fr 0.9fr 1.05fr; gap: 16px; align-items: stretch;
+        }
+        @media (max-width: 1100px) {
+            .main-stage { grid-template-columns: 1fr; }
+            .book-page, .middle-vocab-column, .companion-panel { height: auto !important; }
+        }
+        .book-page {
+            background: var(--paper-white); border: 1px solid var(--book-line); border-radius: var(--card-radius);
+            box-shadow: var(--book-shadow); padding: 20px 24px; position: relative;
+            display: flex; flex-direction: column; gap: 12px; height: 100%; min-height: 640px;
+        }
+        .book-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--hsk5-teal); padding-bottom: 6px; }
+        .book-series-title { font-size: 12px; font-weight: 700; color: var(--hsk5-teal); letter-spacing: 0.6px; text-transform: uppercase; }
+        .book-page-num { font-family: 'Noto Serif SC', serif; font-size: 14px; font-weight: 700; color: var(--ink-black); }
+        .page-navigation-strip {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--hsk5-teal-light); padding: 6px 12px; border-radius: 8px;
+            font-size: 12px; font-weight: 600; color: var(--hsk5-teal);
+        }
+        .page-nav-arrow {
+            background: var(--paper-white); border: 1px solid var(--hsk5-border); padding: 4px 10px;
+            border-radius: 6px; cursor: pointer; font-weight: 700; color: var(--hsk5-teal); font-size: 12px; transition: 0.2s;
+        }
+        .page-nav-arrow:hover { background: var(--hsk5-teal); color: #fff; }
+        .lesson-title-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .lesson-num-box { background: var(--hsk5-teal); color: #fff; font-size: 13px; font-weight: 800; padding: 4px 10px; border-radius: 6px; }
+        .lesson-chinese-title { font-size: 24px; font-weight: 900; color: var(--ink-black); }
+        .lesson-ru-subtitle { font-size: 14px; color: var(--ink-gray); font-weight: 500; }
+        .section-tag-hsk {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800;
+            color: var(--hsk5-teal); border-bottom: 2px solid var(--hsk5-teal); padding-bottom: 3px; margin-bottom: 8px;
+        }
+        .section-tag-hsk .tag-cn { background: var(--hsk5-teal); color: #fff; font-size: 10px; padding: 2px 5px; border-radius: 4px; }
+        .page-content-stage { display: flex; flex-direction: column; gap: 12px; flex-grow: 1; }
+        .article-body { font-size: 16px; line-height: 190%; color: var(--ink-black); text-align: justify; }
+        .article-body p { text-indent: 2em; margin-bottom: 8px; }
+        .hsk-word-inline {
+            display: inline; background-color: var(--hsk5-teal-light); border-bottom: 2px solid var(--hsk5-teal);
+            font-weight: 600; cursor: pointer; color: var(--ink-black); padding: 0 3px; border-radius: 3px; transition: all 0.2s ease;
+        }
+        .hsk-word-inline.active-highlight {
+            background-color: var(--hsk5-teal) !important; color: #fff !important;
+            box-shadow: 0 0 0 3px rgba(31, 95, 97, 0.3); border-radius: 4px;
+        }
+        .middle-vocab-column {
+            background: var(--paper-white); border: 1px solid var(--book-line); border-radius: var(--card-radius);
+            box-shadow: var(--book-shadow); padding: 16px; display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 640px;
+        }
+        .vocab-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--hsk5-teal); padding-bottom: 8px; }
+        .vocab-table-scroll { max-height: 550px; overflow-y: auto; scroll-behavior: smooth; padding-right: 6px; }
+        .vocab-table-scroll::-webkit-scrollbar { width: 6px; }
+        .vocab-table-scroll::-webkit-scrollbar-thumb { background: var(--hsk5-border); border-radius: 4px; }
+        .vocab-table { display: flex; flex-direction: column; gap: 4px; }
+        
+        .vocab-row {
+            display: grid; grid-template-columns: 20px minmax(50px, auto) minmax(65px, auto) 30px 1fr;
+            gap: 6px; align-items: baseline; padding: 8px; border-bottom: 1px dashed rgba(203, 217, 217, 0.6);
+            cursor: pointer; font-size: 13px; border-radius: 8px; transition: all 0.15s ease;
+        }
+        .vocab-row:hover { background: #E2ECEB; }
+        body.dark-mode .vocab-row:hover { background: #223739; }
+        .vocab-row.selected-row { background: #D5E7E7 !important; border-left: 4px solid var(--hsk5-teal); padding-left: 10px; font-weight: 600; }
+        body.dark-mode .vocab-row.selected-row { background: #1F4244 !important; }
+        .vr-num { font-size: 10px; color: var(--ink-gray); font-weight: 600; }
+        .vr-word { font-size: 16px; font-weight: 700; color: var(--ink-black); }
+        .vr-py { font-size: 12px; color: var(--ink-gray); }
+        .vr-pos { font-size: 10px; color: var(--hsk5-teal); font-style: italic; }
+        .vr-trans { font-size: 12px; color: var(--ink-gray); text-align: right; }
+        .book-block-card { border: 1px solid var(--book-line); background: var(--desk-bg); padding: 12px 16px; border-radius: 10px; font-size: 13px; line-height: 160%; }
+        .exercise-item { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed var(--book-line); }
+        #selectionPopup {
+            position: absolute; display: none; background: var(--paper-white); border: 1px solid var(--hsk5-border);
+            border-radius: 12px; padding: 10px 14px; box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            z-index: 9999; transform: translate(-50%, -130%); min-width: 220px; max-width: 360px;
+        }
+        #selectionPopup::after {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border: 6px solid transparent; border-top-color: var(--paper-white);
+        }
+        .popup-header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--book-line); padding-bottom: 6px; margin-bottom: 6px; }
+        .popup-word-wrap { display: flex; align-items: baseline; gap: 8px; }
+        .popup-char { font-size: 16px; font-weight: 800; color: var(--ink-black); line-height: 130%; word-break: break-all; }
+        .popup-py { font-size: 12px; font-weight: 600; color: var(--hsk5-teal); }
+        .popup-trans { font-size: 12px; color: var(--ink-gray); margin-bottom: 8px; }
+        .popup-actions { display: flex; gap: 6px; }
+        .popup-btn {
+            background: var(--hsk5-teal-light); border: 1px solid var(--hsk5-border); border-radius: 6px;
+            padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--hsk5-teal); cursor: pointer; flex: 1; transition: 0.2s;
+        }
+        .popup-btn:hover { background: var(--hsk5-teal); color: #fff; }
+        .companion-panel { display: flex; flex-direction: column; gap: 12px; height: 100%; min-height: 640px; justify-content: space-between; }
+        .bento-module { background: var(--paper-white); border-radius: var(--card-radius); padding: 16px; border: 1px solid var(--hsk5-border); box-shadow: var(--book-shadow); }
+        
+        .avatar-widget { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--chao-purple-light); border: 1px solid var(--chao-purple); position: relative; }
+        .avatar-frame { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--chao-purple); background: #EAE3F7; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .speech-bubble { font-size: 13px; line-height: 145%; color: var(--ink-black); width: 100%; }
+        .speech-bubble strong { color: var(--chao-purple); display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 13px; }
+        .tab-switcher { display: flex; gap: 6px; background: var(--hsk5-teal-light); padding: 4px; border-radius: 10px; }
+        .tab-btn {
+            flex: 1; padding: 8px 4px; font-size: 12px; font-weight: 700; border: none; background: none;
+            color: var(--hsk5-teal); border-radius: 6px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+        }
+        .tab-btn.active { background: var(--paper-white); box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .tab-btn.close-mode { color: #C25E2E !important; background: #FFF0E6 !important; }
+        .tutor-card, .flashcard-card, .studio-card { display: none; flex-direction: column; gap: 10px; width: 100%; flex-grow: 1; overflow: hidden; }
+        .tutor-card.active, .flashcard-card.active, .studio-card.active { display: flex; }
+        .task-flip-wrapper { perspective: 1000px; width: 100%; margin-bottom: 4px; }
+        .task-flip-card { width: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1); border-radius: 12px; }
+        .task-flip-card.flipped { transform: rotateY(180deg); }
+        .task-face {
+            width: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 12px;
+            padding: 12px; border: 1.5px solid var(--hsk5-border); background: var(--desk-bg); display: flex; flex-direction: column; gap: 8px;
+        }
+        .task-face.back { position: absolute; top: 0; left: 0; height: 100%; transform: rotateY(180deg); background: var(--paper-white); border-color: var(--hsk5-teal); justify-content: space-between; }
+        
+        .sentence-builder-box { background: var(--paper-white); border: 1px solid var(--hsk5-border); border-radius: 10px; padding: 8px; margin-top: 2px; }
+        .builder-pool { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; min-height: 34px; background: var(--desk-bg); padding: 6px; border-radius: 8px; border: 1px dashed var(--hsk5-border); }
+        .builder-chip {
+            background: var(--hsk5-teal-light); border: 1px solid var(--hsk5-teal); color: var(--hsk5-teal);
+            padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;
+            font-family: 'Noto Serif SC', serif; transition: 0.2s;
+        }
+        .builder-chip:hover { transform: translateY(-2px); box-shadow: 0 2px 6px rgba(31,95,97,0.2); }
+        .builder-chip.used { opacity: 0.3; pointer-events: none; transform: none; box-shadow: none; }
+        
+        .hint-btn { background: #FFF0E6; border: 1px solid #F0B892; color: #C25E2E; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .hint-btn:hover { background: #FFE0CC; }
+        .start-answer-btn { width: 100%; padding: 8px; border-radius: 8px; background: var(--hsk5-teal); color: #fff; border: none; font-weight: 700; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
+        .start-answer-btn:hover { background: #16484A; }
+        .voice-input-container { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; margin: 4px 0; }
+        .voice-input-container textarea {
+            width: 100%; height: 130px; border: 1.5px solid var(--hsk5-border); border-radius: 10px;
+            padding: 10px 12px; font-size: 14px; background: var(--desk-bg); color: var(--ink-black); outline: none; resize: none; transition: 0.2s;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        .voice-input-container textarea:focus { border-color: var(--hsk5-teal); background: var(--paper-white); }
+        
+        .mic-btn-centered {
+            width: 44px; height: 44px; border-radius: 50%; background: var(--hsk5-teal); color: #fff; font-size: 20px;
+            border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(31, 95, 97, 0.3);
+        }
+        .mic-btn-centered:hover { transform: scale(1.05); }
+        .mic-btn-centered.recording { background: var(--recording-red) !important; animation: pulse-mic 1.2s infinite; }
+        @keyframes pulse-mic { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+        .submit-btn { width: 100%; height: 36px; background: var(--hsk5-teal); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .submit-btn:hover { background: #16484A; }
+        .submit-btn:disabled { background: var(--ink-gray); cursor: not-allowed; }
+        .result-card { display: none; flex-direction: column; gap: 8px; width: 100%; margin-top: 4px; animation: fadeIn 0.3s ease-in; }
+        .result-card.active { display: flex !important; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .res-row { font-size: 12px; line-height: 145%; color: var(--ink-black); }
+        .native-box { background: var(--hsk5-teal-light); border-radius: 8px; padding: 8px 10px; border-left: 4px solid var(--hsk5-teal); }
+        
+        .sound-icon-btn { background: var(--paper-white); border: 1px solid var(--hsk5-border); border-radius: 6px; padding: 3px 6px; cursor: pointer; color: var(--ink-black); font-size: 12px; transition: 0.2s; }
+        .sound-icon-btn:hover { border-color: var(--hsk5-teal); color: var(--hsk5-teal); }
+        .sound-icon-btn.playing { background: var(--hsk5-teal) !important; color: #fff !important; animation: pulse-play 1s infinite; }
+        @keyframes pulse-play { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        /* СТРОГО ФИКСИРОВАННЫЙ БЛОК КАРТОЧЕК БЕЗ СМЕЩЕНИЙ И ПРЫЖКОВ */
+        .card-perspective-wrapper { perspective: 1000px; width: 100%; height: 160px; position: relative; margin-bottom: 4px; }
+        .card-stage { width: 100%; height: 160px; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1); cursor: pointer; border-radius: 14px; }
+        .card-stage.flipped { transform: rotateY(180deg); }
+        
+        .card-face {
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            border-radius: 14px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 12px;
+            box-shadow: 0 4px 16px rgba(230, 140, 100, 0.1); border: 2px solid #F0B892; background: #FFF5EC; transition: background 0.3s, border-color 0.3s;
+        }
+        body.dark-mode .card-face { background: #2D1E18; border-color: #7A4E38; }
+        .card-face.back { transform: rotateY(180deg); background: #FEECE0; border-color: #EBA87E; }
+        body.dark-mode .card-face.back { background: #38241D; border-color: #8C5B42; }
+        .card-stage.success-state .card-face { background: #E8F7EE !important; border-color: var(--success-green) !important; }
+        .card-stage.error-state .card-face { background: #FDF1F0 !important; border-color: var(--recording-red) !important; }
+        /* Иероглиф-кнопка */
+        .fc-char { 
+            font-size: 46px; font-weight: 800; color: var(--ink-black); margin-bottom: 2px; line-height: 1.1; 
+            cursor: pointer; transition: transform 0.15s ease, color 0.2s ease; display: inline-block;
+        }
+        .fc-char:hover { color: var(--hsk5-teal); transform: scale(1.05); }
+        .fc-char.playing { color: var(--hsk5-teal) !important; animation: pulse-play 1s infinite; }
+        .fc-py { font-size: 17px; font-weight: 700; color: #C25E2E; text-align: center; margin-bottom: 2px; cursor: pointer; display: inline-block; }
+        body.dark-mode .fc-py { color: #FFA07A; }
+        .fc-trans { font-size: 14px; font-weight: 600; color: var(--ink-gray); text-align: center; }
+        .card-hint-badge { position: absolute; bottom: 4px; font-size: 10px; font-weight: 600; color: #B56B45; opacity: 0.8; pointer-events: none; }
+        
+        .effort-rating-row { display: flex; gap: 8px; width: 100%; margin-top: 6px; z-index: 10; }
+        .effort-btn { flex: 1; padding: 6px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--hsk5-border); background: var(--paper-white); color: var(--ink-black); transition: 0.2s; }
+        .effort-btn.easy { border-color: var(--success-green); color: var(--success-green); background: var(--success-light); }
+        .effort-btn.hard { border-color: var(--recording-red); color: var(--recording-red); background: #FDF1F0; }
+        .effort-btn:hover { transform: translateY(-2px); }
+        .fc-controls { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; margin-top: 2px; }
+        .fc-mic-large { width: 44px; height: 44px; border-radius: 50%; background: var(--hsk5-teal); color: #fff; font-size: 20px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .fc-mic-large.recording { background: var(--recording-red) !important; animation: pulse-mic 1.2s infinite; }
+        .fc-nav-btn { background: var(--paper-white); border: 1px solid var(--hsk5-border); padding: 6px 14px; border-radius: 8px; font-weight: 600; color: var(--ink-gray); cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .fc-nav-btn:hover { border-color: var(--hsk5-teal); color: var(--hsk5-teal); }
+        .studio-viewport-wrap { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; position: relative; margin: 6px 0; }
+        #studioLiveVideo, #studioPlaybackVideo { width: 100%; height: 100%; object-fit: cover; }
+        #cameraPipOverlay { position: absolute; bottom: 8px; right: 8px; width: 30%; aspect-ratio: 4/3; border-radius: 8px; border: 2px solid #fff; object-fit: cover; display: none; }
+        .rec-live-indicator { position: absolute; top: 8px; left: 8px; background: rgba(217, 69, 59, 0.9); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 6px; border-radius: 6px; display: none; align-items: center; gap: 5px; z-index: 10; }
+        .rec-dot { width: 7px; height: 7px; background: #fff; border-radius: 50%; animation: pulse-mic 1s infinite; }
+        
+        .studio-btn-row { display: flex; gap: 6px; width: 100%; margin-bottom: 6px; }
+        .studio-mode-btn { flex: 1; padding: 6px; border-radius: 8px; border: 1px solid var(--hsk5-border); background: var(--paper-white); font-size: 11px; font-weight: 600; color: var(--ink-black); cursor: pointer; transition: 0.2s; }
+        .studio-mode-btn.active { border-color: var(--hsk5-teal); background: var(--hsk5-teal-light); color: var(--hsk5-teal); }
+        .studio-record-btn { width: 100%; height: 38px; background: var(--recording-red); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .studio-record-btn.recording { background: #b91c1c; }
+        .studio-actions-after { display: none; gap: 8px; width: 100%; margin-top: 6px; }
+        .studio-download-btn { flex: 1; padding: 8px; border-radius: 8px; background: var(--success-green); color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; text-align: center; }
+        
+        .gallery-container { margin-top: 8px; border-top: 1px solid var(--book-line); padding-top: 8px; width: 100%; }
+        .gallery-item { background: var(--desk-bg); border: 1px solid var(--hsk5-border); border-radius: 8px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .gallery-btn { background: var(--paper-white); border: 1px solid var(--hsk5-border); border-radius: 6px; padding: 3px 6px; font-weight: 600; color: var(--ink-black); cursor: pointer; font-size: 11px; }
+        .gallery-btn:hover { border-color: var(--hsk5-teal); }
+        .progress-bar-container { width: 100%; height: 5px; background: rgba(31, 95, 97, 0.12); border-radius: 6px; overflow: hidden; margin-top: 3px; }
+        .progress-bar-fill { height: 100%; width: 0%; background: var(--hsk5-teal); border-radius: 6px; transition: width 0.4s ease; }
+        .review-mode-tag { background: #FFF0E0; color: #C25E2E; border: 1px solid #F0B892; border-radius: 12px; padding: 2px 8px; font-size: 10px; font-weight: 700; display: none; }
+        
+        /* Полностью компактный и сбалансированный дашборд без скролла */
+        .parent-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55);
+            display: none; align-items: center; justify-content: center; z-index: 10000; animation: fadeIn 0.2s ease;
+            backdrop-filter: blur(4px); padding: 8px;
+        }
+        .parent-modal.active { display: flex; }
+        .modal-content {
+            background: var(--paper-white); border: 1.5px solid var(--hsk5-border); border-radius: 18px;
+            width: 100%; max-width: 560px; padding: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+            display: flex; flex-direction: column; gap: 8px; position: relative; max-height: 96vh; overflow: hidden;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--hsk5-teal); padding-bottom: 6px; }
+        .modal-title { font-size: 15px; font-weight: 800; color: var(--hsk5-teal); display: flex; align-items: center; gap: 6px; }
+        .modal-close { background: none; border: none; font-size: 18px; font-weight: 700; cursor: pointer; color: var(--ink-gray); transition: 0.2s; }
+        .modal-close:hover { color: var(--recording-red); }
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .stat-box { background: var(--desk-bg); border: 1px solid var(--hsk5-border); border-radius: 8px; padding: 8px; text-align: center; }
+        .stat-num { font-size: 17px; font-weight: 900; color: var(--hsk5-teal); margin-bottom: 2px; font-family: 'Inter', sans-serif; }
+        .stat-label { font-size: 10px; color: var(--ink-gray); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        /* Компактный контейнер графиков */
+        .chart-container { background: var(--desk-bg); border: 1px solid var(--hsk5-border); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 4px; width: 100%; }
+        .chart-tabs { display: flex; gap: 4px; }
+        .chart-tab-btn { flex: 1; padding: 2px 6px; font-size: 10px; font-weight: 700; border: 1px solid var(--hsk5-border); background: var(--paper-white); color: var(--hsk5-teal); border-radius: 4px; cursor: pointer; }
+        .chart-tab-btn.active { background: var(--hsk5-teal); color: #fff; border-color: var(--hsk5-teal); }
+        
+        .line-chart-svg { width: 100%; height: 95px; display: block; overflow: visible; }
+        .chart-legend { display: flex; justify-content: center; gap: 14px; font-size: 10px; font-weight: 600; color: var(--ink-black); margin-top: 2px; }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .report-section-title { font-size: 11px; font-weight: 800; color: var(--hsk5-teal); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px; }
+        .report-preview-box { background: var(--desk-bg); border: 1px solid var(--hsk5-border); border-radius: 8px; padding: 8px; font-size: 11px; line-height: 140%; color: var(--ink-black); font-family: 'Noto Sans SC', sans-serif; white-space: pre-line; box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); max-height: 85px; overflow-y: auto; }
+        .share-btn { width: 100%; padding: 8px; background: var(--success-green); color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,90,0.2); }
+        .share-btn:hover { background: #235c44; transform: translateY(-1px); }
+        .tea-prompt-banner { display: none; background: var(--tea-light); border: 1.5px solid var(--tea-gold); border-radius: 12px; padding: 12px; margin-top: 10px; animation: fadeIn 0.3s ease; }
+        .tea-banner-btn-row { display: flex; gap: 8px; margin-top: 10px; }
+        .tea-primary-btn { flex: 1; padding: 8px; background: var(--tea-gold); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .tea-sec-btn { padding: 8px 12px; background: none; border: 1px solid var(--tea-gold); color: var(--tea-gold); border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        
+        .gym-card { background: var(--hsk5-teal-light); border: 2px solid var(--hsk5-teal); border-radius: var(--card-radius); padding: 18px; box-shadow: 0 6px 20px rgba(31, 95, 97, 0.15); display: none; animation: fadeIn 0.3s ease; }
+        .gym-card.active { display: block; }
+        .gym-animation-stage { width: 100%; height: 110px; background: var(--paper-white); border-radius: 12px; display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 12px; border: 1px solid var(--hsk5-border); overflow: hidden; }
+        .gym-avatar-emoji { font-size: 48px; transition: transform 0.4s ease; display: inline-block; }
+        @keyframes bounceGym { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-12px) scale(1.1); } }
+        .gym-avatar-emoji.animating { animation: bounceGym 0.8s infinite ease-in-out; }
+        .gym-subtitle-box { background: var(--paper-white); border-radius: 10px; padding: 12px; text-align: center; margin-bottom: 14px; border: 1px solid var(--hsk5-border); }
+        .gym-cn { font-size: 18px; font-weight: 800; color: var(--hsk5-teal); margin-bottom: 4px; }
+        .gym-py { font-size: 13px; font-weight: 600; color: var(--ink-gray); margin-bottom: 4px; }
+        .gym-ru { font-size: 12px; font-style: italic; color: var(--ink-black); }
+        @keyframes slideOutNext { 0% { transform: translateX(0) scale(1); opacity: 1; } 100% { transform: translateX(-60px) scale(0.92); opacity: 0; } }
+        @keyframes slideInNext { 0% { transform: translateX(60px) scale(0.92); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+        @keyframes slideOutPrev { 0% { transform: translateX(0) scale(1); opacity: 1; } 100% { transform: translateX(60px) scale(0.92); opacity: 0; } }
+        @keyframes slideInPrev { 0% { transform: translateX(-60px) scale(0.92); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+        .slide-out-next { animation: slideOutNext 0.18s ease-out forwards; }
+        .slide-in-next { animation: slideInNext 0.22s ease-out forwards; }
+        .slide-out-prev { animation: slideOutPrev 0.18s ease-out forwards; }
+        .slide-in-prev { animation: slideInPrev 0.22s ease-out forwards; }
+        .card-stage.playing { box-shadow: 0 0 0 3px var(--hsk5-teal), 0 8px 22px rgba(31,95,97,0.24); }
+        .textbook-top-banner { display:flex; align-items:stretch; border-radius:8px; overflow:hidden; border:1px solid var(--hsk5-border); margin-bottom:4px; }
+        .tb-orange-box { background:#D97706; color:#fff; width:62px; display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:900; font-family:'Noto Serif SC',serif; }
+        .tb-title-content { background:#FFFBEB; padding:8px 12px; flex-grow:1; display:flex; flex-direction:column; justify-content:center; border-left:3px dashed #F59E0B; }
+        body.dark-mode .tb-title-content { background:#332818; }
+        .tb-pinyin { color:#9A5A11; font-size:11px; font-weight:700; }
+        .tb-hanzi { color:var(--ink-black); font-size:22px; font-weight:900; }
+        .tb-eng { color:var(--ink-gray); font-size:11px; }
+        .dialogue-row-card { display:grid; grid-template-columns:22px minmax(105px,1fr) minmax(90px,0.8fr) minmax(110px,1fr); gap:7px; align-items:center; background:var(--paper-white); border:1px solid var(--hsk5-border); border-radius:8px; padding:8px; margin-bottom:8px; }
+        .dialogue-num-badge { background:#D97706; color:#fff; width:20px; height:20px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; }
+        .dialogue-text-col { font-size:12.5px; line-height:145%; font-family:'Noto Serif SC',serif; }
+        .dialogue-text-line { cursor:pointer; padding:2px 4px; border-radius:4px; transition:0.15s; display:inline-block; }
+        .dialogue-text-line:hover { background:var(--hsk5-teal-light); color:var(--hsk5-teal); }
+        .dialogue-text-line.playing { background:var(--hsk5-teal) !important; color:#fff !important; }
+        .dialogue-img-col { width:100%; aspect-ratio:4/3; border-radius:6px; overflow:hidden; border:1px solid var(--hsk5-border); background:var(--hsk5-teal-light); }
+        .dialogue-img-col img { width:100%; height:100%; object-fit:cover; }
+        .dialogue-img-col.image-unavailable { display:flex; align-items:center; justify-content:center; color:var(--hsk5-teal); font:800 30px 'Noto Serif SC',serif; }
+        .dialogue-right-col { font-size:10.5px; color:var(--ink-gray); display:flex; flex-direction:column; gap:3px; border-left:1px dashed var(--hsk5-border); padding-left:6px; }
+        @media (max-width: 650px) { .dialogue-row-card { grid-template-columns:22px 1fr 1fr; } .dialogue-img-col { grid-column:2; } .dialogue-right-col { grid-column:3; grid-row:2; } }
+
+        /* Desktop: fit the study workspace to the visible window. */
+        @media (min-width: 1101px) and (min-height: 700px) {
+            html, body { height: 100%; }
+            body {
+                height: 100vh;
+                height: 100dvh;
+                min-height: 0;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                padding: 8px;
+            }
+            .toolbar {
+                width: 100%;
+                flex: 0 0 auto;
+                margin: 0 auto 8px;
+                gap: 6px;
+                padding: 6px 12px;
+            }
+            .main-stage {
+                width: 100%;
+                flex: 1 1 auto;
+                min-height: 0;
+                grid-template-columns: 1.35fr 0.9fr 1.05fr;
+                gap: 12px;
+                align-items: stretch;
+            }
+            .book-page, .middle-vocab-column, .companion-panel {
+                height: 100%;
+                min-height: 0;
+                min-width: 0;
+            }
+            .book-page {
+                padding: clamp(10px, 1.35vh, 20px) clamp(12px, 1.5vw, 24px);
+                gap: clamp(6px, 1vh, 12px);
+            }
+            .middle-vocab-column {
+                padding: clamp(10px, 1.2vh, 16px);
+                gap: clamp(6px, 0.9vh, 10px);
+                overflow: hidden;
+            }
+            .vocab-table-scroll {
+                flex: 1 1 auto;
+                min-height: 0;
+                max-height: none;
+            }
+            .companion-panel { gap: clamp(6px, 1vh, 12px); }
+            .bento-module { min-height: 0; }
+            .page-content-stage { min-height: 0; overflow-y: auto; }
+        }
+        .scan-page-root { width:100%; height:100%; min-height:0; overflow:auto; display:flex; justify-content:center; align-items:flex-start; }
+        .scan-sheet { width:100%; position:relative; flex:none; background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.12); }
+        .scan-sheet img { display:block; width:100%; height:100%; object-fit:fill; }
+        .scan-ocr-layer { position:absolute; inset:0; }
+        .scan-word { position:absolute; display:block; padding:0; border:0; background:transparent; cursor:pointer; }
+        .scan-word:hover, .scan-word:focus-visible, .scan-word.playing { outline:1.5px solid rgba(31,95,97,.72); background:rgba(31,95,97,.12); }
+    </style>
+</head>
+<body>
+    <div id="parentModal" class="parent-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">📊 Дашборд прогресса и отчет</span>
+                <button class="modal-close" id="closeModalBtn">✕</button>
+            </div>
+            
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div id="modalTotalWords" class="stat-num">0</div>
+                    <div class="stat-label">Слов выучено (HSK 5)</div>
+                </div>
+                <div class="stat-box">
+                    <div id="modalStudyTime" class="stat-num">00:00</div>
+                    <div class="stat-label">Время на уроке ⏱️</div>
+                </div>
+                <div class="stat-box">
+                    <div id="modalTotalHours" class="stat-num">0.0 ч</div>
+                    <div class="stat-label">Всего на платформе</div>
+                </div>
+                <div class="stat-box">
+                    <div id="modalPlatformDays" class="stat-num">1 день</div>
+                    <div class="stat-label">Дней на платформе 🔥</div>
+                </div>
+            </div>
+            <!-- Компактный график без прокрутки -->
+            <div class="chart-container">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:11px; font-weight:800; color:var(--hsk5-teal); text-transform:uppercase;">📈 Динамика активности</span>
+                    <div class="chart-tabs">
+                        <button id="chartWeekBtn" class="chart-tab-btn active" onclick="switchChartMode('week')">Неделя</button>
+                        <button id="chartMonthBtn" class="chart-tab-btn" onclick="switchChartMode('month')">Месяц</button>
+                    </div>
+                </div>
+                
+                <div style="position:relative; width:100%; height:105px;">
+                    <svg id="lineChartSvg" class="line-chart-svg" viewBox="0 0 520 105"></svg>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item"><span class="legend-dot" style="background:#023047;"></span> ⏱️ Время на уроке (мин)</div>
+                    <div class="legend-item"><span class="legend-dot" style="background:#D90429;"></span> 🎴 Выучено иероглифов (слов)</div>
+                </div>
+            </div>
+            <div class="report-section-title"><span>📤</span> Отчет для родителей (в мессенджер):</div>
+            <div id="reportPreviewText" class="report-preview-box">
+                Загрузка отчета...
+            </div>
+            <button id="copyReportBtn" class="share-btn">📋 Скопировать отчет для родителя</button>
+        </div>
+    </div>
+    
+    <div id="selectionPopup">
+        <div class="popup-header-row">
+            <div class="popup-word-wrap">
+                <span id="popupWordChar" class="popup-char chinese-serif">...</span>
+                <span id="popupWordPy" class="popup-py">...</span>
+            </div>
+            <button id="popupVoiceBtn" class="sound-icon-btn" title="Озвучить / Пауза">🔊</button>
+        </div>
+        <div id="popupWordTrans" class="popup-trans">Загрузка перевода...</div>
+        <div class="popup-actions">
+            <button id="popupAddCardBtn" class="popup-btn">🎴 В карточки</button>
+            <button id="popupExplainBtn" class="popup-btn">💡 Спросить Чао</button>
+        </div>
+    </div>
+    <header class="toolbar">
+        <div class="brand-group">
+            <span class="logo-tag">HSK 5 STANDARD</span>
+            <div class="reward-badge"><span>⭐</span> <span id="rewardPoints">0</span> <span style="font-size:10px;">XP</span></div>
+            <div class="timer-badge-header" id="openParentModalBtn" title="Открыть дашборд и отчет"><span>⏱️</span> <span id="studyTimerDisplay">00:00</span></div>
+            <select id="lessonSelect" class="lesson-dropdown"></select>
+            <select id="pageSelect" class="page-dropdown"></select>
+            <a id="managerLink" class="theme-toggle-btn" href="/manage" style="display:none; text-decoration:none;">Загрузить учебник</a>
+            <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">
+                <span id="themeIcon">🌙</span> <span id="themeLabel" style="font-size:11px;">Тёмная</span>
+            </button>
+        </div>
+        <input type="password" id="apiKeyInput" class="api-input" placeholder="Ключ API (sk-sp-...)">
+    </header>
+    <main class="main-stage" id="mainStageGrid">
+        <article class="book-page">
+            <div class="book-header">
+                <span class="book-series-title" id="bookUnit">...</span>
+                <span class="book-page-num" id="bookPageNum">...</span>
+            </div>
+            <div class="page-navigation-strip">
+                <button class="page-nav-arrow" id="prevPageBtn">← Назад</button>
+                <span id="pageNavIndicator">Страница 1</span>
+                <button class="page-nav-arrow" id="nextPageBtn">Вперёд →</button>
+            </div>
+            <div class="lesson-title-banner">
+                <span class="lesson-num-box" id="lessonBadge">第 1 课</span>
+                <div>
+                    <h1 class="lesson-chinese-title chinese-serif" id="lessonTitle">...</h1>
+                    <span class="lesson-ru-subtitle" id="lessonSubTitle">...</span>
+                </div>
+            </div>
+            <div id="pageContentStage" class="page-content-stage"></div>
+        </article>
+        
+        <section class="middle-vocab-column" id="middleVocabSection">
+            <div class="vocab-card-header">
+                <div class="section-tag-hsk" style="margin:0; border:none; padding:0;">
+                    <span class="tag-cn">生词表</span>
+                    <span class="chinese-serif" style="font-size:14px; font-weight:700;">Словарь урока</span>
+                </div>
+                <span id="vocabWordCountBadge" style="font-size:12px; font-weight:700; color:var(--hsk5-teal);">0 слов</span>
+            </div>
+            <div class="vocab-table-scroll" id="vocabScrollContainer">
+                <div class="vocab-table chinese-sans" id="vocabTableBody"></div>
+            </div>
+        </section>
+        <aside class="companion-panel">
+            <div class="bento-module avatar-widget">
+                <div class="avatar-frame">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="50" fill="#EAE3F7"/>
+                        <path d="M12 98 C16 75, 32 68, 50 68 C68 68, 84 75, 88 98 Z" fill="#7E69AB"/>
+                        <path d="M42 68 C42 76, 58 76, 58 68 Z" fill="#695394"/>
+                        <path d="M26 64 C26 76, 74 76, 74 64" fill="none" stroke="#A4BD99" stroke-width="5" stroke-linecap="round"/>
+                        <rect x="42" y="52" width="16" height="18" fill="#FADBC8" rx="4"/>
+                        <ellipse cx="50" cy="46" rx="22" ry="24" fill="#FADBC8"/>
+                        <path d="M26 46 C24 30, 34 20, 50 20 C66 20, 76 30, 74 46 C74 54, 76 60, 72 62 C68 56, 68 46, 68 46 C60 48, 40 48, 32 46 C32 46, 32 56, 28 62 C24 60, 26 54, 26 46 Z" fill="#242124"/>
+                        <path d="M28 36 C34 38, 44 38, 50 35 C56 38, 66 38, 72 36 C72 30, 66 22, 50 22 C34 22, 28 30, 28 36 Z" fill="#242124"/>
+                        <circle cx="40" cy="45" r="7" fill="none" stroke="#2B2825" stroke-width="2"/>
+                        <circle cx="60" cy="45" r="7" fill="none" stroke="#2B2825" stroke-width="2"/>
+                        <line x1="47" y1="45" x2="53" y2="45" stroke="#2B2825" stroke-width="2"/>
+                        <circle cx="40" cy="45" r="2.2" fill="#2B2825"/>
+                        <circle cx="60" cy="45" r="2.2" fill="#2B2825"/>
+                        <path d="M46 56 Q50 60 54 56" fill="none" stroke="#C27063" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="speech-bubble">
+                    <strong><span>Сяо Чао (小潮)</span></strong>
+                    <span id="chaoSpeech">Привет! Загружаю урок...</span>
+                </div>
+            </div>
+            
+            <div class="tab-switcher">
+                <button id="tabTutor" class="tab-btn active">📖 Разбор</button>
+                <button id="tabCards" class="tab-btn">🎴 Карточки</button>
+                <button id="tabStudio" class="tab-btn">📹 Студия</button>
+            </div>
+            
+            <div id="teaPromptBanner" class="tea-prompt-banner">
+                <div style="font-size:13px; font-weight:700; color:var(--hsk5-teal); display:flex; align-items:center; gap:6px;">
+                    <span>🤸‍♂️</span> <span>Время китайской школьной зарядки (课间操)!</span>
+                </div>
+                <div style="font-size:12px; color:var(--ink-black); margin-top:4px; line-height:140%;">
+                    Прошло 15 минут! Давайте разомнемся по традициям китайских школ: помашем руками, поприседаем и выучим полезные фразы!
+                </div>
+                <div class="tea-banner-btn-row">
+                    <button id="teaAcceptBtn" class="tea-primary-btn" style="background:var(--hsk5-teal);">🤸‍♂️ Начать зарядку</button>
+                    <button id="teaDeclineBtn" class="tea-sec-btn">Пропустить</button>
+                </div>
+            </div>
+            
+            <!-- Блок зарядки (课间操) -->
+            <div id="gymSection" class="gym-card">
+                <div class="tea-header-row" style="border-color: rgba(31,95,97,0.3);">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:18px;">🤸‍♂️</span>
+                        <strong style="color:var(--hsk5-teal); font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">Минутка зарядки (课间操)</strong>
+                    </div>
+                    <span id="gymTimerBadge" class="tea-timer-badge" style="color:var(--hsk5-teal); border-color:var(--hsk5-teal);">01:00</span>
+                </div>
+                <div class="gym-animation-stage">
+                    <div id="gymEmoji" class="gym-avatar-emoji animating">🙆‍♂️</div>
+                </div>
+                <div class="gym-subtitle-box">
+                    <div id="gymCn" class="gym-cn chinese-serif">伸伸臂，踢踢腿！</div>
+                    <div id="gymPy" class="gym-py chinese-sans">shēn shēn bì, tì tì tuǐ!</div>
+                    <div id="gymRu" class="gym-ru">«Вытянем руки, поднимем ноги!»</div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button id="gymVoiceBtn" class="sound-icon-btn" style="flex:1; background:var(--paper-white); border-color:var(--hsk5-teal); color:var(--hsk5-teal); font-weight:700;">🔊 Озвучить фразу</button>
+                    <button id="gymBackBtn" class="tea-primary-btn" style="flex:1.2; background:var(--hsk5-teal);">✍️ К уроку (+20 XP)</button>
+                </div>
+            </div>
+            <div id="tutorSection" class="bento-module tutor-card active">
+                <div class="task-flip-wrapper" id="taskFlipWrapper">
+                    <div class="task-flip-card" id="taskFlipCard">
+                        <div class="task-face front">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                                <div style="font-size:11px; font-weight:700; color:var(--hsk5-teal); text-transform:uppercase; letter-spacing:0.5px;">Устное задание</div>
+                                <button id="builderHintBtn" class="hint-btn" title="Подсказка (-50 XP)">💡 Подсказка (-50 XP)</button>
+                            </div>
+                            <div class="prompt-question chinese-sans" id="taskQuestion" style="font-size:14px; font-weight:600; line-height:150%;">...</div>
+                            
+                            <div class="sentence-builder-box">
+                                <div style="font-size:11px; font-weight:700; color:var(--hsk5-teal); margin-bottom:4px;">🧩 Соберите предложение (интерливинг):</div>
+                                <div id="builderTarget" class="builder-pool" style="min-height:34px; border-color: var(--success-green);"></div>
+                                <div id="builderSource" class="builder-pool" style="margin-top:6px;"></div>
+                            </div>
+                            <button id="flipToAnswerBtn" class="start-answer-btn" style="margin-top:8px;">
+                                <span>🎤 Ответить устно</span>
+                            </button>
+                        </div>
+                        <div class="task-face back">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div style="font-size:11px; font-weight:700; color:var(--hsk5-teal); text-transform:uppercase;">Ваш ответ</div>
+                                <button id="flipBackBtn" style="background:none; border:none; color:var(--hsk5-teal); cursor:pointer; font-size:12px; font-weight:700;">← Назад</button>
+                            </div>
+                            
+                            <div class="voice-input-container">
+                                <textarea id="userSpeechInput" class="chinese-sans" placeholder="Говорите или пишите по-китайски..."></textarea>
+                                <button id="micButton" class="mic-btn-centered" title="Надиктовать голосом">🎤</button>
+                            </div>
+                            <button id="analyzeButton" class="submit-btn">ПРОВЕРИТЬ ОТВЕТ</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="originalQuoteBox" style="display:none; background:var(--desk-bg); border-left:4px solid var(--chao-purple); border-radius:10px; padding:10px; margin-bottom:6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:11px; font-weight:700; color:var(--chao-purple);">Цитата из текста (Эмоциональный якорь):</span>
+                        <button id="originalVoiceBtn" class="sound-icon-btn" title="Озвучить / Пауза">🔊</button>
+                    </div>
+                    <div id="originalQuoteText" class="chinese-serif" style="font-size:16px; font-weight:700; color:var(--ink-black); line-height:140%; margin-bottom:2px;">...</div>
+                    <div id="originalQuotePy" class="chinese-sans" style="font-size:11px; font-weight:600; color:var(--hsk5-teal); line-height:130%;">...</div>
+                </div>
+                <div id="resultCard" class="result-card">
+                    <div class="res-row"><span style="color:var(--success-green);">✔</span> <strong id="resMeaningLabel">Перевод:</strong> <span id="resMeaning">...</span></div>
+                    <div class="res-row"><span style="color:var(--recording-red);">🔍</span> <strong id="resMistakeLabel">Разбор от Чао:</strong> <span id="resMistake">...</span></div>
+                    <div class="native-box">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                            <strong style="color:var(--hsk5-teal); font-size:11px;">⭐ Вариант носителя (HSK 5):</strong>
+                            <button id="ttsButton" class="sound-icon-btn" title="Озвучить / Пауза">🔊</button>
+                        </div>
+                        <div id="resNative" class="chinese-sans" style="font-size:15px; font-weight:700; color:var(--ink-black); margin-bottom:2px; line-height:135%;">...</div>
+                        <div id="resNativePy" class="chinese-sans" style="font-size:11px; font-weight:600; color:var(--hsk5-teal); margin-bottom:2px;"></div>
+                        <div id="resNativeRu" style="font-size:11px; color:var(--ink-gray); font-style:italic; border-top:1px dashed var(--hsk5-border); padding-top:2px;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="cardsSection" class="bento-module flashcard-card">
+                <div style="width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size:11px; font-weight:700; color:var(--hsk5-teal); text-transform:uppercase; letter-spacing:0.5px;">ФЛЭШ-КАРТОЧКИ HSK 5</span>
+                        <span id="fcReviewTag" class="review-mode-tag">🔁 Повторение</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--ink-gray);">
+                        <span>📘 Урок: <strong id="lessonProgressText" style="color: var(--hsk5-teal);">0 / 0</strong></span>
+                        <span id="fcProgress">1 / 0</span>
+                    </div>
+                    <div class="progress-bar-container"><div id="fcProgressBar" class="progress-bar-fill"></div></div>
+                    
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--ink-gray); margin-top:2px;">
+                        <span>🏆 Всего HSK 5: <strong id="totalHskProgressText" style="color: var(--success-green);">0 / 2500</strong></span>
+                        <span id="totalHskPercent" style="color: var(--success-green); font-weight: 700;">0.0%</span>
+                    </div>
+                    <div class="progress-bar-container" style="background: rgba(46, 125, 90, 0.15);"><div id="totalHskProgressBar" class="progress-bar-fill" style="background: var(--success-green);"></div></div>
+                </div>
+                
+                <div class="card-perspective-wrapper">
+                    <div id="cardStage" class="card-stage" title="Кликните на карту для переворота">
+                        <div class="card-face front">
+                            <div id="fcChar" class="fc-char chinese-serif" title="Нажмите, чтобы послушать">恋爱</div>
+                            <span class="card-hint-badge">👆 Клик на иероглиф — озвучка | Клик по карте — перевод</span>
+                        </div>
+                        <div class="card-face back">
+                            <div id="fcPy" class="fc-py chinese-sans" title="Нажмите, чтобы послушать">liàn'ài</div>
+                            <div id="fcTrans" class="fc-trans">любить, роман</div>
+                            
+                            <!-- Оценка карточки: только Легко и Сложно -->
+                            <div class="effort-rating-row" onclick="event.stopPropagation()">
+                                <button class="effort-btn easy" onclick="AppState.rateCardEffort('easy')">🟢 Легко</button>
+                                <button class="effort-btn hard" onclick="AppState.rateCardEffort('hard')">🔴 Сложно</button>
+                            </div>
+                            
+                            <span class="card-hint-badge">👆 Кликните, чтобы вернуть иероглиф</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="fcStatusText" style="font-size:11px; color:var(--ink-gray); text-align:center; margin-bottom:8px;">Слушайте эталон и произносите слово</div>
+                <div class="fc-controls">
+                    <button id="fcPrevBtn" class="fc-nav-btn">←</button>
+                    <button id="fcMicBtn" class="fc-mic-large">🎤</button>
+                    <button id="fcNextBtn" class="fc-nav-btn">→</button>
+                </div>
+            </div>
+            <div id="studioSection" class="bento-module studio-card">
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom:6px;">
+                    <span style="font-size:11px; font-weight:700; color:var(--hsk5-teal); text-transform:uppercase; letter-spacing:0.5px;">Видео-ответ (+50 XP)</span>
+                    <span id="studioRecTimer" style="font-family:monospace; font-weight:700; color:var(--recording-red); font-size:12px;">00:00</span>
+                </div>
+                <div class="studio-btn-row">
+                    <button id="modeCameraBtn" class="studio-mode-btn active">📷 Камера</button>
+                    <button id="modeScreenBtn" class="studio-mode-btn">🖥️ Экран</button>
+                    <button id="modePipBtn" class="studio-mode-btn">✨ 2 в 1</button>
+                </div>
+                <div class="studio-viewport-wrap">
+                    <div id="recLiveBadge" class="rec-live-indicator"><span class="rec-dot"></span> REC</div>
+                    <video id="studioLiveVideo" autoplay muted playsinline></video>
+                    <video id="cameraPipOverlay" autoplay muted playsinline></video>
+                    <video id="studioPlaybackVideo" controls style="display:none;"></video>
+                </div>
+                <button id="studioRecordToggleBtn" class="studio-record-btn"><span>🔴 Начать запись</span></button>
+                <div id="studioActionsAfter" class="studio-actions-after">
+                    <a id="downloadVideoBtn" class="studio-download-btn" href="#">💾 Скачать</a>
+                    <button id="reRecordBtn" class="fc-nav-btn" style="flex:1;">🔄 Заново</button>
+                </div>
+                <div class="gallery-container">
+                    <div style="font-size:11px; font-weight:700; color:var(--hsk5-teal); margin-bottom:6px;">📁 Галерея ответов</div>
+                    <div id="galleryList"></div>
+                </div>
+            </div>
+        </aside>
+    </main>
+    <script>
+        let hskDatabase = [
+            {
+                lessonId: 1, unit: "第一单元 · 抓牢你的幸福", badge: "第 1 课", title: "爱的标准", subtitle: "Критерии любви",
+                pages: [
+                    {
+                        type: "warmup", pageNum: "p. 2", navLabel: "Стр. 2: 热身 (Разминка)",
+                        chaoIntro: "Начнём с разминки (热身): сопоставим ценности в браке и обсудим, что важнее — романтика или взаимная поддержка!",
+                        task: "请谈一谈：在你的心目中，最理想的爱情或婚姻标准是什么？（例如：性格、理解、浪漫、互相关心）",
+                        builderWords: ["真正的爱情", "不仅体现在平时", "更体现在", "困难时彼此扶持"],
+                        systemPrompt: "Ты Сяо Чао — репетитор HSK 5. Урок 1, стр. 2 (热身). Обсуждаем тему: 婚姻和爱情的标准.",
+                        content: {
+                            tag1: "热身", title1: "1. Дайте определения и сценарии",
+                            items: [
+                                { label: "A. 彼此尊重", desc: "взаимное уважение личного пространства и мнения партнёра." },
+                                { label: "B. 患难与共", desc: "делить и горе, и невзгоды, поддерживать в трудную минуту." },
+                                { label: "C. 轰轰烈烈", desc: "бурные, страстные чувства и романтические подвиги." },
+                                { label: "D. 平平淡淡", desc: "тихое спокойное счастье в обыденной жизни." }
+                            ],
+                            tag2: "思考", title2: "2. Расставьте факторы в порядке важности:",
+                            pollHtml: "□ 互相理解与包容 &nbsp;&nbsp;&nbsp;&nbsp; □ 经济基础与稳定生活<br>□ 共同的兴趣爱好 &nbsp;&nbsp;&nbsp;&nbsp; □ 互相关心与扶持"
+                        }
+                    },
+                    {
+                        type: "textbook", pageNum: "p. 3–4", navLabel: "Стр. 3–4: 课文 (Основной текст)",
+                        chaoIntro: "Текст первого урока: история радио-конкурса «Самая любящая пара». Нажимай на слова в тексте — словарь по центру сразу подсветит их!",
+                        task: "请用课文中的内容回答：为什么评委最终把“最恩爱夫妻”的大奖颁给了第三对夫妇？",
+                        builderWords: ["丈夫毫不犹豫地", "签下了同意书", "并在床前", "守护了几天几夜"],
+                        systemPrompt: "Ты Сяо Чао — репетитор HSK 5. Урок 1, стр. 3-4 (课文). Текст о конкурсе на самую любящую пару.",
+                        content: {
+                            sectionTag: "课文", sectionTitle: "爱的标准 (Текст 1)",
+                            paragraphs: [
+                                "一个电台策划了一次“评选最恩爱夫妻”的活动。有人问负责这项活动的导演：“你们是用什么标准来评选的？”",
+                                "经过层层选拔，最终有三对夫妻入围决赛。第一对夫妻结婚几十年，从来没有红过脸，丈夫一直在身边细心照料生病的妻子；第二对夫妻经历过生活中的风风雨雨，在最困难的时候依然彼此扶持、不离不弃。",
+                                "令人意想不到的是，评委们把大奖颁给了一对平凡的年轻夫妇。妻子生病需要动手术，丈夫毫不犹豫地签下了同意书，并在床前守护了几天几夜。当妻子醒来时，丈夫眼里满是泪水，只深情地说了一句：“我不能没有你。”",
+                                "真正的爱情不仅体现在平时的甜言蜜语，更体现在面对疾病、磨难时两个人是否有共同面对的决心与担当。这才是爱的最高标准。"
+                            ],
+                            vocab: [
+                                { word: "恋爱", py: "liàn'ài", pos: "动/名", trans: "любить, роман" },
+                                { word: "照料", py: "zhàoliào", pos: "动", trans: "заботиться" },
+                                { word: "婚姻", py: "hūnyīn", pos: "名", trans: "брак" },
+                                { word: "包容", py: "bāoróng", pos: "动", trans: "прощать, терпеть" },
+                                { word: "彼此", py: "bǐcǐ", pos: "代", trans: "взаимно, друг друга" },
+                                { word: "扶持", py: "fúchí", pos: "动", trans: "поддерживать" },
+                                { word: "轰轰烈烈", py: "hōnghōng lièliè", pos: "形", trans: "бурный, шумный" },
+                                { word: "浪漫", py: "làngmàn", pos: "形", trans: "романтичный" },
+                                { word: "经历", py: "jīnglì", pos: "动/名", trans: "испытывать, опыт" },
+                                { word: "平淡", py: "píngdàn", pos: "形", trans: "заурядный, спокойный" },
+                                { word: "甜言蜜语", py: "tiányán mìyǔ", pos: "成", trans: "сладкие речи" },
+                                { word: "担当", py: "dāndāng", pos: "动/名", trans: "брать ответственность" },
+                                { word: "策划", py: "cèhuà", pos: "动", trans: "планировать" },
+                                { word: "评选", py: "píngxuǎn", pos: "动", trans: "выбирать голосованием" },
+                                { word: "入围", py: "rùwéi", pos: "动", trans: "пройти в финал" },
+                                { word: "评委", py: "píngwěi", pos: "名", trans: "член жюри" },
+                                { word: "犹豫", py: "yóuyù", pos: "形", trans: "колебаться" },
+                                { word: "深情", py: "shēnqíng", pos: "形/名", trans: "глубокие чувства" }
+                            ]
+                        }
+                    },
+                    {
+                        type: "grammar", pageNum: "p. 5", navLabel: "Стр. 5: 注释 (Грамматика)",
+                        chaoIntro: "Разбираем ключевые конструкции HSK 5: нарастание признака «不仅……更……» и приведение примера «拿……来说». Попробуй составить предложение!",
+                        task: "请用“不仅……更……”造一个句子，说明学习汉语的好处。",
+                        builderWords: ["这座城市不仅环境优美", "而且科技发展", "十分迅速"],
+                        systemPrompt: "Ты Сяо Чао — репетитор HSK 5. Урок 1, стр. 5 (注释). Разбираем конструкцию 不仅……更……",
+                        content: {
+                            rules: [
+                                {
+                                    tag: "语法 1", title: "不仅……也 / 还 / 而且 / 更……",
+                                    desc: "соединяет части сложного предложения, указывая на нарастание признака. Второй компонент выделяет истинную глубину мысли.",
+                                    examples: [
+                                        "真正的爱情<strong>不仅</strong>体现在花前月下的甜蜜，<strong>更</strong>体现在平淡生活中的相互扶持。",
+                                        "这座城市<strong>不仅</strong>环境优美，<strong>而且</strong>科技发展十分迅速。"
+                                    ]
+                                },
+                                {
+                                    tag: "语法 2", title: "比如 / 拿……来说 (Например / Взять к примеру...)",
+                                    desc: "вводит конкретный пример для разъяснения или подтверждения высказанной мысли.",
+                                    examples: [
+                                        "想要维持良好的夫妻关系，需要很多品质，<strong>比如</strong>互相信任与包容。",
+                                        "<strong>拿</strong>他们俩<strong>来说</strong>，结婚三十年依然像初恋一样甜蜜。"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            {
+                lessonId: 2, unit: "第一单元 · 抓牢你的幸福", badge: "第 2 课", title: "父母的爱", subtitle: "Родительская любовь",
+                pages: [
+                    {
+                        type: "textbook", pageNum: "p. 12–13", navLabel: "Стр. 12–13: 课文 (Текст и новые слова)",
+                        chaoIntro: "Урок 2 посвящен теме родительской любви: почему гиперопека вредит и почему истинная любовь — это умение вовремя отпустить.",
+                        task: "请用中文谈谈：为什么说理智的爱不是替孩子扫清障碍，而是放手？",
+                        builderWords: ["理智的父母明白", "真正的爱", "不是代替孩子去生活"],
+                        systemPrompt: "Ты Сяо Чао — репетитор HSK 5. Урок 2 (父母的爱).",
+                        content: {
+                            sectionTag: "课文", sectionTitle: "父母的爱 (Текст 2)",
+                            paragraphs: [
+                                "天下没有不爱自己孩子的父母。很多父母总是想把世界上最好的一切都给予孩子，甚至为了孩子可以牺牲自己的一切。",
+                                "然而，过度的保护往往会适得其反。如果父母把孩子保护得太好，替他们扫清了成长道路上的所有障碍，孩子就会失去独立面对生活挑战的能力。",
+                                "理智的父母明白，真正的爱不是代替孩子去生活，而是放手让他们去探索，教会他们如何面对挫折、克服困难，成长为一个有责任感的人。"
+                            ],
+                            vocab: [
+                                { word: "过度", py: "guòdù", pos: "形", trans: "чрезмерный" },
+                                { word: "独立", py: "dúlì", pos: "动/形", trans: "независимый" },
+                                { word: "障碍", py: "zhàng'ài", pos: "名", trans: "препятствие" },
+                                { word: "克服", py: "kèfú", pos: "动", trans: "преодолевать" },
+                                { word: "挫折", py: "cuòzhé", pos: "名", trans: "неудача" },
+                                { word: "牺牲", py: "xīshēng", pos: "动", trans: "жертвовать" }
+                            ]
+                        }
+                    }
+                ]
+            },
+            {
+                lessonId: 101,
+                unit: "Standard Course HSK 1",
+                badge: "第 1 课",
+                title: "你好",
+                subtitle: "Приветствие (HSK 1)",
+                pages: [{
+                    type: "hsk1_dialogues",
+                    pageNum: "p. 14",
+                    navLabel: "Стр. 14: 课文 (Диалоги с картинками)",
+                    chaoIntro: "Урок 1 (HSK 1): слушайте реплики, нажимайте на слова и собирайте приветствие.",
+                    task: "请用中文打招呼：你好！",
+                    builderWords: ["你", "好！"],
+                    systemPrompt: "Ты Сяо Чао — репетитор HSK 1. Тема урока: приветствие.",
+                    content: {
+                        dialogues: [
+                            {
+                                id: 1,
+                                img: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=400&q=80",
+                                lines: [{ speaker: "A", cn: "你好！", py: "Nǐ hǎo!" }, { speaker: "B", cn: "你好！", py: "Nǐ hǎo!" }],
+                                ruVersion: "A: Привет!\nB: Привет!",
+                                newWords: [{ word: "你", py: "nǐ", pos: "мест. об. мн.", trans: "ты" }, { word: "好", py: "hǎo", pos: "прил.", trans: "хороший; хорошо" }]
+                            },
+                            {
+                                id: 2,
+                                img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=400&q=80",
+                                lines: [{ speaker: "A", cn: "您好！", py: "Nín hǎo!" }, { speaker: "B", cn: "你们好！", py: "Nǐmen hǎo!" }],
+                                ruVersion: "A: Здравствуйте!\nB: Здравствуйте!",
+                                newWords: [{ word: "您", py: "nín", pos: "мест. об. мн.", trans: "Вы (вежливо)" }, { word: "你们", py: "nǐmen", pos: "мест. об. мн.", trans: "вы (мн. число)" }]
+                            },
+                            {
+                                id: 3,
+                                img: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=400&q=80",
+                                lines: [{ speaker: "A", cn: "对不起！", py: "Duìbuqǐ!" }, { speaker: "B", cn: "没关系！", py: "Méi guānxi!" }],
+                                ruVersion: "A: Простите!\nB: Ничего страшного!",
+                                newWords: [{ word: "对不起", py: "duìbuqǐ", pos: "глаг. фраза", trans: "простите; извините" }, { word: "没关系", py: "méi guānxi", pos: "фраза", trans: "ничего страшного" }]
+                            }
+                        ],
+                        vocab: [
+                            { word: "你", py: "nǐ", pos: "мест. об. мн.", trans: "ты" },
+                            { word: "好", py: "hǎo", pos: "прил.", trans: "хороший; хорошо" },
+                            { word: "您好", py: "nín hǎo", pos: "приветствие", trans: "здравствуйте" },
+                            { word: "你们", py: "nǐmen", pos: "мест. об. мн.", trans: "вы (мн. число)" },
+                            { word: "对不起", py: "duìbuqǐ", pos: "глаг. фраза", trans: "простите; извините" },
+                            { word: "没关系", py: "méi guānxi", pos: "фраза", trans: "ничего страшного" }
+                        ]
+                    }
+                }]
+            }
+        ];
+        const gymExercises = [
+            { emoji: "🙆‍♂️", cn: "伸伸臂，踢踢腿！", py: "shēn shēn bì, tì tì tuǐ!", ru: "«Вытянем руки, помашем ногами!»" },
+            { emoji: "🔄", cn: "转转脖子，深呼吸！", py: "zhuǎn zhuǎn bózi, shēn hūxī!", ru: "«Покрутим шеей, глубокий вдох!»" },
+            { emoji: "🙋‍♀️", cn: "向上举手，腰挺直！", py: "xiàng shàng jǔ shǒu, yāo tǐng zhí!" , ru: "«Поднимем руки вверх, спина прямая!»" },
+            { emoji: "🧘‍♂️", cn: "放松全身，闭 eyes！", py: "fàngsōng quánshēn, hǎohǎo xiūxí!", ru: "«Расслабим всё тело, отдохнем!»" }
+        ];
+        const AppState = {
+            currentLessonIdx: 0, activePageIndex: 0, currentCardIdx: 0,
+            points: parseInt(localStorage.getItem('chao_points')) || 0,
+            masteredWords: [], allMasteredHskWords: JSON.parse(localStorage.getItem('all_mastered_hsk5_words') || '[]'),
+            totalPlatformSeconds: parseInt(localStorage.getItem('chao_total_seconds')) || 0,
+            platformDays: parseInt(localStorage.getItem('chao_platform_days')) || 1,
+            hintCount: 0,
+            isRecording: false, isCardMicRecording: false, isAnalysisActive: false,
+            currentNativeVoice: '', currentOriginalVoice: '',
+            studio: { mode: 'camera', isRecording: false, stream: null, mediaRecorder: null, recordedChunks: [], recTimer: null, recSeconds: 0, pipDrawInterval: null },
+            gym: { timer: null, seconds: 60, currentStep: 0, stepInterval: null },
+            studySeconds: 0, studyInterval: null,
+            audioCtx: null, audioDestination: null, db: null
+        };
+        let SERVER_MODE = false;
+        async function init() {
+            try {
+                const healthResponse = await fetch('/api/health');
+                if (healthResponse.ok) {
+                    SERVER_MODE = true;
+                    document.getElementById('apiKeyInput').style.display = 'none';
+                    document.getElementById('managerLink').style.display = 'inline-flex';
+                    const remoteResponse = await fetch('/api/lessons');
+                    if (remoteResponse.ok) hskDatabase.push(...await remoteResponse.json());
+                }
+            } catch (_) {}
+            loadState(); initSelectors(); applyTheme(localStorage.getItem('chao_theme') === 'dark');
+            initDB(); loadPage(0); updatePointsUI(); startStudyTimer();
+            window.addEventListener('beforeunload', cleanupAllMedia);
+        }
+        function startStudyTimer() {
+            if (AppState.studyInterval) clearInterval(AppState.studyInterval);
+            AppState.studyInterval = setInterval(() => {
+                AppState.studySeconds++;
+                AppState.totalPlatformSeconds++;
+                localStorage.setItem('chao_total_seconds', AppState.totalPlatformSeconds);
+                updateStudyTimerDisplay();
+                
+                if (AppState.studySeconds % 900 === 0 && !document.getElementById('gymSection').classList.contains('active')) {
+                    document.getElementById('teaPromptBanner').style.display = 'block';
+                }
+            }, 1000);
+        }
+        function updateStudyTimerDisplay() {
+            const timeStr = formatMinutes(AppState.studySeconds);
+            const headerTimer = document.getElementById('studyTimerDisplay');
+            if (headerTimer) headerTimer.textContent = timeStr;
+        }
+        function formatMinutes(sec) {
+            const m = String(Math.floor(sec / 60)).padStart(2, '0');
+            const s = String(sec % 60).padStart(2, '0');
+            return `${m}:${s}`;
+        }
+        function formatHours(sec) {
+            return (sec / 3600).toFixed(1) + ' ч';
+        }
+        function loadState() {
+            const lessonId = hskDatabase[AppState.currentLessonIdx].lessonId;
+            AppState.masteredWords = JSON.parse(localStorage.getItem(`mastered_words_lesson_${lessonId}`) || '[]');
+        }
+        function initSelectors() {
+            document.getElementById('lessonSelect').innerHTML = hskDatabase.map((les, i) => 
+                `<option value="${i}">${les.badge}: ${les.title} (${les.subtitle})</option>`).join('');
+            populatePageSelector();
+        }
+        function populatePageSelector() {
+            const lesson = hskDatabase[AppState.currentLessonIdx];
+            document.getElementById('pageSelect').innerHTML = lesson.pages.map((p, i) => 
+                `<option value="${i}">${p.navLabel || p.pageNum}</option>`).join('');
+        }
+        document.getElementById('lessonSelect').addEventListener('change', (e) => {
+            AppState.currentLessonIdx = parseInt(e.target.value); loadState(); populatePageSelector(); loadPage(0);
+        });
+        document.getElementById('pageSelect').addEventListener('change', (e) => loadPage(parseInt(e.target.value)));
+        function getActiveVocab() {
+            const lesson = hskDatabase[AppState.currentLessonIdx];
+            const activePage = lesson.pages[AppState.activePageIndex];
+            if (activePage && activePage.type === "scanned") return (activePage.content && activePage.content.vocab) || [];
+            const textbookPage = lesson.pages.find(p => p.type === "textbook") || lesson.pages[0];
+            return (textbookPage.content && textbookPage.content.vocab) ? textbookPage.content.vocab : [];
+        }
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function highlightLessonVocab(htmlText) {
+            const vocab = getActiveVocab();
+            if (!vocab || !vocab.length || !htmlText) return htmlText;
+            const sorted = [...vocab].sort((a, b) => b.word.length - a.word.length);
+            let result = htmlText;
+            sorted.forEach(v => {
+                const regex = new RegExp(`(?![^<]*>)(${v.word})`, 'g');
+                result = result.replace(regex, `<span class="hsk-word-inline" data-word="${escapeHtml(v.word)}">$1</span>`);
+            });
+            return result;
+        }
+        function renderPageFromData(page) {
+            const c = page.content;
+            if (page.type === "scanned" && page.scan) {
+                const scan = page.scan;
+                const words = (scan.blocks || []).map(block => {
+                    const vocab = (c.vocab || []).find(item => block.text.includes(item.word));
+                    const word = vocab ? vocab.word : block.text;
+                    const left = (block.x * 100).toFixed(3), top = (block.y * 100).toFixed(3);
+                    const width = (block.w * 100).toFixed(3), height = (block.h * 100).toFixed(3);
+                    return '<button class="scan-word" type="button" data-word="' + escapeHtml(word) +
+                        '" title="' + escapeHtml(block.text) + '" style="left:' + left + '%;top:' + top +
+                        '%;width:' + width + '%;height:' + height + '%"></button>';
+                }).join('');
+                return '<div class="scan-page-root"><div class="scan-sheet" style="aspect-ratio:' +
+                    Number(scan.width) + '/' + Number(scan.height) + '"><img src="' + escapeHtml(scan.imageUrl) +
+                    '" alt="Страница учебника ' + escapeHtml(page.pageNum) + '" loading="lazy"><div class="scan-ocr-layer">' +
+                    words + '</div></div></div>';
+            }
+            if (page.type === "hsk1_dialogues") {
+                return `
+                    <div class="textbook-top-banner">
+                        <div class="tb-orange-box">1</div>
+                        <div class="tb-title-content"><div class="tb-pinyin">Nǐ hǎo</div><div class="tb-hanzi chinese-serif">你好</div><div class="tb-eng">Привет</div></div>
+                    </div>
+                    <div class="section-tag-hsk"><span class="tag-cn">课文</span><span class="chinese-serif">Диалоги</span></div>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        ${c.dialogues.map(d => `
+                            <div class="dialogue-row-card">
+                                <div class="dialogue-num-badge">${d.id}</div>
+                                <div class="dialogue-text-col">
+                                    ${d.lines.map((line, lineIndex) => `
+                                        <div><b>${line.speaker}:</b> <span class="chinese-serif dialogue-text-line" id="line_${d.id}_${lineIndex}" data-cn="${line.cn}" title="Озвучить фразу">${highlightLessonVocab(line.cn)}</span><br><span style="font-size:11px; color:var(--ink-gray); font-family:monospace;">${line.py}</span></div>
+                                    `).join('')}
+                                </div>
+                                <div class="dialogue-img-col"><img src="${d.img}" alt="Диалог ${d.id}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.parentElement.classList.add('image-unavailable');this.parentElement.textContent='你好'"></div>
+                                <div class="dialogue-right-col">
+                                    <div style="font-weight:700; color:var(--ink-black);">Перевод</div><div style="white-space:pre-line; margin-bottom:4px;">${d.ruVersion}</div>
+                                    <div style="font-weight:700; color:var(--ink-black);">Новые слова</div>
+                                    ${d.newWords.map(word => `<div><b>${word.word}</b> <span style="font-family:monospace; color:var(--hsk5-teal);">${word.py || ''}</span><br><span style="font-size:10px; color:var(--ink-gray);">${word.trans}</span></div>`).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            let rawHtml = '';
+            switch(page.type) {
+                case "warmup":
+                    rawHtml = `<div class="section-tag-hsk"><span class="tag-cn">${c.tag1}</span><span class="chinese-serif">${c.title1}</span></div>
+                    <div class="book-block-card chinese-sans" style="margin-bottom:12px;">${c.items.map(it => `<div class="exercise-item"><strong>${it.label}</strong> — ${it.desc}</div>`).join('')}</div>
+                    <div class="section-tag-hsk"><span class="tag-cn">${c.tag2}</span><span class="chinese-serif">${c.title2}</span></div>
+                    <div class="book-block-card chinese-serif" style="font-size:14px; line-height:185%;">${c.pollHtml}</div>`;
+                    break;
+                case "textbook":
+                    rawHtml = `<div class="section-tag-hsk"><span class="tag-cn">${c.sectionTag}</span><span class="chinese-serif">${c.sectionTitle}</span></div>
+                    <div class="article-body chinese-serif">${c.paragraphs.map(p => `<p>${p}</p>`).join('')}</div>`;
+                    break;
+                case "grammar":
+                    rawHtml = c.rules.map(r => `<div class="section-tag-hsk"><span class="tag-cn">${r.tag}</span><span class="chinese-serif">${r.title}</span></div>
+                    <div class="book-block-card chinese-sans" style="margin-bottom:12px;">
+                        <p style="margin-bottom:6px;"><strong>Значение:</strong> ${r.desc}</p>
+                        ${r.examples.map((ex, i) => `<div class="exercise-item"><strong>例 ${i+1}:</strong> ${ex}</div>`).join('')}</div>`).join('');
+                    break;
+                default: rawHtml = `<div class="book-block-card">Страница загружается...</div>`;
+            }
+            return highlightLessonVocab(rawHtml);
+        }
+        function loadPage(idx) {
+            const lesson = hskDatabase[AppState.currentLessonIdx]; AppState.activePageIndex = idx; const data = lesson.pages[idx];
+            document.getElementById('bookUnit').textContent = lesson.unit;
+            document.getElementById('bookPageNum').textContent = data.pageNum;
+            document.getElementById('lessonBadge').textContent = lesson.badge;
+            document.getElementById('lessonTitle').textContent = lesson.title;
+            document.getElementById('lessonSubTitle').textContent = lesson.subtitle;
+            document.getElementById('pageNavIndicator').textContent = `Страница ${idx + 1} из ${lesson.pages.length} (${data.pageNum})`;
+            document.getElementById('pageContentStage').innerHTML = renderPageFromData(data);
+            document.getElementById('taskQuestion').textContent = data.task;
+            document.getElementById('pageSelect').value = idx;
+            const lessonVocab = getActiveVocab(); renderMiddleVocabTable(lessonVocab);
+            document.getElementById('chaoSpeech').textContent = data.chaoIntro || `Мы на странице ${data.pageNum}. Выделяй слова для перевода или отвечай в микрофон!`;
+            closeCurrentAnalysis(); document.getElementById('selectionPopup').style.display = 'none';
+            AppState.hintCount = 0;
+            initSentenceBuilder(data.builderWords || []);
+            if (lessonVocab && lessonVocab.length) { AppState.currentCardIdx = 0; renderFlashcard(lessonVocab); }
+        }
+        document.getElementById('prevPageBtn').addEventListener('click', () => { if (AppState.activePageIndex > 0) loadPage(AppState.activePageIndex - 1); });
+        document.getElementById('nextPageBtn').addEventListener('click', () => {
+            const lesson = hskDatabase[AppState.currentLessonIdx];
+            if (AppState.activePageIndex < lesson.pages.length - 1) loadPage(AppState.activePageIndex + 1);
+        });
+        function renderMiddleVocabTable(vocabList) {
+            const tbody = document.getElementById('vocabTableBody');
+            if (!vocabList || !vocabList.length) {
+                tbody.innerHTML = `<div style="padding:10px; font-size:12px; color:var(--ink-gray);">В этом уроке нет словаря.</div>`;
+                document.getElementById('vocabWordCountBadge').textContent = "0 слов"; return;
+            }
+            document.getElementById('vocabWordCountBadge').textContent = `${vocabList.length} слов`;
+            tbody.innerHTML = vocabList.map((v, i) => `
+                <div class="vocab-row" data-word="${escapeHtml(v.word)}">
+                    <span class="vr-num">${i + 1}</span><span class="vr-word chinese-serif">${escapeHtml(v.word)}</span>
+                    <span class="vr-py">${escapeHtml(v.py)}</span><span class="vr-pos">(${escapeHtml(v.pos)})</span><span class="vr-trans">${escapeHtml(v.trans)}</span>
+                </div>`).join('');
+        }
+        let currentFullSentence = "";
+        let currentBuilderWords = [];
+        function initSentenceBuilder(wordsArray) {
+            const target = document.getElementById('builderTarget'), source = document.getElementById('builderSource');
+            target.innerHTML = ''; source.innerHTML = '';
+            const builderBox = document.querySelector('.sentence-builder-box');
+            if (!wordsArray || !wordsArray.length) { builderBox.style.display = 'none'; currentFullSentence = ""; return; }
+            builderBox.style.display = 'block';
+            
+            currentBuilderWords = [...wordsArray];
+            currentFullSentence = wordsArray.join('').replace(/[\s\p{P}]/gu, "");
+            const shuffled = [...wordsArray].sort(() => Math.random() - 0.5);
+            shuffled.forEach((chunk, idx) => {
+                const chip = document.createElement('div'); 
+                chip.className = 'builder-chip'; 
+                chip.textContent = chunk;
+                chip.dataset.chunk = chunk; 
+                chip.dataset.id = idx;
+                
+                chip.addEventListener('click', () => {
+                    if (chip.parentElement === source) {
+                        target.appendChild(chip);
+                    } else {
+                        source.appendChild(chip);
+                    }
+                    
+                    const assembled = Array.from(target.children).map(c => c.dataset.chunk).join('').replace(/[\s\p{P}]/gu, "");
+                    
+                    if (assembled === currentFullSentence) {
+                        target.style.borderColor = 'var(--success-green)'; 
+                        target.style.background = 'var(--success-light)';
+                        document.getElementById('userSpeechInput').value = wordsArray.join('');
+                        document.getElementById('chaoSpeech').textContent = "Отлично! Предложение собрано верно. Теперь нажми «Ответить устно» и произнеси его в микрофон ✨";
+                        addPoints(5);
+                    } else { 
+                        target.style.borderColor = 'var(--hsk5-border)'; 
+                        target.style.background = 'var(--desk-bg)'; 
+                    }
+                });
+                source.appendChild(chip);
+            });
+        }
+        document.getElementById('builderHintBtn').addEventListener('click', () => {
+            if (AppState.hintCount >= 2) {
+                alert("Сяо Чао: Вы уже использовали максимум (2) подсказки для этого задания!");
+                return;
+            }
+            if (AppState.points < 50) {
+                alert("Сяо Чао: Недостаточно баллов XP! Нужно минимум 50 XP для подсказки.");
+                return;
+            }
+            
+            addPoints(-50);
+            AppState.hintCount++;
+            const target = document.getElementById('builderTarget');
+            const source = document.getElementById('builderSource');
+            
+            const currentAssembledCount = target.children.length;
+            const expectedChunk = currentBuilderWords[currentAssembledCount];
+            let targetChip = Array.from(source.children).find(c => c.dataset.chunk === expectedChunk);
+            if (targetChip) {
+                target.appendChild(targetChip);
+                document.getElementById('chaoSpeech').textContent = `Сяо Чао помог поставить кусок ${AppState.hintCount}-й из ${currentBuilderWords.length} (-50 XP) 💡`;
+                
+                const assembled = Array.from(target.children).map(c => c.dataset.chunk).join('').replace(/[\s\p{P}]/gu, "");
+                if (assembled === currentFullSentence) {
+                    target.style.borderColor = 'var(--success-green)'; 
+                    target.style.background = 'var(--success-light)';
+                    document.getElementById('userSpeechInput').value = currentBuilderWords.join('');
+                }
+            }
+        });
+        function updateMasteredProgress(vocabList) {
+            const vocab = vocabList || getActiveVocab(), totalLessonWords = vocab.length || 1;
+            const lessonCount = AppState.masteredWords.length, lessonPercent = Math.min(100, Math.round((lessonCount / totalLessonWords) * 100));
+            document.getElementById('lessonProgressText').textContent = `${lessonCount} / ${totalLessonWords}`;
+            document.getElementById('fcProgressBar').style.width = `${lessonPercent}%`;
+            document.getElementById('fcProgress').textContent = `${AppState.currentCardIdx + 1} / ${vocab.length}`;
+            const totalHskCount = AppState.allMasteredHskWords.length, totalHskPercent = ((totalHskCount / 2500) * 100).toFixed(1);
+            document.getElementById('totalHskProgressText').textContent = `${totalHskCount} / 2500`;
+            document.getElementById('totalHskPercent').textContent = `${totalHskPercent}%`;
+            document.getElementById('totalHskProgressBar').style.width = `${Math.min(100, (totalHskCount / 2500) * 100)}%`;
+            const currentWord = vocab[AppState.currentCardIdx] ? vocab[AppState.currentCardIdx].word : "";
+            document.getElementById('fcReviewTag').style.display = AppState.masteredWords.includes(currentWord) ? 'inline-block' : 'none';
+        }
+        function markWordAsMastered(word) {
+            if (!word) return;
+            if (!AppState.masteredWords.includes(word)) {
+                AppState.masteredWords.push(word);
+                localStorage.setItem(`mastered_words_lesson_${hskDatabase[AppState.currentLessonIdx].lessonId}`, JSON.stringify(AppState.masteredWords));
+                addPoints(15);
+            }
+            if (!AppState.allMasteredHskWords.includes(word)) {
+                AppState.allMasteredHskWords.push(word);
+                localStorage.setItem('all_mastered_hsk5_words', JSON.stringify(AppState.allMasteredHskWords));
+            }
+            updateMasteredProgress();
+        }
+        AppState.rateCardEffort = function(effort) {
+            event.stopPropagation(); const vocab = getActiveVocab(), item = vocab[AppState.currentCardIdx];
+            if (!item) return; const cardStage = document.getElementById('cardStage');
+            if (effort === 'easy') {
+                markWordAsMastered(item.word); cardStage.classList.add('success-state');
+                setTimeout(() => {
+                    cardStage.classList.remove('success-state');
+                    if (AppState.currentCardIdx < vocab.length - 1) { AppState.currentCardIdx++; renderFlashcard(vocab, 'next'); }
+                }, 600);
+            } else {
+                cardStage.classList.add('error-state');
+                setTimeout(() => {
+                    cardStage.classList.remove('error-state');
+                    AppState.currentCardIdx = (AppState.currentCardIdx + 1) % vocab.length;
+                    renderFlashcard(vocab, 'next');
+                }, 700);
+            }
+        };
+        document.getElementById('cardStage').addEventListener('click', function() {
+            this.classList.toggle('flipped');
+            const vocab = getActiveVocab();
+            if (vocab[AppState.currentCardIdx]) speakChinese(vocab[AppState.currentCardIdx].word, this);
+        });
+        document.getElementById('fcChar').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const vocab = getActiveVocab();
+            if (vocab[AppState.currentCardIdx]) {
+                speakChinese(vocab[AppState.currentCardIdx].word, document.getElementById('cardStage'));
+            }
+        });
+        document.getElementById('fcPy').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const vocab = getActiveVocab();
+            if (vocab[AppState.currentCardIdx]) {
+                speakChinese(vocab[AppState.currentCardIdx].word, document.getElementById('cardStage'));
+            }
+        });
+        function renderFlashcard(vocabList, direction = null) {
+            const vocab = vocabList || getActiveVocab(); if (!vocab.length) return;
+            if (direction === 'next' && AppState.masteredWords.length > 2 && Math.random() < 0.25) {
+                const randomMasteredWord = AppState.masteredWords[Math.floor(Math.random() * AppState.masteredWords.length)];
+                const foundIdx = vocab.findIndex(v => v.word === randomMasteredWord);
+                if (foundIdx !== -1 && foundIdx !== AppState.currentCardIdx) AppState.currentCardIdx = foundIdx;
+            }
+            const item = vocab[AppState.currentCardIdx], cardStage = document.getElementById('cardStage');
+            const updateCardContent = () => {
+                cardStage.classList.remove('flipped', 'success-state', 'error-state', 'playing');
+                document.getElementById('fcChar').textContent = item.word;
+                document.getElementById('fcPy').textContent = item.py;
+                document.getElementById('fcTrans').textContent = item.trans;
+                updateMasteredProgress(vocab);
+            };
+            if (direction === 'next') {
+                cardStage.classList.add('slide-out-next');
+                setTimeout(() => { updateCardContent(); cardStage.classList.remove('slide-out-next'); cardStage.classList.add('slide-in-next'); setTimeout(() => cardStage.classList.remove('slide-in-next'), 230); }, 160);
+            } else if (direction === 'prev') {
+                cardStage.classList.add('slide-out-prev');
+                setTimeout(() => { updateCardContent(); cardStage.classList.remove('slide-out-prev'); cardStage.classList.add('slide-in-prev'); setTimeout(() => cardStage.classList.remove('slide-in-prev'), 230); }, 160);
+            } else { updateCardContent(); }
+        }
+        document.getElementById('fcPrevBtn').addEventListener('click', () => { const v = getActiveVocab(); if (AppState.currentCardIdx > 0) { AppState.currentCardIdx--; renderFlashcard(v, 'prev'); } });
+        document.getElementById('fcNextBtn').addEventListener('click', () => { const v = getActiveVocab(); if (AppState.currentCardIdx < v.length - 1) { AppState.currentCardIdx++; renderFlashcard(v, 'next'); } });
+        function initAudioContext() {
+            if (!AppState.audioCtx) { AppState.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); AppState.audioDestination = AppState.audioCtx.createMediaStreamDestination(); }
+            if (AppState.audioCtx.state === 'suspended') AppState.audioCtx.resume();
+        }
+        document.addEventListener('click', initAudioContext, { once: true });
+        function speakChinese(text, btnElement = null) {
+            if (!text) return;
+            initAudioContext();
+            
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                document.querySelectorAll('.sound-icon-btn, .fc-char, .fc-py, .card-stage, .dialogue-text-line').forEach(b => b.classList.remove('playing'));
+                return;
+            }
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'zh-CN';
+            u.rate = 0.85;
+            if (btnElement) {
+                btnElement.classList.add('playing');
+                u.onend = u.onerror = () => btnElement.classList.remove('playing');
+            }
+            window.speechSynthesis.speak(u);
+        }
+        function closeCurrentAnalysis() {
+            AppState.isAnalysisActive = false; document.getElementById('tabTutor').textContent = "📖 Разбор";
+            document.getElementById('tabTutor').classList.remove('close-mode'); document.getElementById('resultCard').classList.remove('active');
+            document.getElementById('userSpeechInput').value = ''; document.getElementById('originalQuoteBox').style.display = 'none';
+            document.getElementById('taskFlipWrapper').style.display = 'block'; document.getElementById('taskFlipCard').classList.remove('flipped');
+        }
+        document.getElementById('flipToAnswerBtn').addEventListener('click', () => { document.getElementById('taskFlipCard').classList.add('flipped'); setTimeout(() => document.getElementById('userSpeechInput').focus(), 300); });
+        document.getElementById('flipBackBtn').addEventListener('click', () => document.getElementById('taskFlipCard').classList.remove('flipped'));
+        document.getElementById('analyzeButton').addEventListener('click', async () => {
+            const text = document.getElementById('userSpeechInput').value.trim(), key = document.getElementById('apiKeyInput').value.trim();
+            const curPage = hskDatabase[AppState.currentLessonIdx].pages[AppState.activePageIndex];
+            if (!SERVER_MODE && !key) return alert("Enter the API key in standalone mode.");
+            if (!text) return alert("Введите или наговорите ответ на китайском!");
+            const btn = document.getElementById('analyzeButton'); btn.disabled = true; btn.textContent = 'ОЖИДАЙТЕ...';
+            document.getElementById('chaoSpeech').textContent = "Сяо Чао думает над ответом... 💭";
+            const isExplainingWord = text.includes("请小潮解释");
+            const answerLevel = curPage.level || (curPage.type === "hsk1_dialogues" ? "HSK 1" : "HSK 5");
+            let promptText = "";
+            
+            if (isExplainingWord) {
+                const cleanedOriginal = text.replace('请小潮解释：“', '').replace(/”*$/, ''); AppState.currentOriginalVoice = cleanedOriginal;
+                document.getElementById('taskFlipWrapper').style.display = 'none'; document.getElementById('originalQuoteBox').style.display = 'block';
+                document.getElementById('originalQuoteText').textContent = cleanedOriginal;
+                promptText = `Ты наставник ${answerLevel}. Объясни фразу ученику через пример из реальной жизни уровня ${answerLevel}.\nОтветь СТРОГО в 5 строк, разделённых ###. Никакого дополнительного текста до или после:\nСтрока 1: Естественный литературный перевод фразы на русский язык\nСтрока 2: Толковый разбор (2-3 предложения) с примером из жизни\nСтрока 3: Одно естественное предложение носителя с этой фразой ТОЛЬКО китайскими иероглифами\nСтрока 4: Полный пиньинь с тонами к этому предложению\nСтрока 5: Русский перевод этого предложения носителя\nФраза для разбора: "${cleanedOriginal}"`;
+            } else {
+                document.getElementById('taskFlipWrapper').style.display = 'block'; document.getElementById('originalQuoteBox').style.display = 'none';
+                promptText = `Ты наставник ${answerLevel}. Оцени устный ответ на вопрос: "${curPage.task}". ${answerLevel === "HSK 5" ? "Используй логику 起承转合." : "Используй лексику и грамматику соответствующего уровня ${answerLevel}."}\nОтветь СТРОГО в 5 строк, разделённых ###. Никакого дополнительного текста до или после:\nСтрока 1: Точный перевод ответа ученика на русский\nСтрока 2: Совет от Чао (2-3 предложения): разбери ошибки, похвали за удачные слова.\nСтрока 3: Идеальное предложение уровня ${answerLevel} ТОЛЬКО иероглифами\nСтрока 4: Пиньинь с тонами к предложению\nСтрока 5: Русский перевод этого идеального предложения\nОтвет ученика: "${text}"`;
+            }
+            try {
+                let res;
+                if (SERVER_MODE) {
+                    res = await fetch('/api/tutor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: promptText }) });
+                } else {
+                    res = await fetch('https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+                        body: JSON.stringify({ model: 'qwen3.6-flash', max_tokens: 350, temperature: 0.2, enable_thinking: false, messages: [{ role: 'user', content: promptText }] })
+                    });
+                }
+                if (!res.ok) throw new Error('Qwen request failed (' + res.status + ').');                const data = await res.json(), raw = data.choices[0].message.content.trim();
+                let parts = raw.split('###').map(p => p.trim());
+                if (parts.length < 3) parts = raw.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+                const meaning = parts[0] || "Перевод готов", mistake = parts[1] || "Всё отлично!", hanzi = parts[2] || text;
+                const pinyin = parts[3] || "", ruTrans = parts[4] || "";
+                
+                document.getElementById('resMeaningLabel').textContent = isExplainingWord ? "Перевод текста:" : "Смысл ответа:";
+                document.getElementById('resMistakeLabel').textContent = isExplainingWord ? "Объяснение от Чао:" : "Совет от Чао:";
+                document.getElementById('resMeaning').textContent = meaning; document.getElementById('resMistake').textContent = mistake;
+                document.getElementById('resNative').textContent = hanzi;
+                document.getElementById('resNativePy').textContent = pinyin; document.getElementById('resNativeRu').textContent = ruTrans ? `«${ruTrans}»` : "";
+                AppState.currentNativeVoice = hanzi.replace(/[a-zA-Zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ\(\)]/g, '').trim();
+                document.getElementById('resultCard').classList.add('active'); AppState.isAnalysisActive = true;
+                document.getElementById('tabTutor').textContent = "✕ Закрыть разбор"; document.getElementById('tabTutor').classList.remove('close-mode');
+                document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                document.getElementById('chaoSpeech').textContent = isExplainingWord ? "Разбор готов!" : "Разбор ответа готов! Посмотри вариант носителя ниже ✨";
+                addPoints(isExplainingWord ? 10 : 25);
+            } catch (e) { console.error("API Error:", e); alert("Ошибка API: " + e.message); }
+            finally { btn.disabled = false; btn.textContent = 'ПРОВЕРИТЬ ОТВЕТ'; }
+        });
+        document.getElementById('ttsButton').addEventListener('click', (e) => { if (AppState.currentNativeVoice) speakChinese(AppState.currentNativeVoice, e.currentTarget); });
+        document.getElementById('originalVoiceBtn').addEventListener('click', (e) => { if (AppState.currentOriginalVoice) speakChinese(AppState.currentOriginalVoice, e.currentTarget); });
+        document.getElementById('pageContentStage').addEventListener('click', (e) => {
+            const wordSpan = e.target.closest('.hsk-word-inline');
+            const dialogueLine = e.target.closest('.dialogue-text-line');
+            const scanWord = e.target.closest('.scan-word');
+            if (wordSpan) {
+                selectVocabWord(wordSpan.dataset.word, wordSpan);
+            } else if (dialogueLine) {
+                document.querySelectorAll('.dialogue-text-line').forEach(line => line.classList.remove('playing'));
+                speakChinese(dialogueLine.dataset.cn, dialogueLine);
+            } else if (scanWord) {
+                const word = scanWord.dataset.word;
+                const match = getActiveVocab().find(item => item.word === word);
+                if (match) selectVocabWord(match.word, scanWord);
+                else speakChinese(word, scanWord);
+            }
+        });
+        document.getElementById('middleVocabSection').addEventListener('click', (e) => { const vocabRow = e.target.closest('.vocab-row'); if (vocabRow) selectVocabWord(vocabRow.dataset.word, vocabRow); });
+        function selectVocabWord(word, el) {
+            speakChinese(word, el); document.querySelectorAll('.vocab-row').forEach(row => row.classList.remove('selected-row'));
+            let targetRow = el.classList.contains('vocab-row') ? el : document.querySelector(`.vocab-row[data-word="${word}"]`);
+            if (targetRow && targetRow.classList.contains('vocab-row')) {
+                targetRow.classList.add('selected-row'); const container = document.getElementById('vocabScrollContainer');
+                container.scrollTo({ top: targetRow.offsetTop - (container.clientHeight / 2) + (targetRow.clientHeight / 2), behavior: 'smooth' });
+            }
+            document.querySelectorAll('.hsk-word-inline').forEach(span => {
+                span.classList.toggle('active-highlight', span.dataset.word === word);
+                if (span.dataset.word === word) span.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
+        document.addEventListener('mouseup', (e) => {
+            if (document.getElementById('selectionPopup').contains(e.target)) return;
+            const sel = window.getSelection(), str = sel.toString().trim();
+            if (str && /[\u4e00-\u9fa5]/.test(str)) {
+                const range = sel.getRangeAt(0), rect = range.getBoundingClientRect(), popup = document.getElementById('selectionPopup');
+                popup.style.top = `${rect.top + window.scrollY - 10}px`; popup.style.left = `${rect.left + window.scrollX + (rect.width / 2)}px`; popup.style.display = 'block';
+                document.getElementById('popupWordChar').textContent = str;
+                
+                const vocab = getActiveVocab(), match = vocab.find(v => v.word === str);
+                if (match) { 
+                    document.getElementById('popupWordPy').textContent = match.py; 
+                    document.getElementById('popupWordTrans').textContent = `(${match.pos}) ${match.trans}`; 
+                } else { 
+                    document.getElementById('popupWordPy').textContent = "Фраза HSK 5"; 
+                    document.getElementById('popupWordTrans').textContent = "Нажмите «Спросить Чао» для полного разбора"; 
+                }
+            } else { document.getElementById('selectionPopup').style.display = 'none'; }
+        });
+        document.getElementById('popupVoiceBtn').addEventListener('click', (e) => speakChinese(document.getElementById('popupWordChar').textContent, e.currentTarget));
+        document.getElementById('popupAddCardBtn').addEventListener('click', () => { document.getElementById('tabCards').click(); addPoints(10); document.getElementById('selectionPopup').style.display = 'none'; });
+        document.getElementById('popupExplainBtn').addEventListener('click', () => {
+            const word = document.getElementById('popupWordChar').textContent; document.getElementById('tabTutor').click();
+            document.getElementById('userSpeechInput').value = `请小潮解释：“${word}”`; AppState.currentOriginalVoice = word;
+            document.getElementById('originalQuoteText').textContent = word; document.getElementById('originalQuoteBox').style.display = 'block';
+            document.getElementById('taskFlipWrapper').style.display = 'none'; document.getElementById('selectionPopup').style.display = 'none';
+            document.getElementById('analyzeButton').click();
+        });
+        // Функция рендеринга аккуратного и понятного линейного графика с разнесенными уровнями
+        function renderProgressLineChart(mode = 'week') {
+            const svg = document.getElementById('lineChartSvg');
+            svg.innerHTML = '';
+            
+            let data = [];
+            if (mode === 'week') {
+                data = [
+                    { label: 'Пн', time: 25, words: 12 },
+                    { label: 'Вт', time: 40, words: 18 },
+                    { label: 'Ср', time: 15, words: 5 },
+                    { label: 'Чт', time: 55, words: 24 },
+                    { label: 'Пт', time: 30, words: 15 },
+                    { label: 'Сб', time: 65, words: 30 },
+                    { label: 'Вс', time: 45, words: 20 }
+                ];
+            } else {
+                data = [
+                    { label: 'Нед 1', time: 180, words: 85 },
+                    { label: 'Нед 2', time: 220, words: 110 },
+                    { label: 'Нед 3', time: 195, words: 95 },
+                    { label: 'Нед 4', time: 260, words: 140 }
+                ];
+            }
+            const width = 520, height = 105;
+            const paddingX = 45, paddingY = 18;
+            const usableWidth = width - paddingX * 2;
+            const usableHeight = height - paddingY * 2 - 12;
+            const maxTime = Math.max(...data.map(d => d.time), 60);
+            const maxWords = Math.max(...data.map(d => d.words), 30);
+            const getX = (i) => paddingX + (i / (data.length - 1)) * usableWidth;
+            // Четко разделяем линии по высоте, чтобы не пересекались
+            const getYTime = (val) => paddingY + 10 - (val / maxTime) * (usableHeight - 15);
+            const getYWords = (val) => paddingY + 48 - (val / maxWords) * (usableHeight - 15);
+            let ptsTime = [];
+            let ptsWords = [];
+            data.forEach((d, i) => {
+                const x = getX(i);
+                ptsTime.push(`${x},${getYTime(d.time)}`);
+                ptsWords.push(`${x},${getYWords(d.words)}`);
+            });
+            // Линия времени (Темно-синий)
+            const polylineTime = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            polylineTime.setAttribute('points', ptsTime.join(' '));
+            polylineTime.setAttribute('fill', 'none');
+            polylineTime.setAttribute('stroke', '#023047');
+            polylineTime.setAttribute('stroke-width', '2.5');
+            svg.appendChild(polylineTime);
+            // Линия слов (Ярко-красный)
+            const polylineWords = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            polylineWords.setAttribute('points', ptsWords.join(' '));
+            polylineWords.setAttribute('fill', 'none');
+            polylineWords.setAttribute('stroke', '#D90429');
+            polylineWords.setAttribute('stroke-width', '2.5');
+            svg.appendChild(polylineWords);
+            // Точки и подписи
+            data.forEach((d, i) => {
+                const x = getX(i);
+                
+                // Время (подпись сверху)
+                const yt = getYTime(d.time);
+                const circleT = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circleT.setAttribute('cx', x);
+                circleT.setAttribute('cy', yt);
+                circleT.setAttribute('r', '3.5');
+                circleT.setAttribute('fill', '#023047');
+                svg.appendChild(circleT);
+                const textT = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                textT.setAttribute('x', x);
+                textT.setAttribute('y', yt - 5);
+                textT.setAttribute('font-size', '8.5');
+                textT.setAttribute('fill', '#023047');
+                textT.setAttribute('text-anchor', 'middle');
+                textT.setAttribute('font-weight', 'bold');
+                textT.textContent = `${d.time} мин`;
+                svg.appendChild(textT);
+                // Слова (подпись снизу)
+                const yw = getYWords(d.words);
+                const circleW = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circleW.setAttribute('cx', x);
+                circleW.setAttribute('cy', yw);
+                circleW.setAttribute('r', '3.5');
+                circleW.setAttribute('fill', '#D90429');
+                svg.appendChild(circleW);
+                const textW = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                textW.setAttribute('x', x);
+                textW.setAttribute('y', yw + 15);
+                textW.setAttribute('font-size', '8.5');
+                textW.setAttribute('fill', '#D90429');
+                textW.setAttribute('text-anchor', 'middle');
+                textW.setAttribute('font-weight', 'bold');
+                textW.textContent = `${d.words} слов`;
+                svg.appendChild(textW);
+                // Метки оси X
+                const textX = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                textX.setAttribute('x', x);
+                textX.setAttribute('y', height - 2);
+                textX.setAttribute('font-size', '10');
+                textX.setAttribute('fill', '#1A1817');
+                textX.setAttribute('text-anchor', 'middle');
+                textX.setAttribute('font-weight', '700');
+                textX.textContent = d.label;
+                svg.appendChild(textX);
+            });
+        }
+        window.switchChartMode = function(mode) {
+            document.getElementById('chartWeekBtn').classList.toggle('active', mode === 'week');
+            document.getElementById('chartMonthBtn').classList.toggle('active', mode === 'month');
+            renderProgressLineChart(mode);
+        };
+        const parentModal = document.getElementById('parentModal');
+        document.getElementById('openParentModalBtn').addEventListener('click', () => {
+            document.getElementById('modalTotalWords').textContent = AppState.allMasteredHskWords.length;
+            const currentLessonTime = formatMinutes(AppState.studySeconds);
+            const totalPlatformTime = formatHours(AppState.totalPlatformSeconds);
+            
+            document.getElementById('modalStudyTime').textContent = currentLessonTime;
+            document.getElementById('modalTotalHours').textContent = totalPlatformTime;
+            document.getElementById('modalPlatformDays').textContent = `${AppState.platformDays} дн.`;
+            renderProgressLineChart('week');
+            const reportText = `📊 Отчет по китайскому языку (HSK 5)\n👤 Ученик: Занимается самостоятельно\n⏱️ Время на текущем уроке: ${currentLessonTime}\n⏳ Всего на платформе: ${totalPlatformTime} (${AppState.platformDays} дн.)\n🏆 Набрано баллов: ${AppState.points} XP\n📚 Освоено слов всего: ${AppState.allMasteredHskWords.length} / 2500\n🔥 Статус: Успешно пройдены упражнения! Сяо Чао оценивает прогресс как отличный ✨`;
+            document.getElementById('reportPreviewText').textContent = reportText;
+            parentModal.classList.add('active');
+        });
+        document.getElementById('closeModalBtn').addEventListener('click', () => parentModal.classList.remove('active'));
+        document.getElementById('copyReportBtn').addEventListener('click', () => {
+            const text = document.getElementById('reportPreviewText').textContent;
+            navigator.clipboard.writeText(text).then(() => alert("Отчет скопирован в буфер обмена! Теперь его можно отправить в Telegram или WhatsApp."));
+        });
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRec) {
+            const recognition = new SpeechRec(); recognition.lang = 'zh-CN'; recognition.continuous = false; recognition.interimResults = true;
+            const micButton = document.getElementById('micButton'), userSpeechInput = document.getElementById('userSpeechInput'); let finalTranscript = '';
+            recognition.onstart = () => { AppState.isRecording = true; finalTranscript = userSpeechInput.value.trim(); micButton.classList.add('recording'); userSpeechInput.placeholder = "Слушаю вас прямо сейчас..."; };
+            recognition.onresult = (e) => {
+                let interimTranscript = '';
+                for (let i = e.resultIndex; i < e.results.length; ++i) {
+                    if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript; else interimTranscript += e.results[i][0].transcript;
+                }
+                userSpeechInput.value = finalTranscript + interimTranscript;
+            };
+            recognition.onerror = recognition.onend = () => { AppState.isRecording = false; micButton.classList.remove('recording'); userSpeechInput.placeholder = "Ответьте по-китайски..."; };
+            micButton.addEventListener('click', () => { if (AppState.isRecording) { recognition.stop(); return; } try { recognition.start(); } catch (err) {} });
+            const cardRecognition = new SpeechRec(); cardRecognition.lang = 'zh-CN'; cardRecognition.continuous = false; cardRecognition.interimResults = false;
+            const fcMicBtn = document.getElementById('fcMicBtn'), fcStatusText = document.getElementById('fcStatusText');
+            cardRecognition.onstart = () => {
+                AppState.isCardMicRecording = true; fcMicBtn.classList.add('recording'); fcStatusText.textContent = "Слушаю произношение... 🎧";
+                fcStatusText.style.color = "var(--hsk5-teal)"; document.getElementById('cardStage').classList.remove('success-state', 'error-state');
+            };
+            cardRecognition.onresult = (e) => {
+                const rawHeard = e.results[0][0].transcript.trim(), vocab = getActiveVocab();
+                const currentWord = vocab[AppState.currentCardIdx] ? vocab[AppState.currentCardIdx].word : "";
+                const cleanHeard = rawHeard.replace(/[\s\p{P}]/gu, ""), cleanTarget = currentWord.replace(/[\s\p{P}]/gu, "");
+                if (cleanHeard.includes(cleanTarget) || cleanTarget.includes(cleanHeard)) {
+                    document.getElementById('cardStage').classList.add('success-state'); fcStatusText.textContent = `✔ Верно! Распознано: «${rawHeard}»`;
+                    fcStatusText.style.color = "var(--success-green)"; markWordAsMastered(currentWord);
+                    setTimeout(() => {
+                        if (AppState.currentCardIdx < vocab.length - 1) { AppState.currentCardIdx++; renderFlashcard(vocab, 'next'); }
+                        else { fcStatusText.textContent = "🎉 Все слова пройдены!"; }
+                    }, 1200);
+                } else {
+                    document.getElementById('cardStage').classList.add('error-state'); 
+                    fcStatusText.innerHTML = `Услышано: «${rawHeard}». Попробуйте ещё раз или <button onclick="speakChinese('${currentWord}')" style="background:none;border:none;color:var(--hsk5-teal);text-decoration:underline;cursor:pointer;">послушайте эталон</button>`;
+                    fcStatusText.style.color = "var(--recording-red)"; setTimeout(() => document.getElementById('cardStage').classList.remove('error-state'), 1200);
+                }
+            };
+            cardRecognition.onerror = cardRecognition.onend = () => { AppState.isCardMicRecording = false; fcMicBtn.classList.remove('recording'); };
+            fcMicBtn.addEventListener('click', () => { if (AppState.isCardMicRecording) { cardRecognition.stop(); return; } try { cardRecognition.start(); } catch (err) {} });
+        }
+        function cleanupAllMedia() {
+            if (AppState.studio.mediaRecorder && AppState.studio.isRecording) AppState.studio.mediaRecorder.stop();
+            if (AppState.studio.stream) AppState.studio.stream.getTracks().forEach(track => track.stop());
+            if (AppState.studio.recTimer) clearInterval(AppState.studio.recTimer);
+            if (AppState.gym.timer) clearInterval(AppState.gym.timer);
+            if (AppState.gym.stepInterval) clearInterval(AppState.gym.stepInterval);
+            if (AppState.studio.pipDrawInterval) clearInterval(AppState.studio.pipDrawInterval);
+            window.speechSynthesis.cancel();
+        }
+        let db = null;
+        function initDB() {
+            const req = indexedDB.open("ChaoVideoDB_HSK5", 1);
+            req.onupgradeneeded = (e) => { if (!e.target.result.objectStoreNames.contains("videos")) e.target.result.createObjectStore("videos", { keyPath: "id", autoIncrement: true }); };
+            req.onsuccess = (e) => { db = e.target.result; loadGallery(); };
+        }
+        function loadGallery() {
+            if (!db) return;
+            db.transaction(["videos"], "readonly").objectStore("videos").getAll().onsuccess = (e) => {
+                const list = e.target.result.reverse(), container = document.getElementById('galleryList');
+                if (!list.length) { container.innerHTML = `<div style="font-size:11px; color:var(--ink-gray);">Записей пока нет.</div>`; return; }
+                container.innerHTML = list.map(v => `
+                    <div class="gallery-item">
+                        <div><strong style="color:var(--ink-black); display:block; font-size:12px;">${v.title}</strong><span style="font-size:10px; color:var(--ink-gray);">${v.date}</span></div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="gallery-btn" onclick="playSavedVideo(${v.id})">▶</button>
+                            <button class="gallery-btn" style="color:var(--recording-red);" onclick="deleteVideo(${v.id})">🗑</button>
+                        </div>
+                    </div>`).join('');
+            };
+        }
+        window.deleteVideo = function(id) { db.transaction(["videos"], "readwrite").objectStore("videos").delete(id).onsuccess = () => loadGallery(); };
+        window.playSavedVideo = function(id) {
+            db.transaction(["videos"], "readonly").objectStore("videos").get(id).onsuccess = (e) => {
+                if (e.target.result) {
+                    cleanupAllMedia(); const url = URL.createObjectURL(e.target.result.blob);
+                    document.getElementById('studioLiveVideo').style.display = 'none'; document.getElementById('cameraPipOverlay').style.display = 'none';
+                    const playback = document.getElementById('studioPlaybackVideo'); playback.src = url; playback.style.display = 'block'; playback.play();
+                    document.getElementById('studioActionsAfter').style.display = 'flex'; document.getElementById('downloadVideoBtn').href = url;
+                    document.getElementById('downloadVideoBtn').download = `HSK5_Speech_${id}.webm`; document.getElementById('studioRecordToggleBtn').style.display = 'none';
+                }
+            };
+        };
+        ['tabTutor', 'tabCards', 'tabStudio'].forEach((tabId, idx) => {
+            document.getElementById(tabId).addEventListener('click', () => {
+                document.getElementById('gymSection').classList.remove('active'); document.getElementById('teaPromptBanner').style.display = 'none';
+                if (idx === 0 && AppState.isAnalysisActive) { closeCurrentAnalysis(); return; }
+                cleanupAllMedia();
+                ['tabTutor', 'tabCards', 'tabStudio'].forEach(t => document.getElementById(t).classList.remove('active'));
+                ['tutorSection', 'cardsSection', 'studioSection'].forEach(s => document.getElementById(s).classList.remove('active'));
+                document.getElementById(tabId).classList.add('active'); document.getElementById(['tutorSection', 'cardsSection', 'studioSection'][idx]).classList.add('active');
+                if (idx === 1) renderFlashcard(); else if (idx === 2) initStudioStreams();
+            });
+        });
+        async function initStudioStreams() {
+            cleanupAllMedia(); initAudioContext();
+            document.getElementById('studioPlaybackVideo').style.display = 'none'; document.getElementById('studioLiveVideo').style.display = 'block';
+            document.getElementById('studioActionsAfter').style.display = 'none'; document.getElementById('studioRecordToggleBtn').style.display = 'block';
+            try {
+                if (AppState.studio.mode === 'camera') {
+                    document.getElementById('cameraPipOverlay').style.display = 'none';
+                    AppState.studio.stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: { echoCancellation: true, noiseSuppression: true } });
+                    document.getElementById('studioLiveVideo').srcObject = AppState.studio.stream;
+                } else if (AppState.studio.mode === 'screen') {
+                    document.getElementById('cameraPipOverlay').style.display = 'none';
+                    AppState.studio.stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                    document.getElementById('studioLiveVideo').srcObject = AppState.studio.stream;
+                } else if (AppState.studio.mode === 'pip') {
+                    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                    const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    document.getElementById('studioLiveVideo').srcObject = screenStream; document.getElementById('cameraPipOverlay').srcObject = camStream;
+                    document.getElementById('cameraPipOverlay').style.display = 'block'; AppState.studio.stream = screenStream;
+                }
+            } catch (err) { console.warn("Ошибка доступа к устройствам:", err); }
+        }
+        ['modeCameraBtn', 'modeScreenBtn', 'modePipBtn'].forEach(btn => {
+            document.getElementById(btn).addEventListener('click', (e) => {
+                ['modeCameraBtn', 'modeScreenBtn', 'modePipBtn'].forEach(b => document.getElementById(b).classList.remove('active'));
+                e.target.classList.add('active'); AppState.studio.mode = btn.replace('mode', '').replace('Btn', '').toLowerCase(); initStudioStreams();
+            });
+        });
+        document.getElementById('studioRecordToggleBtn').addEventListener('click', () => {
+            if (!AppState.studio.isRecording && AppState.studio.stream) {
+                AppState.studio.recordedChunks = [];
+                AppState.studio.mediaRecorder = new MediaRecorder(AppState.studio.stream, { mimeType: 'video/webm;codecs=vp8,opus' });
+                AppState.studio.mediaRecorder.ondataavailable = e => { if (e.data.size > 0) AppState.studio.recordedChunks.push(e.data); };
+                AppState.studio.mediaRecorder.onstop = () => {
+                    const blob = new Blob(AppState.studio.recordedChunks, { type: 'video/webm' }), url = URL.createObjectURL(blob);
+                    document.getElementById('cameraPipOverlay').style.display = 'none'; document.getElementById('studioLiveVideo').style.display = 'none';
+                    document.getElementById('studioPlaybackVideo').src = url; document.getElementById('studioPlaybackVideo').style.display = 'block';
+                    document.getElementById('studioActionsAfter').style.display = 'flex'; document.getElementById('downloadVideoBtn').href = url;
+                    document.getElementById('downloadVideoBtn').download = `HSK5_Speech_${Date.now()}.webm`; document.getElementById('studioRecordToggleBtn').style.display = 'none';
+                    const title = `Ответ: ${hskDatabase[AppState.currentLessonIdx].badge} (${hskDatabase[AppState.currentLessonIdx].pages[AppState.activePageIndex].pageNum})`;
+                    db.transaction(["videos"], "readwrite").objectStore("videos").add({ blob, title, date: new Date().toLocaleString() }).onsuccess = () => loadGallery();
+                    addPoints(50);
+                };
+                AppState.studio.mediaRecorder.start(200); AppState.studio.isRecording = true;
+                document.getElementById('studioRecordToggleBtn').classList.add('recording'); document.getElementById('recLiveBadge').style.display = 'flex';
+                AppState.studio.recSeconds = 0;
+                AppState.studio.recTimer = setInterval(() => {
+                    AppState.studio.recSeconds++;
+                    document.getElementById('studioRecTimer').textContent = `${String(Math.floor(AppState.studio.recSeconds / 60)).padStart(2, '0')}:${String(AppState.studio.recSeconds % 60).padStart(2, '0')}`;
+                }, 1000);
+            } else if (AppState.studio.isRecording) {
+                AppState.studio.mediaRecorder.stop(); AppState.studio.isRecording = false; clearInterval(AppState.studio.recTimer);
+                document.getElementById('studioRecordToggleBtn').classList.remove('recording'); document.getElementById('recLiveBadge').style.display = 'none';
+            }
+        });
+        document.getElementById('reRecordBtn').addEventListener('click', initStudioStreams);
+        function addPoints(n) { AppState.points += n; updatePointsUI(); localStorage.setItem('chao_points', AppState.points); }
+        function updatePointsUI() { document.getElementById('rewardPoints').textContent = AppState.points; }
+        document.getElementById('apiKeyInput').value = localStorage.getItem('ali_token_plan_key') || '';
+        document.getElementById('apiKeyInput').addEventListener('input', (e) => localStorage.setItem('ali_token_plan_key', e.target.value.trim()));
+        function applyTheme(isDark) {
+            if (isDark) {
+                document.body.classList.add('dark-mode'); document.getElementById('themeIcon').textContent = '☀️'; document.getElementById('themeLabel').textContent = 'Светлая'; localStorage.setItem('chao_theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-mode'); document.getElementById('themeIcon').textContent = '🌙'; document.getElementById('themeLabel').textContent = 'Тёмная'; localStorage.setItem('chao_theme', 'light');
+            }
+        }
+        document.getElementById('themeToggleBtn').addEventListener('click', () => applyTheme(!document.body.classList.contains('dark-mode')));
+        
+        // Логика китайской зарядки (课间操)
+        document.getElementById('teaAcceptBtn').addEventListener('click', () => {
+            document.getElementById('teaPromptBanner').style.display = 'none';
+            document.getElementById('gymSection').classList.add('active');
+            startGymSession();
+        });
+        document.getElementById('teaDeclineBtn').addEventListener('click', () => document.getElementById('teaPromptBanner').style.display = 'none');
+        document.getElementById('gymBackBtn').addEventListener('click', () => {
+            document.getElementById('gymSection').classList.remove('active');
+            clearInterval(AppState.gym.timer); clearInterval(AppState.gym.stepInterval);
+            addPoints(20);
+            startStudyTimer();
+        });
+        document.getElementById('gymVoiceBtn').addEventListener('click', (e) => {
+            const ex = gymExercises[AppState.gym.currentStep];
+            speakChinese(ex.cn, e.currentTarget);
+        });
+        function startGymSession() {
+            AppState.gym.seconds = 60; AppState.gym.currentStep = 0;
+            updateGymDisplay(); updateGymStep();
+            clearInterval(AppState.gym.timer); clearInterval(AppState.gym.stepInterval);
+            AppState.gym.timer = setInterval(() => {
+                AppState.gym.seconds--;
+                const m = String(Math.floor(AppState.gym.seconds / 60)).padStart(2, '0');
+                const s = String(AppState.gym.seconds % 60).padStart(2, '0');
+                document.getElementById('gymTimerBadge').textContent = `${m}:${s}`;
+                if (AppState.gym.seconds <= 0) {
+                    clearInterval(AppState.gym.timer); clearInterval(AppState.gym.stepInterval);
+                    document.getElementById('gymTimerBadge').textContent = "Готово!";
+                }
+            }, 1000);
+            AppState.gym.stepInterval = setInterval(() => {
+                AppState.gym.currentStep = (AppState.gym.currentStep + 1) % gymExercises.length;
+                updateGymStep();
+            }, 15000);
+        }
+        function updateGymStep() {
+            const ex = gymExercises[AppState.gym.currentStep];
+            document.getElementById('gymEmoji').textContent = ex.emoji;
+            document.getElementById('gymCn').textContent = ex.cn;
+            document.getElementById('gymPy').textContent = ex.py;
+            document.getElementById('gymRu').textContent = ex.ru;
+            speakChinese(ex.cn);
+        }
+        function updateGymDisplay() {
+            document.getElementById('gymTimerBadge').textContent = "01:00";
+        }
+        init();
+    </script>
+</body>
+</html>

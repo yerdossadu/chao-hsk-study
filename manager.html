@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Загрузка учебника · Chao HSK</title>
+<style>
+:root{font-family:Inter,Arial,sans-serif;color:#1a1817;background:#e4dfd5;--teal:#1f5f61;--paper:#fffefa;--border:#cbd9d9}
+*{box-sizing:border-box}body{margin:0;padding:22px}main{max-width:1080px;margin:auto}
+header,.panel{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 4px 16px #0000000b}
+h1{font-size:22px;margin:0 0 6px}h2{font-size:16px;margin:0 0 14px;color:var(--teal)}
+p{line-height:1.5;color:#55514b}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700}input,select,textarea,button{font:inherit}
+input,select,textarea{border:1px solid var(--border);border-radius:8px;padding:10px;background:white;color:#1a1817}
+button,.link{border:0;background:var(--teal);color:white;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+button:disabled{opacity:.55;cursor:wait}.subtle{background:#ebf4f4;color:var(--teal);border:1px solid var(--border)}
+#status{margin:10px 0;color:var(--teal);font-size:13px;white-space:pre-wrap}
+#draftJson{width:100%;min-height:430px;font:12px/1.45 Consolas,monospace}
+.preview-page{display:grid;grid-template-columns:minmax(240px,1fr) minmax(240px,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+.preview-page img{width:100%;height:auto;border:1px solid #ddd;background:white}.ocr{white-space:pre-wrap;max-height:300px;overflow:auto;font:12px/1.5 Consolas,monospace;background:#f7f6f1;padding:10px;border-radius:8px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.book-row{padding:10px 0;border-bottom:1px solid #eee;display:flex;gap:12px;align-items:center;justify-content:space-between}
+small{color:#666}.notice{font-size:12px}.hidden{display:none!important}
+@media(max-width:650px){body{padding:10px}.preview-page{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Загрузка учебника</h1>
+  <p>Загрузите скан PDF. Сервер сохранит страницы в исходном виде, распознает китайский текст и подготовит черновик урока. Проверьте OCR и поправьте черновик до публикации.</p>
+  <a class="link subtle" href="/">Вернуться к платформе</a>
+</header>
+<section class="panel">
+  <h2>1. Добавить сканированный PDF</h2>
+  <form id="uploadForm">
+    <div class="grid">
+      <label>Название учебника<input name="title" required placeholder="Например, Standard Course HSK 1"></label>
+      <label>Уровень<select name="level"><option>HSK 1</option><option>HSK 2</option><option>HSK 3</option><option>HSK 4</option><option>HSK 5</option><option>HSK 6</option><option>HSK 7–9</option></select></label>
+      <label>Файл PDF<input name="file" type="file" accept="application/pdf,.pdf" required></label>
+    </div>
+    <div class="actions"><button id="uploadBtn">Загрузить и распознать</button></div>
+  </form>
+  <div id="status" role="status"></div>
+</section>
+<section class="panel">
+  <h2>2. Учебники на сервере</h2>
+  <div id="books"></div>
+</section>
+<section class="panel hidden" id="lessonPanel">
+  <h2>3. Выбрать страницы одного урока</h2>
+  <div class="grid">
+    <label>Название урока<input id="lessonTitle" placeholder="Например, Приветствие"></label>
+    <label>Первая страница PDF<input id="pageStart" type="number" min="1" value="1"></label>
+    <label>Последняя страница PDF<input id="pageEnd" type="number" min="1" value="1"></label>
+  </div>
+  <div class="actions"><button id="draftBtn">Распознать лексику и подготовить черновик в Qwen</button></div>
+</section>
+<section class="panel hidden" id="reviewPanel">
+  <h2>4. Сверить сканы и отредактировать урок</h2>
+  <p class="notice">Изображения ниже — исходные страницы. OCR используется для подготовки текста и интерактивных областей. Сверьте написание слов, пиньинь, перевод и задания с книгой.</p>
+  <div id="previews"></div>
+  <label>Черновик структуры урока (JSON)<textarea id="draftJson" spellcheck="false"></textarea></label>
+  <div class="actions"><button id="publishBtn">Опубликовать урок в платформе</button></div>
+</section>
+</main>
+<script>
+let teacherToken = sessionStorage.getItem('chao_teacher_token') || '';
+let selectedBook = null;
+let latestDraft = null;
+
+async function api(url, options = {}) {
+  if (!teacherToken) {
+    const password = prompt('Пароль преподавателя для загрузки и редактирования уроков:');
+    if (!password) throw new Error('Вход отменён.');
+    teacherToken = 'Basic ' + btoa('teacher:' + password);
+    sessionStorage.setItem('chao_teacher_token', teacherToken);
+  }
+  const headers = new Headers(options.headers || {});
+  headers.set('Authorization', teacherToken);
+  const response = await fetch(url, {...options, headers});
+  if (response.status === 401) {
+    sessionStorage.removeItem('chao_teacher_token'); teacherToken = '';
+    throw new Error('Неверный пароль. Обновите страницу и войдите снова.');
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.detail || ('Ошибка ' + response.status));
+  return data;
+}
+
+function showStatus(message) { document.getElementById('status').textContent = message; }
+function addBookButton(book) {
+  const row = document.createElement('div'); row.className = 'book-row';
+  const description = document.createElement('span');
+  description.textContent = book.title + ' · ' + book.level + ' · ' + book.status +
+    (book.page_count ? ' · страниц: ' + book.page_count : '') + (book.error ? ' · ' + book.error : '');
+  row.append(description);
+  if (book.status === 'ready') {
+    const button = document.createElement('button'); button.className = 'subtle'; button.textContent = 'Выбрать';
+    button.addEventListener('click', () => selectBook(book)); row.append(button);
+  }
+  document.getElementById('books').append(row);
+}
+async function loadBooks() {
+  const list = await api('/api/books');
+  const container = document.getElementById('books'); container.replaceChildren();
+  if (!list.length) { container.textContent = 'Пока нет загруженных учебников.'; return; }
+  list.forEach(addBookButton);
+}
+function selectBook(book) {
+  selectedBook = book;
+  document.getElementById('lessonPanel').classList.remove('hidden');
+  document.getElementById('pageEnd').max = book.page_count;
+  document.getElementById('pageEnd').value = Math.min(book.page_count, 3);
+  document.getElementById('lessonTitle').value = book.title + ' — урок';
+  showStatus('Выбран: ' + book.title + '. Укажите страницы одного урока из PDF.');
+}
+
+document.getElementById('uploadForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = document.getElementById('uploadBtn'); button.disabled = true;
+  try {
+    const result = await api('/api/books', {method:'POST', body:new FormData(event.currentTarget)});
+    showStatus('PDF загружен. OCR распознаёт страницы в фоновом режиме…');
+    event.currentTarget.reset();
+    await loadBooks();
+    const poll = async () => {
+      const item = await api('/api/books/' + result.id);
+      if (item.status === 'processing') { showStatus('OCR: обработано ' + item.page_count + ' страниц…'); setTimeout(poll, 4000); }
+      else { showStatus(item.status === 'ready' ? 'OCR готов. Страниц: ' + item.page_count : 'Ошибка OCR: ' + item.error); await loadBooks(); }
+    };
+    setTimeout(poll, 3000);
+  } catch (error) { showStatus(error.message); }
+  finally { button.disabled = false; }
+});
+
+document.getElementById('draftBtn').addEventListener('click', async event => {
+  const button = event.currentTarget; button.disabled = true;
+  try {
+    const draft = await api('/api/books/' + selectedBook.id + '/draft', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({start:Number(document.getElementById('pageStart').value),
+        end:Number(document.getElementById('pageEnd').value), title:document.getElementById('lessonTitle').value})});
+    latestDraft = draft; document.getElementById('draftJson').value = JSON.stringify(draft, null, 2);
+    const scans = draft.pages.map(page => page.scan.imageUrl);
+    const ocrPages = await api('/api/books/' + selectedBook.id + '/pages');
+    const preview = document.getElementById('previews'); preview.replaceChildren();
+    draft.pages.forEach(page => {
+      const source = ocrPages.find(item => item.image === page.scan.imageUrl);
+      const card = document.createElement('div'); card.className = 'preview-page';
+      const image = document.createElement('img'); image.src = page.scan.imageUrl; image.alt = page.pageNum;
+      const text = document.createElement('pre'); text.className = 'ocr'; text.textContent = source ? source.text : '';
+      card.append(image, text); preview.append(card);
+    });
+    document.getElementById('reviewPanel').classList.remove('hidden');
+    showStatus('Черновик готов. Сравните его с оригинальными сканами и отредактируйте JSON при необходимости.');
+  } catch (error) { showStatus(error.message); }
+  finally { button.disabled = false; }
+});
+
+document.getElementById('publishBtn').addEventListener('click', async event => {
+  const button = event.currentTarget; button.disabled = true;
+  try {
+    const lesson = JSON.parse(document.getElementById('draftJson').value);
+    await api('/api/lessons', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({book_id:selectedBook.id, lesson})});
+    showStatus('Урок опубликован. Обновите платформу, чтобы открыть его.');
+  } catch (error) { showStatus(error instanceof SyntaxError ? 'Проверьте формат JSON: ' + error.message : error.message); }
+  finally { button.disabled = false; }
+});
+
+loadBooks().catch(error => showStatus(error.message));
+</script>
+</body>
+</html>
