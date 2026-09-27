@@ -1768,5 +1768,78 @@
         }
         init();
     </script>
+<script>
+(function () {
+    const css = document.createElement("style");
+    css.textContent = ".active-recall-launch{width:100%;padding:10px 12px;border:1px solid var(--hsk5-border);border-radius:10px;background:var(--chao-purple-light);color:var(--chao-purple);font-size:12px;font-weight:800;cursor:pointer}.active-recall-launch:hover{border-color:var(--chao-purple)}.recall-overlay{display:none;position:fixed;inset:0;z-index:10000;background:rgba(17,24,24,.58);padding:18px;align-items:center;justify-content:center}.recall-overlay.open{display:flex}.recall-dialog{width:min(560px,100%);max-height:min(90vh,780px);overflow:auto;background:var(--paper-white);color:var(--ink-black);border:1px solid var(--hsk5-border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:20px;display:flex;flex-direction:column;gap:12px}.recall-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.recall-close{border:0;border-radius:8px;background:var(--hsk5-teal-light);color:var(--ink-black);padding:7px 10px;cursor:pointer;font-size:16px}.recall-prompt{background:var(--hsk5-teal-light);border-left:4px solid var(--hsk5-teal);border-radius:10px;padding:12px;line-height:1.55;font-size:14px}.recall-vocab{display:flex;flex-wrap:wrap;gap:6px}.recall-chip{border:1px solid var(--hsk5-border);border-radius:999px;background:var(--paper-white);color:var(--hsk5-teal);padding:4px 9px;font-size:12px}.recall-input{min-height:100px;resize:vertical;border:1px solid var(--hsk5-border);border-radius:10px;padding:11px;background:var(--desk-bg);color:var(--ink-black);font:16px 'Noto Sans SC',sans-serif}.recall-feedback{display:none;background:var(--desk-bg);border-radius:10px;padding:12px;line-height:1.55}.recall-feedback.visible{display:block}.recall-hanzi{font:700 22px/1.5 'Noto Serif SC',serif}.recall-actions{display:flex;flex-wrap:wrap;gap:8px}.recall-actions button{flex:1;min-width:145px;border:0;border-radius:9px;padding:10px;background:var(--hsk5-teal);color:white;font-weight:700;cursor:pointer}.recall-actions button.secondary{background:var(--hsk5-teal-light);color:var(--hsk5-teal);border:1px solid var(--hsk5-border)}.recall-actions button:disabled{opacity:.55;cursor:wait}.recall-schedule{display:none}.recall-schedule.visible{display:flex}@media(max-width:600px){.recall-dialog{padding:15px}.recall-overlay{padding:10px}}";
+    document.head.appendChild(css);
+    const tutorBox = document.getElementById("tutorSection") || document.querySelector(".companion-panel");
+    if (!tutorBox || document.getElementById("activeRecallOpen")) return;
+    const launch = document.createElement("button");
+    launch.id = "activeRecallOpen"; launch.type = "button"; launch.className = "active-recall-launch";
+    launch.innerHTML = '🧠 Практика мысли по-китайски <span id="recallDueBadge"></span>';
+    tutorBox.insertBefore(launch, tutorBox.firstChild);
+    const overlay = document.createElement("div"); overlay.id = "recallOverlay"; overlay.className = "recall-overlay"; overlay.setAttribute("role", "dialog"); overlay.setAttribute("aria-modal", "true"); overlay.setAttribute("aria-labelledby", "recallTitle");
+    overlay.innerHTML = '<section class="recall-dialog"><div class="recall-head"><div><div style="font-size:11px;font-weight:800;color:var(--chao-purple);text-transform:uppercase">Активное припоминание</div><h2 id="recallTitle" style="font-size:20px">Сформулируй мысль по-китайски</h2></div><button id="recallClose" class="recall-close" type="button" aria-label="Закрыть">✕</button></div><div id="recallPrompt" class="recall-prompt"></div><div id="recallVocab" class="recall-vocab"></div><textarea id="recallAnswer" class="recall-input" lang="zh" placeholder="Напиши свой вариант по-китайски. Можно использовать голосовой ввод клавиатуры."></textarea><div class="recall-actions"><button id="recallCheck" type="button">Проверить и получить подсказку</button><button id="recallTryAgain" class="secondary" type="button" style="display:none">Попробовать ещё раз</button></div><div id="recallFeedback" class="recall-feedback" aria-live="polite"></div><div id="recallSchedule" class="recall-actions recall-schedule"><button id="recallEasy" type="button">Понятно — запомнить</button><button id="recallHard" class="secondary" type="button">Пока трудно</button></div><div id="recallStatus" style="font-size:12px;color:var(--ink-gray)"></div></section>';
+    document.body.appendChild(overlay);
+    const storeKey = "chao_active_recall_v1";
+    let practice = null, attempt = 0, reference = "", previewOnly = false;
+    const el = id => document.getElementById(id);
+    const esc = value => String(value == null ? "" : value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    function records() { try { const data = JSON.parse(localStorage.getItem(storeKey) || "[]"); return Array.isArray(data) ? data : []; } catch (_) { return []; } }
+    function save(items) { localStorage.setItem(storeKey, JSON.stringify(items.slice(-200))); }
+    function badge() { const n = records().filter(x => x.dueAt && x.dueAt <= Date.now()).length; el("recallDueBadge").textContent = n ? " · повторений: " + n : ""; }
+    function currentPractice(lesson, page) {
+        const vocab = (typeof getActiveVocab === "function" ? getActiveVocab() : ((page.content || {}).vocab || [])).slice(0,6).map(x => x.word).filter(Boolean);
+        const theme = (lesson.title + (lesson.subtitle ? " — " + lesson.subtitle : "")).slice(0,120);
+        const hint = vocab.length ? " По возможности используй одно из слов: " + vocab.join("、") + "." : "";
+        const badgeText = lesson.badge || ""; const foundLevel = badgeText.match(/HSKs*[1-9](?:.[0-9]+)?/i);
+        return {lessonId:String(lesson.lessonId),theme:theme,prompt:"Сформулируй одну свою мысль по-китайски на тему «" + theme + "». Напиши естественное короткое предложение." + hint,vocab:vocab,level:page.level || (page.type === "hsk1_dialogues" ? "HSK 1" : (foundLevel ? foundLevel[0] : "HSK 5"))};
+    }
+    function setPractice(item, preview) {
+        practice=item; attempt=0; reference=""; previewOnly=!!preview;
+        el("recallPrompt").textContent=item.theme + " — " + item.prompt;
+        el("recallVocab").innerHTML=(item.vocab || []).map(w=>'<span class="recall-chip chinese-sans">'+esc(w)+"</span>").join("");
+        el("recallAnswer").value=""; el("recallAnswer").placeholder="Напиши свой вариант по-китайски. Можно использовать голосовой ввод клавиатуры.";
+        el("recallFeedback").classList.remove("visible"); el("recallFeedback").innerHTML=""; el("recallSchedule").classList.remove("visible"); el("recallTryAgain").style.display="none";
+        el("recallCheck").disabled=false; el("recallCheck").textContent="Проверить и получить подсказку";
+        el("recallStatus").textContent=preview && item.dueAt ? "Следующее повторение: " + new Date(item.dueAt).toLocaleDateString("ru-RU") + "." : "";
+    }
+    function openPractice() {
+        const due=records().filter(x=>x.dueAt && x.dueAt<=Date.now()).sort((a,b)=>a.dueAt-b.dueAt)[0];
+        if (due) setPractice(due,false);
+        else { const lesson=hskDatabase[AppState.currentLessonIdx], page=lesson.pages[AppState.activePageIndex], item=currentPractice(lesson,page), saved=records().find(x=>x.lessonId===item.lessonId); setPractice(saved || item,!!saved); }
+        overlay.classList.add("open"); setTimeout(()=>el("recallAnswer").focus(),80);
+    }
+    function closePractice() { overlay.classList.remove("open"); }
+    launch.addEventListener("click",openPractice); el("recallClose").addEventListener("click",closePractice);
+    overlay.addEventListener("click",e=>{if(e.target===overlay)closePractice();});
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")closePractice();});
+    el("recallCheck").addEventListener("click",async function () {
+        const answer=el("recallAnswer").value.trim(); if(!answer){el("recallAnswer").focus();return;}
+        if(typeof SERVER_MODE==="undefined" || !SERVER_MODE){el("recallStatus").textContent="Открой платформу на сервере, чтобы ответ проверил ИИ.";return;}
+        const button=el("recallCheck"); button.disabled=true; button.textContent="Проверяю ответ…"; el("recallStatus").textContent="Сяо Чао проверяет смысл и грамматику…";
+        try {
+            const response=await fetch("/api/practice/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({answer:answer,prompt:practice.prompt,theme:practice.theme,level:practice.level,vocab:practice.vocab,reference:reference})});
+            const result=await response.json(); if(!response.ok)throw new Error(result.detail || "Не удалось проверить ответ.");
+            const feedback=el("recallFeedback"); feedback.innerHTML='<div style="font-weight:800;color:'+(result.understood?"var(--success-green)":"var(--tea-gold)")+ ';margin-bottom:5px">'+(result.understood?"✓ Смысл понятен":"Есть что улучшить — это нормально")+'</div><div style="display:flex;align-items:center;gap:8px"><div class="recall-hanzi chinese-sans">'+esc(result.corrected_sentence)+'</div><button id="recallSpeak" class="sound-icon-btn" type="button" title="Озвучить исправленную фразу">🔊</button></div>'+(result.natural_alternative?'<div style="margin-top:7px"><strong>Ещё естественный вариант:</strong><div class="chinese-sans" style="font-size:17px;font-weight:700">'+esc(result.natural_alternative)+'</div></div>':"")+'<div style="margin-top:7px">'+esc(result.explanation)+'</div>';
+            feedback.classList.add("visible"); reference=result.corrected_sentence || ""; attempt++;
+            el("recallSpeak").addEventListener("click",()=>{if(typeof speakChinese==="function")speakChinese(result.corrected_sentence);});
+            el("recallTryAgain").style.display=attempt<2?"inline-block":"none"; el("recallSchedule").classList.add("visible");
+            el("recallStatus").textContent=previewOnly?"Эта практика уже запланирована; дата не меняется.":"Выбери срок повторения — прогресс хранится в этом браузере.";
+        } catch(error) { el("recallStatus").textContent=error.message; }
+        finally { button.disabled=false; button.textContent=attempt?"Проверить ещё раз":"Проверить и получить подсказку"; }
+    });
+    el("recallTryAgain").addEventListener("click",()=>{el("recallAnswer").value="";el("recallAnswer").placeholder="Теперь попробуй написать фразу ещё раз своими словами…";el("recallAnswer").focus();el("recallStatus").textContent="Опирайся на исправленный вариант выше и попробуй ещё раз.";});
+    function schedule(easy) {
+        if(previewOnly){closePractice();return;}
+        const list=records(), index=list.findIndex(x=>x.lessonId===practice.lessonId), prior=index>=0?list[index]:null;
+        const stage=easy?Math.min(2,(prior && prior.stage || 0)+(prior?1:0)):(prior && prior.stage || 0), days=easy?[1,3,7][stage]:1;
+        const item=Object.assign({},practice,{stage:stage,dueAt:Date.now()+days*86400000,attempts:(prior && prior.attempts || 0)+attempt,updatedAt:Date.now()});
+        if(index>=0)list[index]=item;else list.push(item);save(list);badge();el("recallStatus").textContent="Сохранено. Напоминание появится примерно через "+days+" дн.";setTimeout(closePractice,900);
+    }
+    el("recallEasy").addEventListener("click",()=>schedule(true)); el("recallHard").addEventListener("click",()=>schedule(false)); badge();
+})();
+</script>
 </body>
 </html>
