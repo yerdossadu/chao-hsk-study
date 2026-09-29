@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY server.py app.html manager.html ./
+COPY server.py lesson_validation.py app.html manager.html ./
 RUN mkdir -p /var/data
 
 EXPOSE 10000
