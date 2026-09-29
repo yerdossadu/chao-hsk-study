@@ -18,6 +18,7 @@ import requests
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from lesson_validation import validate_ai_draft, validate_lesson
 
 APP_DIR = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("CHAO_DATA_DIR", "/var/data"))
@@ -231,20 +232,23 @@ def create_lesson_draft(book_id: str, body: dict[str, Any], _: bool = Depends(re
         parsed = json.loads(raw)
     except Exception as exc:
         raise HTTPException(502, f"Не удалось подготовить черновик Qwen: {str(exc)[:350]}")
+    try:
+        validate_ai_draft(parsed, range(start, end + 1))
+    except ValueError as exc:
+        raise HTTPException(502, f"ИИ вернул некорректный урок: {exc}. Повторите создание черновика.") from None
     by_number = {page["page"]: page for page in selected}
-    parsed_by_number = {int(page.get("pdf_page", start + i)): page
-                        for i, page in enumerate(parsed.get("pages", []))}
+    parsed_by_number = {page["pdf_page"]: page for page in parsed["pages"]}
     draft_pages = []
     for number in range(start, end + 1):
         scan = by_number[number]
-        ai_page = parsed_by_number.get(number, {})
+        ai_page = parsed_by_number[number]
         draft_pages.append({
             "type": "scanned", "level": book["level"],
             "pageNum": f"p. {number}", "navLabel": f"Стр. PDF {number}",
-            "chaoIntro": ai_page.get("chaoIntro", "Посмотри на страницу и изучи выделенные слова."),
-            "task": ai_page.get("task", f"Изучи страницу {number} учебника."),
+            "chaoIntro": ai_page["chaoIntro"],
+            "task": ai_page["task"],
             "builderWords": [], "systemPrompt": f"Репетитор {book['level']}.",
-            "content": {"vocab": ai_page.get("vocab", [])},
+            "content": {"vocab": ai_page["vocab"]},
             "scan": {"imageUrl": scan["image"], "width": scan["width"],
                      "height": scan["height"], "blocks": scan["blocks"]}
         })
@@ -257,11 +261,16 @@ def create_lesson_draft(book_id: str, body: dict[str, Any], _: bool = Depends(re
 def publish_lesson(body: dict[str, Any], _: bool = Depends(require_teacher)):
     lesson = body.get("lesson")
     book_id = body.get("book_id")
-    if not isinstance(lesson, dict) or not lesson.get("pages") or not book_id:
-        raise HTTPException(400, "Черновик урока заполнен не полностью.")
-    for page in lesson["pages"]:
-        if page.get("type") != "scanned" or not str(page.get("scan", {}).get("imageUrl", "")).startswith(f"/scans/{book_id}/"):
-            raise HTTPException(400, "В уроке есть страница без оригинального скана.")
+    if not isinstance(book_id, str) or not re.fullmatch(r"[a-f0-9]{32}", book_id):
+        raise HTTPException(400, "Выберите учебник для публикации.")
+    with connect_db() as db:
+        book = db.execute("SELECT page_count,status FROM books WHERE id=?", (book_id,)).fetchone()
+    if not book or book["status"] != "ready":
+        raise HTTPException(400, "Учебник не найден или ещё не готов.")
+    try:
+        validate_lesson(lesson, book_id, book["page_count"], MAX_LESSON_PAGES)
+    except ValueError as exc:
+        raise HTTPException(400, f"Нельзя опубликовать урок: {exc}. Исправьте черновик.") from None
     lesson_id = str(lesson.get("lessonId") or uuid.uuid4().hex)
     lesson["lessonId"] = lesson_id
     title, level = str(lesson.get("title", "Урок")), str(lesson.get("badge", "HSK"))

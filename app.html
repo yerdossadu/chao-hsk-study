@@ -1582,7 +1582,7 @@
                 const rawHeard = e.results[0][0].transcript.trim(), vocab = getActiveVocab();
                 const currentWord = vocab[AppState.currentCardIdx] ? vocab[AppState.currentCardIdx].word : "";
                 const cleanHeard = rawHeard.replace(/[\s\p{P}]/gu, ""), cleanTarget = currentWord.replace(/[\s\p{P}]/gu, "");
-                if (cleanHeard.includes(cleanTarget) || cleanTarget.includes(cleanHeard)) {
+                if (cleanHeard.length > 0 && cleanTarget.length > 0 && cleanHeard === cleanTarget) {
                     document.getElementById('cardStage').classList.add('success-state'); fcStatusText.textContent = `✔ Верно! Распознано: «${rawHeard}»`;
                     fcStatusText.style.color = "var(--success-green)"; markWordAsMastered(currentWord);
                     setTimeout(() => {
