@@ -53,7 +53,19 @@ small{color:#666}.notice{font-size:12px}.hidden{display:none!important}
     <label>Первая страница PDF<input id="pageStart" type="number" min="1" value="1"></label>
     <label>Последняя страница PDF<input id="pageEnd" type="number" min="1" value="1"></label>
   </div>
-  <div class="actions"><button id="draftBtn">Распознать лексику и подготовить черновик в Qwen</button></div>
+  <div class="actions"><button id="draftBtn">Подготовить интерактивный скан с лексикой</button><button id="electronicDraftBtn" class="subtle">Сделать электронную страницу и перевести английский на русский</button></div>
+  <section class="panel" id="assetPanel">
+    <h2>Иллюстрации для электронных страниц</h2>
+    <p class="notice">Загрузите свою картинку в библиотеку выбранного учебника. Она сохранится на сервере, и её можно будет добавить в макет.</p>
+    <div class="grid">
+      <label>X страницы (%)<input id="assetX" type="number" min="0" max="99" value="68"></label>
+      <label>Y страницы (%)<input id="assetY" type="number" min="0" max="99" value="72"></label>
+      <label>Ширина (%)<input id="assetW" type="number" min="1" max="100" value="27"></label>
+      <label>Высота (%)<input id="assetH" type="number" min="1" max="100" value="24"></label>
+    </div>
+    <div class="grid"><label>Файл PNG, JPG или WebP<input id="assetFile" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="button" id="assetUploadBtn">Сохранить изображение</button></div>
+    <div id="assetList" class="grid"></div>
+  </section>
 </section>
 <section class="panel hidden" id="reviewPanel">
   <h2>4. Сверить сканы и отредактировать урок</h2>
@@ -110,9 +122,10 @@ function selectBook(book) {
   selectedBook = book;
   document.getElementById('lessonPanel').classList.remove('hidden');
   document.getElementById('pageEnd').max = book.page_count;
-  document.getElementById('pageEnd').value = Math.min(book.page_count, 3);
+  document.getElementById('pageEnd').value = Math.min(book.page_count, 1);
   document.getElementById('lessonTitle').value = book.title + ' — урок';
   showStatus('Выбран: ' + book.title + '. Укажите страницы одного урока из PDF.');
+  loadAssets().catch(error => showStatus(error.message));
 }
 
 document.getElementById('uploadForm').addEventListener('submit', async event => {
@@ -141,18 +154,88 @@ document.getElementById('draftBtn').addEventListener('click', async event => {
       body:JSON.stringify({start:Number(document.getElementById('pageStart').value),
         end:Number(document.getElementById('pageEnd').value), title:document.getElementById('lessonTitle').value})});
     latestDraft = draft; document.getElementById('draftJson').value = JSON.stringify(draft, null, 2);
-    const scans = draft.pages.map(page => page.scan.imageUrl);
     const ocrPages = await api('/api/books/' + selectedBook.id + '/pages');
     const preview = document.getElementById('previews'); preview.replaceChildren();
     draft.pages.forEach(page => {
-      const source = ocrPages.find(item => item.image === page.scan.imageUrl);
+      const imageUrl = (page.scan || page.sourceScan).imageUrl;
+      const source = ocrPages.find(item => item.image === imageUrl);
       const card = document.createElement('div'); card.className = 'preview-page';
-      const image = document.createElement('img'); image.src = page.scan.imageUrl; image.alt = page.pageNum;
+      const image = document.createElement('img'); image.src = (page.scan || page.sourceScan).imageUrl; image.alt = page.pageNum;
       const text = document.createElement('pre'); text.className = 'ocr'; text.textContent = source ? source.text : '';
       card.append(image, text); preview.append(card);
     });
     document.getElementById('reviewPanel').classList.remove('hidden');
     showStatus('Черновик готов. Сравните его с оригинальными сканами и отредактируйте JSON при необходимости.');
+  } catch (error) { showStatus(error.message); }
+  finally { button.disabled = false; }
+});
+
+document.getElementById('electronicDraftBtn').addEventListener('click', async event => {
+  const button = event.currentTarget; button.disabled = true;
+  try {
+    const draft = await api('/api/books/' + selectedBook.id + '/electronic-draft', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({start:Number(document.getElementById('pageStart').value),
+        end:Number(document.getElementById('pageEnd').value), title:document.getElementById('lessonTitle').value})});
+    latestDraft = draft; document.getElementById('draftJson').value = JSON.stringify(draft, null, 2);
+    const preview = document.getElementById('previews'); preview.replaceChildren();
+    for (const page of draft.pages) {
+      const card = document.createElement('div'); card.className = 'preview-page';
+      const image = document.createElement('img'); image.src = page.sourceScan.imageUrl; image.alt = page.pageNum;
+      const text = document.createElement('pre'); text.className = 'ocr';
+      text.textContent = page.layout.blocks.filter(block => block.type === 'text')
+        .map(block => block.translation ? block.text + '\n→ ' + block.translation : block.text).join('\n\n');
+      card.append(image, text); preview.append(card);
+    }
+    document.getElementById('reviewPanel').classList.remove('hidden');
+    showStatus('Электронная страница готова. Проверьте распознавание и перевод, затем опубликуйте урок.');
+  } catch (error) { showStatus(error.message); }
+  finally { button.disabled = false; }
+});
+
+async function loadAssets() {
+  const assets = await api('/api/books/' + selectedBook.id + '/assets');
+  const container = document.getElementById('assetList'); container.replaceChildren();
+  if (!assets.length) { container.textContent = 'Пока нет изображений для этого учебника.'; return; }
+  assets.forEach(asset => {
+    const row = document.createElement('div'); row.className = 'book-row';
+    const image = document.createElement('img'); image.src = asset.url; image.alt = asset.filename;
+    image.style.cssText = 'width:74px;height:58px;object-fit:contain;background:#f7f6f1;border-radius:6px';
+    const name = document.createElement('span'); name.textContent = asset.filename;
+    const insert = document.createElement('button'); insert.type = 'button'; insert.className = 'subtle'; insert.textContent = 'Добавить в макет';
+    insert.addEventListener('click', () => {
+      try {
+        const lesson = JSON.parse(document.getElementById('draftJson').value);
+        const pageNumber = 'p. ' + Number(document.getElementById('pageStart').value);
+        const page = lesson.pages.find(item => item.pageNum === pageNumber);
+        if (!page || page.type !== 'electronic') throw new Error('Сначала создайте электронную страницу.');
+        if (page.layout.blocks.some(block => block.id === 'asset-' + asset.id))
+          throw new Error('Эта картинка уже добавлена на страницу.');
+        const x = Number(document.getElementById('assetX').value) / 100;
+        const y = Number(document.getElementById('assetY').value) / 100;
+        const w = Number(document.getElementById('assetW').value) / 100;
+        const h = Number(document.getElementById('assetH').value) / 100;
+        if (![x,y,w,h].every(Number.isFinite) || w <= 0 || h <= 0 || x < 0 || y < 0 || x+w > 1 || y+h > 1)
+          throw new Error('Размер и координаты должны помещаться внутри страницы.');
+        page.layout.blocks.push({id:'asset-' + asset.id, type:'image', imageUrl:asset.url,
+          alt:asset.filename, x, y, w, h});
+        document.getElementById('draftJson').value = JSON.stringify(lesson, null, 2);
+        showStatus('Иллюстрация добавлена. Её координаты и размер можно поправить в макете JSON перед публикацией.');
+      } catch (error) { showStatus(error.message); }
+    });
+    row.append(image, name, insert); container.append(row);
+  });
+}
+
+document.getElementById('assetUploadBtn').addEventListener('click', async event => {
+  const button = event.currentTarget, file = document.getElementById('assetFile').files[0];
+  if (!file || !selectedBook) { showStatus('Выберите изображение и учебник.'); return; }
+  button.disabled = true;
+  try {
+    const data = new FormData(); data.append('file', file);
+    await api('/api/books/' + selectedBook.id + '/assets', {method:'POST', body:data});
+    document.getElementById('assetFile').value = '';
+    await loadAssets(); showStatus('Изображение сохранено в библиотеке учебника.');
   } catch (error) { showStatus(error.message); }
   finally { button.disabled = false; }
 });
