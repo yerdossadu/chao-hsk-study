@@ -15,6 +15,7 @@ _env = patch.dict(os.environ, {"CHAO_DATA_DIR": _data.name, "ADMIN_PASSWORD": "t
                                "ALI_TOKEN_PLAN_API_KEY": "fake-test-key"})
 _env.start()
 import server
+from layout import group_ocr_lines
 
 
 def tearDownModule():
@@ -38,7 +39,10 @@ class LessonValidationTests(unittest.TestCase):
         for number in (1, 2):
             (pages / f"{number:04}.json").write_text(json.dumps({
                 "page": number, "text": "你好", "image": f"/scans/{self.book_id}/{number}",
-                "width": 600, "height": 800, "blocks": []}), encoding="utf-8")
+                "width": 600, "height": 800, "blocks": [
+                    {"text": "Hello", "x": .1, "y": .1, "w": .1, "h": .025},
+                    {"text": "world", "x": .22, "y": .102, "w": .12, "h": .024}
+                ]}), encoding="utf-8")
         self.ai = {"title": "Приветствие", "subtitle": "Учимся здороваться", "unit": "1", "pages": [
             {"pdf_page": n, "task": "Прочитай", "chaoIntro": "Повтори слова", "vocab": [
                 {"word": "你好", "py": "nǐ hǎo", "pos": "", "trans": "привет"}]} for n in (1, 2)]}
@@ -110,6 +114,55 @@ class LessonValidationTests(unittest.TestCase):
         response = self.draft(self.ai)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.publish(response.json()).status_code, 200)
+
+    def test_ocr_words_keep_line_geometry_and_columns_separate(self):
+        lines = group_ocr_lines([
+            {"text": "Good", "x": .1, "y": .1, "w": .08, "h": .025},
+            {"text": "morning", "x": .19, "y": .101, "w": .13, "h": .024},
+            {"text": "Exercise", "x": .7, "y": .1, "w": .15, "h": .025},
+            {"text": "3", "x": .1, "y": .15, "w": .02, "h": .025},
+        ])
+        self.assertEqual([line["text"] for line in lines], ["Good morning", "Exercise", "3"])
+        self.assertAlmostEqual(lines[0]["x"], .1)
+        self.assertAlmostEqual(lines[0]["w"], .22)
+
+    def test_electronic_draft_translates_english_and_retains_geometry(self):
+        response = Mock()
+        response.json.return_value = {"choices": [{"message": {"content": json.dumps({
+            "translations": [{"id": "line-1", "translation": "Доброе утро"}]
+        })}}]}
+        with patch.object(server.requests, "post", return_value=response) as request:
+            result = self.client.post(f"/api/books/{self.book_id}/electronic-draft", auth=self.auth,
+                                      json={"start": 1, "end": 1, "title": "Первая страница"})
+        self.assertEqual(result.status_code, 200, result.text)
+        page = result.json()["pages"][0]
+        self.assertEqual(page["type"], "electronic")
+        self.assertEqual(page["layout"]["blocks"][0]["text"], "Hello world")
+        self.assertEqual(page["layout"]["blocks"][0]["translation"], "Доброе утро")
+        self.assertAlmostEqual(page["layout"]["blocks"][0]["x"], .1)
+        self.assertEqual(request.call_args.args[0], server.QWEN_URL)
+
+    def test_generated_image_is_saved_and_can_be_embedded_in_page(self):
+        upload = self.client.post(f"/api/books/{self.book_id}/assets", auth=self.auth,
+                                  files={"file": ("drawing.png", b"\x89PNG\r\n\x1a\nimage", "image/png")})
+        self.assertEqual(upload.status_code, 200, upload.text)
+        asset = upload.json()
+        self.assertEqual(self.client.get(asset["url"]).status_code, 200)
+        self.assertEqual(len(self.client.get(f"/api/books/{self.book_id}/assets", auth=self.auth).json()), 1)
+        translation = Mock()
+        translation.json.return_value = {"choices": [{"message": {"content": json.dumps({
+            "translations": [{"id": "line-1", "translation": "Привет"}]
+        })}}]}
+        with patch.object(server.requests, "post", return_value=translation):
+            draft_response = self.client.post(f"/api/books/{self.book_id}/electronic-draft", auth=self.auth,
+                                              json={"start": 1, "end": 1})
+        self.assertEqual(draft_response.status_code, 200, draft_response.text)
+        lesson = draft_response.json()
+        lesson["pages"][0]["layout"]["blocks"].append({"id": "illustration", "type": "image",
+            "imageUrl": asset["url"], "alt": asset["filename"], "x": .7, "y": .72, "w": .25, "h": .25})
+        self.assertEqual(self.publish(lesson).status_code, 200)
+        lesson["pages"][0]["layout"]["blocks"][-1]["imageUrl"] = f"/assets/{self.book_id}/{'b'*32}.png"
+        self.assertEqual(self.publish(lesson).status_code, 400)
 
 
 if __name__ == "__main__":

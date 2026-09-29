@@ -447,6 +447,12 @@
         .scan-ocr-layer { position:absolute; inset:0; }
         .scan-word { position:absolute; display:block; padding:0; border:0; background:transparent; cursor:pointer; }
         .scan-word:hover, .scan-word:focus-visible, .scan-word.playing { outline:1.5px solid rgba(31,95,97,.72); background:rgba(31,95,97,.12); }
+        .electronic-page-root { width:100%; height:100%; min-height:0; overflow:auto; display:flex; justify-content:center; align-items:flex-start; }
+        .electronic-sheet { width:100%; position:relative; flex:none; overflow:hidden; background:#fffefa; color:#24211f; box-shadow:0 2px 12px rgba(0,0,0,.12); container-type:inline-size; }
+        .electronic-block { position:absolute; overflow:visible; }
+        .electronic-text { margin:0; font-family:Arial,sans-serif; line-height:1.12; white-space:nowrap; }
+        .electronic-art { width:100%; height:100%; object-fit:contain; }
+        .electronic-source-toggle { position:absolute; top:8px; right:8px; z-index:5; margin:0; padding:5px 8px; font-size:11px; }
     </style>
 </head>
 <body>
@@ -1029,6 +1035,18 @@
         }
         function renderPageFromData(page) {
             const c = page.content;
+            if (page.type === "electronic" && page.layout) {
+                const layout = page.layout;
+                const blocks = layout.blocks.map(block => {
+                    const position = `left:${(block.x * 100).toFixed(3)}%;top:${(block.y * 100).toFixed(3)}%;width:${(block.w * 100).toFixed(3)}%;height:${(block.h * 100).toFixed(3)}%`;
+                    if (block.type === "image") return `<div class="electronic-block" style="${position}"><img class="electronic-art" src="${escapeHtml(block.imageUrl)}" alt="${escapeHtml(block.alt)}" loading="lazy"></div>`;
+                    const display = block.translation || block.text;
+                    const fontSize = Math.max(1, block.h * layout.height / layout.width * 100);
+                    const fit = Math.min(1, Math.max(.55, block.text.length / Math.max(1, display.length) * .9));
+                    return `<div class="electronic-block" style="${position}"><p class="electronic-text" style="font-size:max(7px,${(fontSize * fit).toFixed(3)}cqw)" data-source-size="${fontSize.toFixed(3)}cqw" data-translation-size="${(fontSize * fit).toFixed(3)}cqw" data-original="${escapeHtml(block.text)}" data-translation="${escapeHtml(display)}">${escapeHtml(display)}</p></div>`;
+                }).join('');
+                return `<div class="electronic-page-root"><div class="electronic-sheet" style="aspect-ratio:${Number(layout.width)}/${Number(layout.height)}"><button type="button" class="electronic-source-toggle" onclick="toggleElectronicSource(this)">Показать английский оригинал</button>${blocks}</div></div>`;
+            }
             if (page.type === "scanned" && page.scan) {
                 const scan = page.scan;
                 const words = (scan.blocks || []).map(block => {
@@ -1093,6 +1111,16 @@
                 default: rawHtml = `<div class="book-block-card">Страница загружается...</div>`;
             }
             return highlightLessonVocab(rawHtml);
+        }
+        function toggleElectronicSource(button) {
+            const sheet = button.closest('.electronic-sheet');
+            const showOriginal = button.dataset.original !== 'true';
+            button.dataset.original = String(showOriginal);
+            button.textContent = showOriginal ? 'Показать русский перевод' : 'Показать английский оригинал';
+            sheet.querySelectorAll('.electronic-text').forEach(node => {
+                node.textContent = showOriginal ? node.dataset.original : node.dataset.translation;
+                node.style.fontSize = `max(7px,${showOriginal ? node.dataset.sourceSize : node.dataset.translationSize})`;
+            });
         }
         function loadPage(idx) {
             const lesson = hskDatabase[AppState.currentLessonIdx]; AppState.activePageIndex = idx; const data = lesson.pages[idx];
