@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chao HSK 5 Studio | Риторика и Язык</title>
+    <title>Chao HSK Study</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -94,6 +94,29 @@
             display: flex; align-items: center; gap: 4px; transition: all 0.2s ease;
         }
         .theme-toggle-btn:hover { border-color: var(--hsk5-teal); }
+        /* line icons instead of emoji */
+        .ico { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; vertical-align: -3px; }
+        .brand-row { display: flex; align-items: center; gap: 6px; }
+        .level-chip { padding: 3px 7px; border-radius: 6px; border: 1px solid var(--hsk5-teal); color: var(--hsk5-teal); font-size: 11px; font-weight: 800; white-space: nowrap; }
+        .side-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .side-label { display: none; font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--ink-gray); }
+        .side-stats { display: flex; gap: 6px; }
+        .side-stats .reward-badge, .side-stats .timer-badge-header { min-width: 0; padding: 5px 10px; }
+        .reward-badge small { font-size: 10px; }
+        .side-action { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--hsk5-border); background: var(--paper-white); color: var(--hsk5-teal); font-size: 12px; font-weight: 700; cursor: pointer; }
+        .side-action:hover { border-color: var(--hsk5-teal); background: var(--hsk5-teal-light); }
+        .side-spacer { display: none; }
+        #themeLabel { font-size: 11px; }
+        /* phones and narrow windows: the menu is two short rows */
+        @media (max-width: 1100px) {
+            .toolbar { padding: 6px 8px; }
+            .toolbar .brand-group { width: 100%; gap: 6px; }
+            .toolbar .side-field { order: 5; flex: 1 1 40%; }
+            .toolbar .lesson-dropdown, .toolbar .page-dropdown { width: 100%; max-width: none; padding: 5px 8px; font-size: 12px; }
+            .toolbar .side-action span, .toolbar #themeLabel { display: none; }
+            .toolbar .side-action, .toolbar .theme-toggle-btn { padding: 6px 8px; }
+            .toolbar .side-stats .reward-badge, .toolbar .side-stats .timer-badge-header { padding: 4px 8px; font-size: 11px; }
+        }
         .main-stage {
             max-width: 1600px; margin: 0 auto; display: grid;
             grid-template-columns: 1.35fr 0.9fr 1.05fr; gap: 16px; align-items: stretch;
@@ -125,7 +148,12 @@
         .lesson-chinese-title { font-size: 24px; font-weight: 900; color: var(--ink-black); }
         .lesson-ru-subtitle { font-size: 14px; color: var(--ink-gray); font-weight: 500; }
         /* compact page bar */
-        .book-bar { display: flex; align-items: center; gap: 8px; min-height: 34px; padding-bottom: 6px; border-bottom: 2px solid var(--hsk5-teal); }
+        .book-bar { position: relative; display: flex; align-items: center; gap: 8px; min-height: 34px; padding-bottom: 8px; }
+        /* lesson progress: one segment per page (opened / current / ahead) */
+        .book-progress { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 3px; height: 3px; }
+        .book-progress i { flex: 1; border-radius: 2px; background: var(--hsk5-border); }
+        .book-progress i.seen { background: rgba(31, 95, 97, .45); }
+        .book-progress i.now { background: var(--hsk5-teal); }
         .book-bar .page-nav-arrow { flex: none; width: 30px; height: 30px; padding: 0; font-size: 20px; line-height: 1; display: grid; place-items: center; }
         .book-bar .page-nav-arrow:disabled { opacity: .35; cursor: default; background: var(--paper-white); color: var(--hsk5-teal); }
         .book-bar .lesson-num-box { flex: none; font-size: 12px; padding: 3px 8px; white-space: nowrap; }
@@ -176,6 +204,14 @@
         .vr-py { font-size: 12px; color: var(--ink-gray); }
         .vr-pos { font-size: 10px; color: var(--hsk5-teal); font-style: italic; }
         .vr-trans { font-size: 12px; color: var(--ink-gray); text-align: right; }
+        .vocab-row.learned .vr-num { color: var(--success-green); font-size: 12px; font-weight: 800; }
+        .vocab-tools { display: flex; flex-direction: column; gap: 6px; }
+        .vocab-scope { display: flex; gap: 3px; padding: 3px; border-radius: 8px; background: var(--hsk5-teal-light); }
+        .vocab-scope button { flex: 1; padding: 4px 6px; border: 0; border-radius: 6px; background: none; color: var(--hsk5-teal); font-size: 11px; font-weight: 700; cursor: pointer; }
+        .vocab-scope button[aria-pressed="true"] { background: var(--paper-white); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+        .vocab-search { display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid var(--hsk5-border); border-radius: 8px; background: var(--paper-white); color: var(--ink-gray); }
+        .vocab-search:focus-within { border-color: var(--hsk5-teal); }
+        .vocab-search input { flex: 1; min-width: 0; padding: 6px 0; border: 0; outline: none; background: none; color: var(--ink-black); font: 12px 'Inter', sans-serif; }
         .book-block-card { border: 1px solid var(--book-line); background: var(--desk-bg); padding: 12px 16px; border-radius: 10px; font-size: 13px; line-height: 160%; }
         .exercise-item { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed var(--book-line); }
         #selectionPopup {
@@ -412,22 +448,36 @@
                 min-height: 0;
                 overflow: hidden;
                 display: flex;
-                flex-direction: column;
+                flex-direction: row;
                 padding: 8px;
             }
+            /* side rail: all the height goes to the lesson */
             .toolbar {
-                width: 100%;
-                flex: 0 0 auto;
-                margin: 0 auto 8px;
-                gap: 6px;
-                padding: 6px 12px;
+                flex: 0 0 176px;
+                width: 176px;
+                height: 100%;
+                margin: 0 10px 0 0;
+                padding: 12px 10px;
+                flex-direction: column;
+                flex-wrap: nowrap;
+                align-items: stretch;
+                justify-content: flex-start;
             }
+            .toolbar .brand-group { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 12px; height: 100%; }
+            .toolbar .lesson-dropdown, .toolbar .page-dropdown { width: 100%; max-width: none; padding: 6px 8px; font-size: 12px; }
+            .toolbar .side-label { display: block; }
+            .toolbar .side-stats { flex-direction: column; }
+            .toolbar .side-stats .reward-badge, .toolbar .side-stats .timer-badge-header { justify-content: flex-start; border-radius: 8px; }
+            .toolbar .side-spacer { display: block; flex: 1; }
+            .toolbar .theme-toggle-btn { justify-content: center; }
+            .toolbar .api-input { width: 100%; margin-top: 8px; }
             .main-stage {
                 width: 100%;
+                max-width: none;
                 flex: 1 1 auto;
                 min-height: 0;
-                grid-template-columns: 1.35fr 0.9fr 1.05fr;
-                gap: 12px;
+                grid-template-columns: var(--book-col, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+                gap: 10px;
                 align-items: stretch;
             }
             .book-page, .middle-vocab-column, .companion-panel {
@@ -485,14 +535,14 @@
     <div id="parentModal" class="parent-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <span class="modal-title">📊 Дашборд прогресса и отчет</span>
+                <span class="modal-title">Прогресс и отчёт для родителей</span>
                 <button class="modal-close" id="closeModalBtn">✕</button>
             </div>
             
             <div class="stat-grid">
                 <div class="stat-box">
                     <div id="modalTotalWords" class="stat-num">0</div>
-                    <div class="stat-label">Слов выучено (HSK 5)</div>
+                    <div class="stat-label" id="modalWordsLabel">Слов выучено</div>
                 </div>
                 <div class="stat-box">
                     <div id="modalStudyTime" class="stat-num">00:00</div>
@@ -525,11 +575,11 @@
                     <div class="legend-item"><span class="legend-dot" style="background:#D90429;"></span> 🎴 Выучено иероглифов (слов)</div>
                 </div>
             </div>
-            <div class="report-section-title"><span>📤</span> Отчет для родителей (в мессенджер):</div>
+            <div class="report-section-title">Отчёт для родителей (для мессенджера)</div>
             <div id="reportPreviewText" class="report-preview-box">
                 Загрузка отчета...
             </div>
-            <button id="copyReportBtn" class="share-btn">📋 Скопировать отчет для родителя</button>
+            <button id="copyReportBtn" class="share-btn">Скопировать отчёт для родителя</button>
         </div>
     </div>
     
@@ -543,20 +593,25 @@
         </div>
         <div id="popupWordTrans" class="popup-trans">Загрузка перевода...</div>
         <div class="popup-actions">
-            <button id="popupAddCardBtn" class="popup-btn">🎴 В карточки</button>
-            <button id="popupExplainBtn" class="popup-btn">💡 Спросить Чао</button>
+            <button id="popupAddCardBtn" class="popup-btn">В карточки</button>
+            <button id="popupExplainBtn" class="popup-btn">Спросить Чао</button>
         </div>
     </div>
+    <!-- Menu: a side rail on desktop (the textbook page needs the height),
+         a compact bar on phones. -->
     <header class="toolbar">
         <div class="brand-group">
-            <span class="logo-tag">HSK 5 STANDARD</span>
-            <div class="reward-badge"><span>⭐</span> <span id="rewardPoints">0</span> <span style="font-size:10px;">XP</span></div>
-            <div class="timer-badge-header" id="openParentModalBtn" title="Открыть дашборд и отчет"><span>⏱️</span> <span id="studyTimerDisplay">00:00</span></div>
-            <select id="lessonSelect" class="lesson-dropdown"></select>
-            <select id="pageSelect" class="page-dropdown"></select>
-            <a id="managerLink" class="theme-toggle-btn" href="/manage" style="display:none; text-decoration:none;">Загрузить учебник</a>
+            <div class="brand-row"><span class="logo-tag">Chao HSK</span><span class="level-chip" id="levelChip">HSK</span></div>
+            <label class="side-field"><span class="side-label">Урок</span><select id="lessonSelect" class="lesson-dropdown"></select></label>
+            <label class="side-field"><span class="side-label">Страница</span><select id="pageSelect" class="page-dropdown"></select></label>
+            <div class="side-stats">
+                <div class="reward-badge" title="Баллы за занятия"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg><span id="rewardPoints">0</span><small>XP</small></div>
+                <button type="button" class="timer-badge-header" id="openParentModalBtn" title="Прогресс и отчёт для родителей"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span id="studyTimerDisplay">00:00</span></button>
+            </div>
+            <button type="button" class="side-action" id="openProgressBtn" title="Дашборд прогресса и отчёт для родителей"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Прогресс и отчёт</span></button>
+            <span class="side-spacer"></span>
             <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">
-                <span id="themeIcon">🌙</span> <span id="themeLabel" style="font-size:11px;">Тёмная</span>
+                <span id="themeIcon" aria-hidden="true"></span> <span id="themeLabel">Тёмная тема</span>
             </button>
         </div>
         <input type="password" id="apiKeyInput" class="api-input" placeholder="Ключ API (sk-sp-...)">
@@ -575,6 +630,7 @@
                 </div>
                 <span class="book-bar-page" title="Номер страницы в учебнике и позиция в уроке"><b class="book-page-num" id="bookPageNum">...</b><span id="pageNavIndicator">1/1</span></span>
                 <button class="page-nav-arrow" id="nextPageBtn" title="Следующая страница" aria-label="Следующая страница">›</button>
+                <div class="book-progress" id="bookProgress" aria-label="Пройденные страницы урока"></div>
             </div>
             <div id="pageContentStage" class="page-content-stage"></div>
         </article>
@@ -586,6 +642,16 @@
                     <span class="chinese-serif" style="font-size:14px; font-weight:700;">Словарь урока</span>
                 </div>
                 <span id="vocabWordCountBadge" style="font-size:12px; font-weight:700; color:var(--hsk5-teal);">0 слов</span>
+            </div>
+            <!-- The dictionary grows with the course: search it and choose how
+                 much of it to see. -->
+            <div class="vocab-tools">
+                <div class="vocab-scope" role="group" aria-label="Какие слова показать">
+                    <button type="button" data-vscope="page" aria-pressed="true">Страница</button>
+                    <button type="button" data-vscope="lesson" aria-pressed="false">Урок</button>
+                    <button type="button" data-vscope="section" aria-pressed="false">Раздел</button>
+                </div>
+                <label class="vocab-search"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="vocabSearch" type="search" placeholder="Иероглиф, пиньинь или перевод" aria-label="Поиск по словарю"></label>
             </div>
             <div class="vocab-table-scroll" id="vocabScrollContainer">
                 <div class="vocab-table chinese-sans" id="vocabTableBody"></div>
@@ -618,9 +684,9 @@
             </div>
             
             <div class="tab-switcher">
-                <button id="tabTutor" class="tab-btn active">📖 Разбор</button>
-                <button id="tabCards" class="tab-btn">🎴 Карточки</button>
-                <button id="tabStudio" class="tab-btn">📹 Студия</button>
+                <button id="tabTutor" class="tab-btn active">Разбор</button>
+                <button id="tabCards" class="tab-btn">Карточки</button>
+                <button id="tabStudio" class="tab-btn">Студия</button>
             </div>
             
             <div id="teaPromptBanner" class="tea-prompt-banner">
@@ -654,7 +720,7 @@
                     <div id="gymRu" class="gym-ru">«Вытянем руки, поднимем ноги!»</div>
                 </div>
                 <div style="display:flex; gap:8px;">
-                    <button id="gymVoiceBtn" class="sound-icon-btn" style="flex:1; background:var(--paper-white); border-color:var(--hsk5-teal); color:var(--hsk5-teal); font-weight:700;">🔊 Озвучить фразу</button>
+                    <button id="gymVoiceBtn" class="sound-icon-btn" style="flex:1; background:var(--paper-white); border-color:var(--hsk5-teal); color:var(--hsk5-teal); font-weight:700;">Озвучить фразу</button>
                     <button id="gymBackBtn" class="tea-primary-btn" style="flex:1.2; background:var(--hsk5-teal);">✍️ К уроку (+20 XP)</button>
                 </div>
             </div>
@@ -664,17 +730,17 @@
                         <div class="task-face front">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
                                 <div style="font-size:11px; font-weight:700; color:var(--hsk5-teal); text-transform:uppercase; letter-spacing:0.5px;">Устное задание</div>
-                                <button id="builderHintBtn" class="hint-btn" title="Подсказка (-50 XP)">💡 Подсказка (-50 XP)</button>
+                                <button id="builderHintBtn" class="hint-btn" title="Подсказка стоит 50 XP">Подсказка −50 XP</button>
                             </div>
                             <div class="prompt-question chinese-sans" id="taskQuestion" style="font-size:14px; font-weight:600; line-height:150%;">...</div>
                             
                             <div class="sentence-builder-box">
-                                <div style="font-size:11px; font-weight:700; color:var(--hsk5-teal); margin-bottom:4px;">🧩 Соберите предложение (интерливинг):</div>
+                                <div style="font-size:11px; font-weight:700; color:var(--hsk5-teal); margin-bottom:4px;">Соберите предложение</div>
                                 <div id="builderTarget" class="builder-pool" style="min-height:34px; border-color: var(--success-green);"></div>
                                 <div id="builderSource" class="builder-pool" style="margin-top:6px;"></div>
                             </div>
                             <button id="flipToAnswerBtn" class="start-answer-btn" style="margin-top:8px;">
-                                <span>🎤 Ответить устно</span>
+                                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Ответить устно</span>
                             </button>
                         </div>
                         <div class="task-face back">
@@ -687,7 +753,7 @@
                                 <textarea id="userSpeechInput" class="chinese-sans" placeholder="Говорите или пишите по-китайски..."></textarea>
                                 <button id="micButton" class="mic-btn-centered" title="Надиктовать голосом">🎤</button>
                             </div>
-                            <button id="analyzeButton" class="submit-btn">ПРОВЕРИТЬ ОТВЕТ</button>
+                            <button id="analyzeButton" class="submit-btn">Проверить ответ</button>
                         </div>
                     </div>
                 </div>
@@ -704,7 +770,7 @@
                     <div class="res-row"><span style="color:var(--recording-red);">🔍</span> <strong id="resMistakeLabel">Разбор от Чао:</strong> <span id="resMistake">...</span></div>
                     <div class="native-box">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
-                            <strong style="color:var(--hsk5-teal); font-size:11px;">⭐ Вариант носителя (HSK 5):</strong>
+                            <strong style="color:var(--hsk5-teal); font-size:11px;" id="nativeLabel">Вариант носителя:</strong>
                             <button id="ttsButton" class="sound-icon-btn" title="Озвучить / Пауза">🔊</button>
                         </div>
                         <div id="resNative" class="chinese-sans" style="font-size:15px; font-weight:700; color:var(--ink-black); margin-bottom:2px; line-height:135%;">...</div>
@@ -717,17 +783,17 @@
             <div id="cardsSection" class="bento-module flashcard-card">
                 <div style="width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size:11px; font-weight:700; color:var(--hsk5-teal); text-transform:uppercase; letter-spacing:0.5px;">ФЛЭШ-КАРТОЧКИ HSK 5</span>
+                        <span id="fcHeading" style="font-size:11px; font-weight:700; color:var(--hsk5-teal); text-transform:uppercase; letter-spacing:0.5px;">Карточки</span>
                         <span id="fcReviewTag" class="review-mode-tag">🔁 Повторение</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--ink-gray);">
-                        <span>📘 Урок: <strong id="lessonProgressText" style="color: var(--hsk5-teal);">0 / 0</strong></span>
+                        <span>Урок: <strong id="lessonProgressText" style="color: var(--hsk5-teal);">0 / 0</strong></span>
                         <span id="fcProgress">1 / 0</span>
                     </div>
                     <div class="progress-bar-container"><div id="fcProgressBar" class="progress-bar-fill"></div></div>
                     
                     <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--ink-gray); margin-top:2px;">
-                        <span>🏆 Всего HSK 5: <strong id="totalHskProgressText" style="color: var(--success-green);">0 / 2500</strong></span>
+                        <span>Всего <span id="fcLevelName">HSK</span>: <strong id="totalHskProgressText" style="color: var(--success-green);">0</strong></span>
                         <span id="totalHskPercent" style="color: var(--success-green); font-weight: 700;">0.0%</span>
                     </div>
                     <div class="progress-bar-container" style="background: rgba(46, 125, 90, 0.15);"><div id="totalHskProgressBar" class="progress-bar-fill" style="background: var(--success-green);"></div></div>
@@ -745,8 +811,8 @@
                             
                             <!-- Оценка карточки: только Легко и Сложно -->
                             <div class="effort-rating-row" onclick="event.stopPropagation()">
-                                <button class="effort-btn easy" onclick="AppState.rateCardEffort('easy')">🟢 Легко</button>
-                                <button class="effort-btn hard" onclick="AppState.rateCardEffort('hard')">🔴 Сложно</button>
+                                <button class="effort-btn easy" onclick="AppState.rateCardEffort('easy')">Легко</button>
+                                <button class="effort-btn hard" onclick="AppState.rateCardEffort('hard')">Сложно</button>
                             </div>
                             
                             <span class="card-hint-badge">👆 Кликните, чтобы вернуть иероглиф</span>
@@ -766,9 +832,9 @@
                     <span id="studioRecTimer" style="font-family:monospace; font-weight:700; color:var(--recording-red); font-size:12px;">00:00</span>
                 </div>
                 <div class="studio-btn-row">
-                    <button id="modeCameraBtn" class="studio-mode-btn active">📷 Камера</button>
-                    <button id="modeScreenBtn" class="studio-mode-btn">🖥️ Экран</button>
-                    <button id="modePipBtn" class="studio-mode-btn">✨ 2 в 1</button>
+                    <button id="modeCameraBtn" class="studio-mode-btn active">Камера</button>
+                    <button id="modeScreenBtn" class="studio-mode-btn">Экран</button>
+                    <button id="modePipBtn" class="studio-mode-btn">2 в 1</button>
                 </div>
                 <div class="studio-viewport-wrap">
                     <div id="recLiveBadge" class="rec-live-indicator"><span class="rec-dot"></span> REC</div>
@@ -778,8 +844,8 @@
                 </div>
                 <button id="studioRecordToggleBtn" class="studio-record-btn"><span>🔴 Начать запись</span></button>
                 <div id="studioActionsAfter" class="studio-actions-after">
-                    <a id="downloadVideoBtn" class="studio-download-btn" href="#">💾 Скачать</a>
-                    <button id="reRecordBtn" class="fc-nav-btn" style="flex:1;">🔄 Заново</button>
+                    <a id="downloadVideoBtn" class="studio-download-btn" href="#">Скачать</a>
+                    <button id="reRecordBtn" class="fc-nav-btn" style="flex:1;">Заново</button>
                 </div>
                 <div class="gallery-container">
                     <div style="font-size:11px; font-weight:700; color:var(--hsk5-teal); margin-bottom:6px;">📁 Галерея ответов</div>
@@ -981,7 +1047,6 @@
                 if (healthResponse.ok) {
                     SERVER_MODE = true;
                     document.getElementById('apiKeyInput').style.display = 'none';
-                    document.getElementById('managerLink').style.display = 'inline-flex';
                     const remoteResponse = await fetch('/api/lessons');
                     if (remoteResponse.ok) hskDatabase.push(...await remoteResponse.json());
                 }
@@ -1067,6 +1132,34 @@
             });
             return result;
         }
+        // ---- Level of the current lesson ----
+        // Labels, word targets and the parent report follow the lesson's
+        // level: HSK 3.0 sections (e.g. "HSK 1 v3.0") use the new word lists,
+        // others the classic HSK 2.0 totals.
+        const HSK3_WORDS = { 1: 500, 2: 1272, 3: 2245, 4: 3245, 5: 4316, 6: 5456, 7: 11092, 8: 11092, 9: 11092 };
+        const HSK2_WORDS = { 1: 150, 2: 300, 3: 600, 4: 1200, 5: 2500, 6: 5000 };
+        const LevelInfo = { name: 'HSK 5', number: 5, target: 2500 };
+        function updateLevelLabels(lesson, page) {
+            const text = [page && page.level, lesson.level, lesson.section, lesson.badge, lesson.subtitle, page && page.systemPrompt].filter(Boolean).join(' ');
+            const m = /HSK\s*([1-9])/i.exec(text) || (page && page.type === 'hsk1_dialogues' ? [0, '1'] : null);
+            const number = m ? Number(m[1]) : 5, v3 = /v\s*3|3\.0/i.test(lesson.section || lesson.unit || '');
+            Object.assign(LevelInfo, { number, name: `HSK ${number}${v3 ? ' (3.0)' : ''}`, target: (v3 ? HSK3_WORDS : HSK2_WORDS)[number] || 2500 });
+            document.getElementById('levelChip').textContent = `HSK ${number}`;
+            document.getElementById('fcHeading').textContent = `Карточки ${LevelInfo.name}`;
+            document.getElementById('fcLevelName').textContent = LevelInfo.name;
+            document.getElementById('modalWordsLabel').textContent = `Слов выучено (${LevelInfo.name})`;
+            document.getElementById('nativeLabel').textContent = `Вариант носителя (${LevelInfo.name}):`;
+        }
+        // Pages of the lesson already opened, shown as a strip under the page bar.
+        function markPageVisited(lesson, idx) {
+            const key = `chao_visited_${lesson.lessonId}`;
+            let seen = [];
+            try { seen = JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) {}
+            if (!seen.includes(idx)) { seen.push(idx); localStorage.setItem(key, JSON.stringify(seen)); }
+            document.getElementById('bookProgress').innerHTML = lesson.pages.map((p, i) =>
+                `<i class="${i === idx ? 'now' : seen.includes(i) ? 'seen' : ''}" title="${escapeHtml(p.navLabel || p.pageNum || '')}"></i>`).join('');
+        }
+
         // ---- Forma Studio pages ----
         // The page HTML comes ready from Forma; its styles and text-fitting
         // script are loaded once from the platform (/forma/...), and fonts
@@ -1133,6 +1226,14 @@
             // In the stacked layout (narrow windows) the page is still kept
             // within the window's height, so it is seen whole.
             const height = (fit ? stage.clientHeight : window.innerHeight - 16) - 3;
+            // The textbook column is exactly as wide as the page at full
+            // height; the dictionary and the study panel share the rest.
+            const grid = document.getElementById('mainStageGrid'), book = stage.closest('.book-page');
+            if (fit && book) {
+                const want = Math.round(Math.max(320, Math.min(grid.clientWidth * 0.55, height * ratio + (book.offsetWidth - stage.clientWidth))));
+                const now = parseFloat(grid.style.getPropertyValue('--book-col')) || 0;
+                if (Math.abs(now - want) > 2) grid.style.setProperty('--book-col', want + 'px');
+            } else grid.style.removeProperty('--book-col');
             sheet.style.width = Math.floor(Math.min(fit ? stage.clientWidth : root.clientWidth, height * ratio)) + 'px';
         }
         function mountFormaPage(stage, page) {
@@ -1261,9 +1362,12 @@
             document.getElementById('nextPageBtn').disabled = idx === lesson.pages.length - 1;
             document.getElementById('pageContentStage').innerHTML = renderPageFromData(data);
             if (data.type === "forma" && data.forma) mountFormaPage(document.getElementById('pageContentStage'), data);
+            else document.getElementById('mainStageGrid').style.removeProperty('--book-col');
+            updateLevelLabels(lesson, data);
+            markPageVisited(lesson, idx);
             document.getElementById('taskQuestion').textContent = data.task;
             document.getElementById('pageSelect').value = idx;
-            const lessonVocab = getActiveVocab(); renderMiddleVocabTable(lessonVocab);
+            const lessonVocab = getActiveVocab(); renderVocabColumn();
             document.getElementById('chaoSpeech').textContent = data.chaoIntro || `Мы на странице ${data.pageNum}. Выделяй слова для перевода или отвечай в микрофон!`;
             closeCurrentAnalysis(); document.getElementById('selectionPopup').style.display = 'none';
             AppState.hintCount = 0;
@@ -1281,17 +1385,44 @@
             const lesson = hskDatabase[AppState.currentLessonIdx];
             if (AppState.activePageIndex < lesson.pages.length - 1) loadPage(AppState.activePageIndex + 1);
         });
-        function renderMiddleVocabTable(vocabList) {
+        // Dictionary column: words of this page, the lesson or the whole
+        // section, filtered by a search; learned words are marked.
+        const VocabView = { scope: localStorage.getItem('chao_vocab_scope') || 'page', q: '' };
+        function uniqueWords(list) { const seen = new Set(); return list.filter(v => v && v.word && !seen.has(v.word) && seen.add(v.word)); }
+        function pageWords(p) { return (p && p.content && p.content.vocab) || []; }
+        function vocabForScope() {
+            const lesson = hskDatabase[AppState.currentLessonIdx];
+            if (VocabView.scope === 'lesson') return uniqueWords(lesson.pages.flatMap(pageWords));
+            if (VocabView.scope === 'section') {
+                const section = lesson.section || lesson.unit;
+                return uniqueWords(hskDatabase.filter(l => (l.section || l.unit) === section).flatMap(l => l.pages.flatMap(pageWords)));
+            }
+            return getActiveVocab();
+        }
+        function renderVocabColumn() {
+            document.querySelectorAll('[data-vscope]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vscope === VocabView.scope)));
+            const q = VocabView.q.trim().toLowerCase(), plain = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+            const list = vocabForScope().filter(v => !q || v.word.includes(q) || plain(v.py).replace(/\s/g, '').includes(plain(q).replace(/\s/g, '')) || String(v.trans || '').toLowerCase().includes(q));
+            renderMiddleVocabTable(list, q ? 'Ничего не найдено.' : '');
+        }
+        document.querySelector('.vocab-scope').addEventListener('click', e => {
+            const b = e.target.closest('[data-vscope]'); if (!b) return;
+            VocabView.scope = b.dataset.vscope; localStorage.setItem('chao_vocab_scope', VocabView.scope); renderVocabColumn();
+        });
+        document.getElementById('vocabSearch').addEventListener('input', e => { VocabView.q = e.target.value; renderVocabColumn(); });
+        function renderMiddleVocabTable(vocabList, emptyText) {
             const tbody = document.getElementById('vocabTableBody');
             if (!vocabList || !vocabList.length) {
-                tbody.innerHTML = `<div style="padding:10px; font-size:12px; color:var(--ink-gray);">В этом уроке нет словаря.</div>`;
+                tbody.innerHTML = `<div style="padding:10px; font-size:12px; color:var(--ink-gray);">${emptyText || 'На этой странице нет новых слов — выберите «Урок» или «Раздел».'}</div>`;
                 document.getElementById('vocabWordCountBadge').textContent = "0 слов"; return;
             }
-            document.getElementById('vocabWordCountBadge').textContent = `${vocabList.length} слов`;
+            const learned = new Set(AppState.allMasteredHskWords || []);
+            const done = vocabList.filter(v => learned.has(v.word)).length;
+            document.getElementById('vocabWordCountBadge').textContent = `${vocabList.length} слов${done ? ` · выучено ${done}` : ''}`;
             tbody.innerHTML = vocabList.map((v, i) => `
-                <div class="vocab-row" data-word="${escapeHtml(v.word)}">
-                    <span class="vr-num">${i + 1}</span><span class="vr-word chinese-serif">${escapeHtml(v.word)}</span>
-                    <span class="vr-py">${escapeHtml(v.py)}</span><span class="vr-pos">(${escapeHtml(v.pos)})</span><span class="vr-trans">${escapeHtml(v.trans)}</span>
+                <div class="vocab-row${learned.has(v.word) ? ' learned' : ''}" data-word="${escapeHtml(v.word)}"${learned.has(v.word) ? ' title="Выучено"' : ''}>
+                    <span class="vr-num">${learned.has(v.word) ? '✓' : i + 1}</span><span class="vr-word chinese-serif">${escapeHtml(v.word)}</span>
+                    <span class="vr-py">${escapeHtml(v.py)}</span><span class="vr-pos">${v.pos ? '(' + escapeHtml(v.pos) + ')' : ''}</span><span class="vr-trans">${escapeHtml(v.trans)}</span>
                 </div>`).join('');
         }
         let currentFullSentence = "";
@@ -1372,10 +1503,10 @@
             document.getElementById('lessonProgressText').textContent = `${lessonCount} / ${totalLessonWords}`;
             document.getElementById('fcProgressBar').style.width = `${lessonPercent}%`;
             document.getElementById('fcProgress').textContent = `${AppState.currentCardIdx + 1} / ${vocab.length}`;
-            const totalHskCount = AppState.allMasteredHskWords.length, totalHskPercent = ((totalHskCount / 2500) * 100).toFixed(1);
-            document.getElementById('totalHskProgressText').textContent = `${totalHskCount} / 2500`;
+            const totalHskCount = AppState.allMasteredHskWords.length, totalHskPercent = ((totalHskCount / LevelInfo.target) * 100).toFixed(1);
+            document.getElementById('totalHskProgressText').textContent = `${totalHskCount} / ${LevelInfo.target}`;
             document.getElementById('totalHskPercent').textContent = `${totalHskPercent}%`;
-            document.getElementById('totalHskProgressBar').style.width = `${Math.min(100, (totalHskCount / 2500) * 100)}%`;
+            document.getElementById('totalHskProgressBar').style.width = `${Math.min(100, (totalHskCount / LevelInfo.target) * 100)}%`;
             const currentWord = vocab[AppState.currentCardIdx] ? vocab[AppState.currentCardIdx].word : "";
             document.getElementById('fcReviewTag').style.display = AppState.masteredWords.includes(currentWord) ? 'inline-block' : 'none';
         }
@@ -1389,6 +1520,7 @@
             if (!AppState.allMasteredHskWords.includes(word)) {
                 AppState.allMasteredHskWords.push(word);
                 localStorage.setItem('all_mastered_hsk5_words', JSON.stringify(AppState.allMasteredHskWords));
+                renderVocabColumn();
             }
             updateMasteredProgress();
         }
@@ -1533,7 +1665,7 @@
                 document.getElementById('chaoSpeech').textContent = isExplainingWord ? "Разбор готов!" : "Разбор ответа готов! Посмотри вариант носителя ниже ✨";
                 addPoints(isExplainingWord ? 10 : 25);
             } catch (e) { console.error("API Error:", e); alert("Ошибка API: " + e.message); }
-            finally { btn.disabled = false; btn.textContent = 'ПРОВЕРИТЬ ОТВЕТ'; }
+            finally { btn.disabled = false; btn.textContent = 'Проверить ответ'; }
         });
         document.getElementById('ttsButton').addEventListener('click', (e) => { if (AppState.currentNativeVoice) speakChinese(AppState.currentNativeVoice, e.currentTarget); });
         document.getElementById('originalVoiceBtn').addEventListener('click', (e) => { if (AppState.currentOriginalVoice) speakChinese(AppState.currentOriginalVoice, e.currentTarget); });
@@ -1588,7 +1720,7 @@
                     document.getElementById('popupWordPy').textContent = match.py; 
                     document.getElementById('popupWordTrans').textContent = `(${match.pos}) ${match.trans}`; 
                 } else { 
-                    document.getElementById('popupWordPy').textContent = "Фраза HSK 5"; 
+                    document.getElementById('popupWordPy').textContent = "Фраза " + LevelInfo.name; 
                     document.getElementById('popupWordTrans').textContent = "Нажмите «Спросить Чао» для полного разбора"; 
                 }
             } else { document.getElementById('selectionPopup').style.display = 'none'; }
@@ -1713,6 +1845,7 @@
             renderProgressLineChart(mode);
         };
         const parentModal = document.getElementById('parentModal');
+        document.getElementById('openProgressBtn').addEventListener('click', () => document.getElementById('openParentModalBtn').click());
         document.getElementById('openParentModalBtn').addEventListener('click', () => {
             document.getElementById('modalTotalWords').textContent = AppState.allMasteredHskWords.length;
             const currentLessonTime = formatMinutes(AppState.studySeconds);
@@ -1722,7 +1855,7 @@
             document.getElementById('modalTotalHours').textContent = totalPlatformTime;
             document.getElementById('modalPlatformDays').textContent = `${AppState.platformDays} дн.`;
             renderProgressLineChart('week');
-            const reportText = `📊 Отчет по китайскому языку (HSK 5)\n👤 Ученик: Занимается самостоятельно\n⏱️ Время на текущем уроке: ${currentLessonTime}\n⏳ Всего на платформе: ${totalPlatformTime} (${AppState.platformDays} дн.)\n🏆 Набрано баллов: ${AppState.points} XP\n📚 Освоено слов всего: ${AppState.allMasteredHskWords.length} / 2500\n🔥 Статус: Успешно пройдены упражнения! Сяо Чао оценивает прогресс как отличный ✨`;
+            const reportText = `📊 Отчёт по китайскому языку (${LevelInfo.name})\n👤 Ученик: Занимается самостоятельно\n⏱️ Время на текущем уроке: ${currentLessonTime}\n⏳ Всего на платформе: ${totalPlatformTime} (${AppState.platformDays} дн.)\n🏆 Набрано баллов: ${AppState.points} XP\n📚 Освоено слов всего: ${AppState.allMasteredHskWords.length} / ${LevelInfo.target} (словарь ${LevelInfo.name})\n🔥 Статус: Успешно пройдены упражнения! Сяо Чао оценивает прогресс как отличный ✨`;
             document.getElementById('reportPreviewText').textContent = reportText;
             parentModal.classList.add('active');
         });
@@ -1884,10 +2017,12 @@
         document.getElementById('apiKeyInput').value = localStorage.getItem('ali_token_plan_key') || '';
         document.getElementById('apiKeyInput').addEventListener('input', (e) => localStorage.setItem('ali_token_plan_key', e.target.value.trim()));
         function applyTheme(isDark) {
+            const sun = '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+            const moon = '<svg class="ico" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
             if (isDark) {
-                document.body.classList.add('dark-mode'); document.getElementById('themeIcon').textContent = '☀️'; document.getElementById('themeLabel').textContent = 'Светлая'; localStorage.setItem('chao_theme', 'dark');
+                document.body.classList.add('dark-mode'); document.getElementById('themeIcon').innerHTML = sun; document.getElementById('themeLabel').textContent = 'Светлая тема'; localStorage.setItem('chao_theme', 'dark');
             } else {
-                document.body.classList.remove('dark-mode'); document.getElementById('themeIcon').textContent = '🌙'; document.getElementById('themeLabel').textContent = 'Тёмная'; localStorage.setItem('chao_theme', 'light');
+                document.body.classList.remove('dark-mode'); document.getElementById('themeIcon').innerHTML = moon; document.getElementById('themeLabel').textContent = 'Тёмная тема'; localStorage.setItem('chao_theme', 'light');
             }
         }
         document.getElementById('themeToggleBtn').addEventListener('click', () => applyTheme(!document.body.classList.contains('dark-mode')));
@@ -1950,7 +2085,7 @@
     if (!tutorBox || document.getElementById("activeRecallOpen")) return;
     const launch = document.createElement("button");
     launch.id = "activeRecallOpen"; launch.type = "button"; launch.className = "active-recall-launch";
-    launch.innerHTML = '🧠 Практика мысли по-китайски <span id="recallDueBadge"></span>';
+    launch.innerHTML = 'Практика: мысль по-китайски <span id="recallDueBadge"></span>';
     tutorBox.insertBefore(launch, tutorBox.firstChild);
     const overlay = document.createElement("div"); overlay.id = "recallOverlay"; overlay.className = "recall-overlay"; overlay.setAttribute("role", "dialog"); overlay.setAttribute("aria-modal", "true"); overlay.setAttribute("aria-labelledby", "recallTitle");
     overlay.innerHTML = '<section class="recall-dialog"><div class="recall-head"><div><div style="font-size:11px;font-weight:800;color:var(--chao-purple);text-transform:uppercase">Активное припоминание</div><h2 id="recallTitle" style="font-size:20px">Сформулируй мысль по-китайски</h2></div><button id="recallClose" class="recall-close" type="button" aria-label="Закрыть">✕</button></div><div id="recallPrompt" class="recall-prompt"></div><div id="recallVocab" class="recall-vocab"></div><textarea id="recallAnswer" class="recall-input" lang="zh" placeholder="Напиши свой вариант по-китайски. Можно использовать голосовой ввод клавиатуры."></textarea><div class="recall-actions"><button id="recallCheck" type="button">Проверить и получить подсказку</button><button id="recallTryAgain" class="secondary" type="button" style="display:none">Попробовать ещё раз</button></div><div id="recallFeedback" class="recall-feedback" aria-live="polite"></div><div id="recallSchedule" class="recall-actions recall-schedule"><button id="recallEasy" type="button">Понятно — запомнить</button><button id="recallHard" class="secondary" type="button">Пока трудно</button></div><div id="recallStatus" style="font-size:12px;color:var(--ink-gray)"></div></section>';
