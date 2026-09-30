@@ -104,8 +104,8 @@
         }
         .book-page {
             background: var(--paper-white); border: 1px solid var(--book-line); border-radius: var(--card-radius);
-            box-shadow: var(--book-shadow); padding: 20px 24px; position: relative;
-            display: flex; flex-direction: column; gap: 12px; height: 100%; min-height: 640px;
+            box-shadow: var(--book-shadow); padding: 12px 14px; position: relative;
+            display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 640px;
         }
         .book-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--hsk5-teal); padding-bottom: 6px; }
         .book-series-title { font-size: 12px; font-weight: 700; color: var(--hsk5-teal); letter-spacing: 0.6px; text-transform: uppercase; }
@@ -124,6 +124,18 @@
         .lesson-num-box { background: var(--hsk5-teal); color: #fff; font-size: 13px; font-weight: 800; padding: 4px 10px; border-radius: 6px; }
         .lesson-chinese-title { font-size: 24px; font-weight: 900; color: var(--ink-black); }
         .lesson-ru-subtitle { font-size: 14px; color: var(--ink-gray); font-weight: 500; }
+        /* compact page bar */
+        .book-bar { display: flex; align-items: center; gap: 8px; min-height: 34px; padding-bottom: 6px; border-bottom: 2px solid var(--hsk5-teal); }
+        .book-bar .page-nav-arrow { flex: none; width: 30px; height: 30px; padding: 0; font-size: 20px; line-height: 1; display: grid; place-items: center; }
+        .book-bar .page-nav-arrow:disabled { opacity: .35; cursor: default; background: var(--paper-white); color: var(--hsk5-teal); }
+        .book-bar .lesson-num-box { flex: none; font-size: 12px; padding: 3px 8px; white-space: nowrap; }
+        .book-bar-title { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; overflow: hidden; white-space: nowrap; }
+        .book-bar-title .lesson-chinese-title { margin: 0; font-size: 18px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+        .book-bar-title .lesson-ru-subtitle { font-size: 13px; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+        .book-bar-title .book-series-title { font-size: 10px; opacity: .8; flex: none; }
+        .book-bar-page { flex: none; display: flex; align-items: baseline; gap: 6px; padding: 3px 9px; border-radius: 7px; background: var(--hsk5-teal-light); color: var(--hsk5-teal); font-size: 12px; font-weight: 700; }
+        .book-bar-page .book-page-num { font-size: 13px; }
+        @media (max-width: 650px) { .book-bar-title .lesson-ru-subtitle, .book-bar-title .book-series-title { display: none; } }
         .section-tag-hsk {
             display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800;
             color: var(--hsk5-teal); border-bottom: 2px solid var(--hsk5-teal); padding-bottom: 3px; margin-bottom: 8px;
@@ -424,8 +436,8 @@
                 min-width: 0;
             }
             .book-page {
-                padding: clamp(10px, 1.35vh, 20px) clamp(12px, 1.5vw, 24px);
-                gap: clamp(6px, 1vh, 12px);
+                padding: clamp(8px, 1vh, 14px) clamp(10px, 1vw, 16px);
+                gap: clamp(5px, .8vh, 8px);
             }
             .middle-vocab-column {
                 padding: clamp(10px, 1.2vh, 16px);
@@ -550,21 +562,18 @@
     </header>
     <main class="main-stage" id="mainStageGrid">
         <article class="book-page">
-            <div class="book-header">
-                <span class="book-series-title" id="bookUnit">...</span>
-                <span class="book-page-num" id="bookPageNum">...</span>
-            </div>
-            <div class="page-navigation-strip">
-                <button class="page-nav-arrow" id="prevPageBtn">← Назад</button>
-                <span id="pageNavIndicator">Страница 1</span>
-                <button class="page-nav-arrow" id="nextPageBtn">Вперёд →</button>
-            </div>
-            <div class="lesson-title-banner">
+            <!-- One compact bar: page arrows, lesson, page number. The page
+                 itself gets the rest of the height. -->
+            <div class="book-bar">
+                <button class="page-nav-arrow" id="prevPageBtn" title="Предыдущая страница" aria-label="Предыдущая страница">‹</button>
                 <span class="lesson-num-box" id="lessonBadge">第 1 课</span>
-                <div>
+                <div class="book-bar-title">
                     <h1 class="lesson-chinese-title chinese-serif" id="lessonTitle">...</h1>
                     <span class="lesson-ru-subtitle" id="lessonSubTitle">...</span>
+                    <span class="book-series-title" id="bookUnit">...</span>
                 </div>
+                <span class="book-bar-page" title="Номер страницы в учебнике и позиция в уроке"><b class="book-page-num" id="bookPageNum">...</b><span id="pageNavIndicator">1/1</span></span>
+                <button class="page-nav-arrow" id="nextPageBtn" title="Следующая страница" aria-label="Следующая страница">›</button>
             </div>
             <div id="pageContentStage" class="page-content-stage"></div>
         </article>
@@ -1122,7 +1131,7 @@
             root.classList.toggle('fit', fit);
             // In the stacked layout (narrow windows) the page is still kept
             // within the window's height, so it is seen whole.
-            const height = fit ? stage.clientHeight : window.innerHeight - 16;
+            const height = (fit ? stage.clientHeight : window.innerHeight - 16) - 3;
             sheet.style.width = Math.floor(Math.min(fit ? stage.clientWidth : root.clientWidth, height * ratio)) + 'px';
         }
         function mountFormaPage(stage, page) {
@@ -1246,7 +1255,9 @@
             document.getElementById('lessonBadge').textContent = lesson.badge;
             document.getElementById('lessonTitle').textContent = lesson.title;
             document.getElementById('lessonSubTitle').textContent = lesson.subtitle;
-            document.getElementById('pageNavIndicator').textContent = `Страница ${idx + 1} из ${lesson.pages.length} (${data.pageNum})`;
+            document.getElementById('pageNavIndicator').textContent = `${idx + 1}/${lesson.pages.length}`;
+            document.getElementById('prevPageBtn').disabled = idx === 0;
+            document.getElementById('nextPageBtn').disabled = idx === lesson.pages.length - 1;
             document.getElementById('pageContentStage').innerHTML = renderPageFromData(data);
             if (data.type === "forma" && data.forma) mountFormaPage(document.getElementById('pageContentStage'), data);
             document.getElementById('taskQuestion').textContent = data.task;
@@ -1259,6 +1270,12 @@
             if (lessonVocab && lessonVocab.length) { AppState.currentCardIdx = 0; renderFlashcard(lessonVocab); }
         }
         document.getElementById('prevPageBtn').addEventListener('click', () => { if (AppState.activePageIndex > 0) loadPage(AppState.activePageIndex - 1); });
+        // ← / → turn pages when no field is being typed in.
+        document.addEventListener('keydown', e => {
+            if (e.altKey || e.ctrlKey || e.metaKey || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+            if (e.key === 'ArrowLeft') document.getElementById('prevPageBtn').click();
+            if (e.key === 'ArrowRight') document.getElementById('nextPageBtn').click();
+        });
         document.getElementById('nextPageBtn').addEventListener('click', () => {
             const lesson = hskDatabase[AppState.currentLessonIdx];
             if (AppState.activePageIndex < lesson.pages.length - 1) loadPage(AppState.activePageIndex + 1);
