@@ -471,7 +471,7 @@
         .forma-page-root.fit { overflow:hidden; justify-content:flex-start; }
         .forma-toolbar { position:absolute; top:6px; right:6px; z-index:6; display:flex; gap:4px; padding:3px; border-radius:9px; background:rgba(255,255,255,.94); box-shadow:0 1px 6px rgba(0,0,0,.12); opacity:.55; transition:opacity .15s; }
         .forma-page-root:hover .forma-toolbar, .forma-toolbar:focus-within { opacity:1; }
-        .forma-toolbar button { margin:0; padding:4px 9px; border:0; border-radius:6px; background:transparent; color:#333; font-size:11px; cursor:pointer; }
+        .forma-toolbar button { margin:0; min-width:30px; padding:3px 6px; font-weight:700; border:0; border-radius:6px; background:transparent; color:#333; font-size:11px; cursor:pointer; }
         .forma-toolbar button[aria-pressed="true"] { background:var(--hsk5-teal, #1f5f61); color:#fff; }
         .forma-sheet { width:100%; flex:none; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.12); }
         .forma-sheet > .hsk-page { width:var(--forma-w,100%); margin-left:var(--forma-ml,0); }
@@ -1089,9 +1089,9 @@
         function renderFormaPage(page) {
             const f = page.forma;
             return `<div class="forma-page-root"><div class="forma-toolbar" role="group" aria-label="Язык страницы">
-                <button type="button" data-forma-lang="ru" aria-pressed="${FormaView.lang === 'ru'}">Русский</button>
-                <button type="button" data-forma-lang="orig" aria-pressed="${FormaView.lang === 'orig'}">Оригинал</button>
-                <button type="button" data-forma-pinyin aria-pressed="${FormaView.pinyin}">Пиньинь</button></div>
+                <button type="button" data-forma-lang="ru" aria-pressed="${FormaView.lang === 'ru'}" title="Русский перевод" aria-label="Русский перевод">RU</button>
+                <button type="button" data-forma-lang="orig" aria-pressed="${FormaView.lang === 'orig'}" title="Оригинал (английский)" aria-label="Оригинал (английский)">EN</button>
+                <button type="button" data-forma-pinyin aria-pressed="${FormaView.pinyin}" title="Пиньинь над иероглифами" aria-label="Пиньинь над иероглифами">pīn</button></div>
                 <div class="forma-sheet" style="${formaCropStyle(f)}">${f.html}</div></div>`;
         }
         // Lesson words on the page become the platform's clickable words
