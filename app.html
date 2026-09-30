@@ -855,171 +855,9 @@
         </aside>
     </main>
     <script>
-        let hskDatabase = [
-            {
-                lessonId: 1, unit: "第一单元 · 抓牢你的幸福", badge: "第 1 课", title: "爱的标准", subtitle: "Критерии любви",
-                pages: [
-                    {
-                        type: "warmup", pageNum: "p. 2", navLabel: "Стр. 2: 热身 (Разминка)",
-                        chaoIntro: "Начнём с разминки (热身): сопоставим ценности в браке и обсудим, что важнее — романтика или взаимная поддержка!",
-                        task: "请谈一谈：在你的心目中，最理想的爱情或婚姻标准是什么？（例如：性格、理解、浪漫、互相关心）",
-                        builderWords: ["真正的爱情", "不仅体现在平时", "更体现在", "困难时彼此扶持"],
-                        systemPrompt: "Ты Сяо Чао — репетитор HSK 5. Урок 1, стр. 2 (热身). Обсуждаем тему: 婚姻和爱情的标准.",
-                        content: {
-                            tag1: "热身", title1: "1. Дайте определения и сценарии",
-                            items: [
-                                { label: "A. 彼此尊重", desc: "взаимное уважение личного пространства и мнения партнёра." },
-                                { label: "B. 患难与共", desc: "делить и горе, и невзгоды, поддерживать в трудную минуту." },
-                                { label: "C. 轰轰烈烈", desc: "бурные, страстные чувства и романтические подвиги." },
-                                { label: "D. 平平淡淡", desc: "тихое спокойное счастье в обыденной жизни." }
-                            ],
-                            tag2: "思考", title2: "2. Расставьте факторы в порядке важности:",
-                            pollHtml: "□ 互相理解与包容 &nbsp;&nbsp;&nbsp;&nbsp; □ 经济基础与稳定生活<br>□ 共同的兴趣爱好 &nbsp;&nbsp;&nbsp;&nbsp; □ 互相关心与扶持"
-                        }
-                    },
-                    {
-                        type: "textbook", pageNum: "p. 3–4", navLabel: "Стр. 3–4: 课文 (Основной текст)",
-                        chaoIntro: "Текст первого урока: история радио-конкурса «Самая любящая пара». Нажимай на слова в тексте — словарь по центру сразу подсветит их!",
-                        task: "请用课文中的内容回答：为什么评委最终把“最恩爱夫妻”的大奖颁给了第三对夫妇？",
-                        builderWords: ["丈夫毫不犹豫地", "签下了同意书", "并在床前", "守护了几天几夜"],
-                        systemPrompt: "Ты Сяо Чао — репетитор HSK 5. Урок 1, стр. 3-4 (课文). Текст о конкурсе на самую любящую пару.",
-                        content: {
-                            sectionTag: "课文", sectionTitle: "爱的标准 (Текст 1)",
-                            paragraphs: [
-                                "一个电台策划了一次“评选最恩爱夫妻”的活动。有人问负责这项活动的导演：“你们是用什么标准来评选的？”",
-                                "经过层层选拔，最终有三对夫妻入围决赛。第一对夫妻结婚几十年，从来没有红过脸，丈夫一直在身边细心照料生病的妻子；第二对夫妻经历过生活中的风风雨雨，在最困难的时候依然彼此扶持、不离不弃。",
-                                "令人意想不到的是，评委们把大奖颁给了一对平凡的年轻夫妇。妻子生病需要动手术，丈夫毫不犹豫地签下了同意书，并在床前守护了几天几夜。当妻子醒来时，丈夫眼里满是泪水，只深情地说了一句：“我不能没有你。”",
-                                "真正的爱情不仅体现在平时的甜言蜜语，更体现在面对疾病、磨难时两个人是否有共同面对的决心与担当。这才是爱的最高标准。"
-                            ],
-                            vocab: [
-                                { word: "恋爱", py: "liàn'ài", pos: "动/名", trans: "любить, роман" },
-                                { word: "照料", py: "zhàoliào", pos: "动", trans: "заботиться" },
-                                { word: "婚姻", py: "hūnyīn", pos: "名", trans: "брак" },
-                                { word: "包容", py: "bāoróng", pos: "动", trans: "прощать, терпеть" },
-                                { word: "彼此", py: "bǐcǐ", pos: "代", trans: "взаимно, друг друга" },
-                                { word: "扶持", py: "fúchí", pos: "动", trans: "поддерживать" },
-                                { word: "轰轰烈烈", py: "hōnghōng lièliè", pos: "形", trans: "бурный, шумный" },
-                                { word: "浪漫", py: "làngmàn", pos: "形", trans: "романтичный" },
-                                { word: "经历", py: "jīnglì", pos: "动/名", trans: "испытывать, опыт" },
-                                { word: "平淡", py: "píngdàn", pos: "形", trans: "заурядный, спокойный" },
-                                { word: "甜言蜜语", py: "tiányán mìyǔ", pos: "成", trans: "сладкие речи" },
-                                { word: "担当", py: "dāndāng", pos: "动/名", trans: "брать ответственность" },
-                                { word: "策划", py: "cèhuà", pos: "动", trans: "планировать" },
-                                { word: "评选", py: "píngxuǎn", pos: "动", trans: "выбирать голосованием" },
-                                { word: "入围", py: "rùwéi", pos: "动", trans: "пройти в финал" },
-                                { word: "评委", py: "píngwěi", pos: "名", trans: "член жюри" },
-                                { word: "犹豫", py: "yóuyù", pos: "形", trans: "колебаться" },
-                                { word: "深情", py: "shēnqíng", pos: "形/名", trans: "глубокие чувства" }
-                            ]
-                        }
-                    },
-                    {
-                        type: "grammar", pageNum: "p. 5", navLabel: "Стр. 5: 注释 (Грамматика)",
-                        chaoIntro: "Разбираем ключевые конструкции HSK 5: нарастание признака «不仅……更……» и приведение примера «拿……来说». Попробуй составить предложение!",
-                        task: "请用“不仅……更……”造一个句子，说明学习汉语的好处。",
-                        builderWords: ["这座城市不仅环境优美", "而且科技发展", "十分迅速"],
-                        systemPrompt: "Ты Сяо Чао — репетитор HSK 5. Урок 1, стр. 5 (注释). Разбираем конструкцию 不仅……更……",
-                        content: {
-                            rules: [
-                                {
-                                    tag: "语法 1", title: "不仅……也 / 还 / 而且 / 更……",
-                                    desc: "соединяет части сложного предложения, указывая на нарастание признака. Второй компонент выделяет истинную глубину мысли.",
-                                    examples: [
-                                        "真正的爱情<strong>不仅</strong>体现在花前月下的甜蜜，<strong>更</strong>体现在平淡生活中的相互扶持。",
-                                        "这座城市<strong>不仅</strong>环境优美，<strong>而且</strong>科技发展十分迅速。"
-                                    ]
-                                },
-                                {
-                                    tag: "语法 2", title: "比如 / 拿……来说 (Например / Взять к примеру...)",
-                                    desc: "вводит конкретный пример для разъяснения или подтверждения высказанной мысли.",
-                                    examples: [
-                                        "想要维持良好的夫妻关系，需要很多品质，<strong>比如</strong>互相信任与包容。",
-                                        "<strong>拿</strong>他们俩<strong>来说</strong>，结婚三十年依然像初恋一样甜蜜。"
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                ]
-            },
-            {
-                lessonId: 2, unit: "第一单元 · 抓牢你的幸福", badge: "第 2 课", title: "父母的爱", subtitle: "Родительская любовь",
-                pages: [
-                    {
-                        type: "textbook", pageNum: "p. 12–13", navLabel: "Стр. 12–13: 课文 (Текст и новые слова)",
-                        chaoIntro: "Урок 2 посвящен теме родительской любви: почему гиперопека вредит и почему истинная любовь — это умение вовремя отпустить.",
-                        task: "请用中文谈谈：为什么说理智的爱不是替孩子扫清障碍，而是放手？",
-                        builderWords: ["理智的父母明白", "真正的爱", "不是代替孩子去生活"],
-                        systemPrompt: "Ты Сяо Чао — репетитор HSK 5. Урок 2 (父母的爱).",
-                        content: {
-                            sectionTag: "课文", sectionTitle: "父母的爱 (Текст 2)",
-                            paragraphs: [
-                                "天下没有不爱自己孩子的父母。很多父母总是想把世界上最好的一切都给予孩子，甚至为了孩子可以牺牲自己的一切。",
-                                "然而，过度的保护往往会适得其反。如果父母把孩子保护得太好，替他们扫清了成长道路上的所有障碍，孩子就会失去独立面对生活挑战的能力。",
-                                "理智的父母明白，真正的爱不是代替孩子去生活，而是放手让他们去探索，教会他们如何面对挫折、克服困难，成长为一个有责任感的人。"
-                            ],
-                            vocab: [
-                                { word: "过度", py: "guòdù", pos: "形", trans: "чрезмерный" },
-                                { word: "独立", py: "dúlì", pos: "动/形", trans: "независимый" },
-                                { word: "障碍", py: "zhàng'ài", pos: "名", trans: "препятствие" },
-                                { word: "克服", py: "kèfú", pos: "动", trans: "преодолевать" },
-                                { word: "挫折", py: "cuòzhé", pos: "名", trans: "неудача" },
-                                { word: "牺牲", py: "xīshēng", pos: "动", trans: "жертвовать" }
-                            ]
-                        }
-                    }
-                ]
-            },
-            {
-                lessonId: 101,
-                unit: "Standard Course HSK 1",
-                badge: "第 1 课",
-                title: "你好",
-                subtitle: "Приветствие (HSK 1)",
-                pages: [{
-                    type: "hsk1_dialogues",
-                    pageNum: "p. 14",
-                    navLabel: "Стр. 14: 课文 (Диалоги с картинками)",
-                    chaoIntro: "Урок 1 (HSK 1): слушайте реплики, нажимайте на слова и собирайте приветствие.",
-                    task: "请用中文打招呼：你好！",
-                    builderWords: ["你", "好！"],
-                    systemPrompt: "Ты Сяо Чао — репетитор HSK 1. Тема урока: приветствие.",
-                    content: {
-                        dialogues: [
-                            {
-                                id: 1,
-                                img: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=400&q=80",
-                                lines: [{ speaker: "A", cn: "你好！", py: "Nǐ hǎo!" }, { speaker: "B", cn: "你好！", py: "Nǐ hǎo!" }],
-                                ruVersion: "A: Привет!\nB: Привет!",
-                                newWords: [{ word: "你", py: "nǐ", pos: "мест. об. мн.", trans: "ты" }, { word: "好", py: "hǎo", pos: "прил.", trans: "хороший; хорошо" }]
-                            },
-                            {
-                                id: 2,
-                                img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=400&q=80",
-                                lines: [{ speaker: "A", cn: "您好！", py: "Nín hǎo!" }, { speaker: "B", cn: "你们好！", py: "Nǐmen hǎo!" }],
-                                ruVersion: "A: Здравствуйте!\nB: Здравствуйте!",
-                                newWords: [{ word: "您", py: "nín", pos: "мест. об. мн.", trans: "Вы (вежливо)" }, { word: "你们", py: "nǐmen", pos: "мест. об. мн.", trans: "вы (мн. число)" }]
-                            },
-                            {
-                                id: 3,
-                                img: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=400&q=80",
-                                lines: [{ speaker: "A", cn: "对不起！", py: "Duìbuqǐ!" }, { speaker: "B", cn: "没关系！", py: "Méi guānxi!" }],
-                                ruVersion: "A: Простите!\nB: Ничего страшного!",
-                                newWords: [{ word: "对不起", py: "duìbuqǐ", pos: "глаг. фраза", trans: "простите; извините" }, { word: "没关系", py: "méi guānxi", pos: "фраза", trans: "ничего страшного" }]
-                            }
-                        ],
-                        vocab: [
-                            { word: "你", py: "nǐ", pos: "мест. об. мн.", trans: "ты" },
-                            { word: "好", py: "hǎo", pos: "прил.", trans: "хороший; хорошо" },
-                            { word: "您好", py: "nín hǎo", pos: "приветствие", trans: "здравствуйте" },
-                            { word: "你们", py: "nǐmen", pos: "мест. об. мн.", trans: "вы (мн. число)" },
-                            { word: "对不起", py: "duìbuqǐ", pos: "глаг. фраза", trans: "простите; извините" },
-                            { word: "没关系", py: "méi guānxi", pos: "фраза", trans: "ничего страшного" }
-                        ]
-                    }
-                }]
-            }
-        ];
+        // Lessons come from the server: pages published from Forma Studio (the
+        // management console) and lessons made with the manager.
+        let hskDatabase = [];
         const gymExercises = [
             { emoji: "🙆‍♂️", cn: "伸伸臂，踢踢腿！", py: "shēn shēn bì, tì tì tuǐ!", ru: "«Вытянем руки, помашем ногами!»" },
             { emoji: "🔄", cn: "转转脖子，深呼吸！", py: "zhuǎn zhuǎn bózi, shēn hūxī!", ru: "«Покрутим шеей, глубокий вдох!»" },
@@ -1051,8 +889,29 @@
                     if (remoteResponse.ok) hskDatabase.push(...await remoteResponse.json());
                 }
             } catch (_) {}
-            loadState(); initSelectors(); applyTheme(localStorage.getItem('chao_theme') === 'dark');
-            initDB(); loadPage(0); updatePointsUI(); startStudyTimer();
+            applyTheme(localStorage.getItem('chao_theme') === 'dark');
+            if (!hskDatabase.length) {
+                // Nothing published yet: say where lessons come from.
+                document.getElementById('lessonSelect').innerHTML = '<option>Уроков пока нет</option>';
+                document.getElementById('pageSelect').innerHTML = '<option>—</option>';
+                ['lessonSelect', 'pageSelect', 'prevPageBtn', 'nextPageBtn'].forEach(id => document.getElementById(id).disabled = true);
+                document.getElementById('lessonTitle').textContent = 'Уроков пока нет';
+                document.getElementById('lessonBadge').textContent = 'Chao HSK';
+                ['lessonSubTitle', 'bookUnit', 'bookPageNum', 'pageNavIndicator'].forEach(id => document.getElementById(id).textContent = '');
+                document.getElementById('pageContentStage').innerHTML = '<div class="book-block-card" style="margin:auto; max-width:420px; text-align:center; line-height:1.6">Уроки появятся здесь, как только преподаватель опубликует страницы учебника из Forma Studio.</div>';
+                document.getElementById('chaoSpeech').textContent = 'Привет! Как только появятся уроки, начнём заниматься вместе.';
+                initDB(); updatePointsUI(); startStudyTimer();
+                window.addEventListener('beforeunload', cleanupAllMedia);
+                return;
+            }
+            // Open the lesson the learner was on last time.
+            const lastLesson = hskDatabase.findIndex(l => String(l.lessonId) === localStorage.getItem('chao_last_lesson'));
+            if (lastLesson >= 0) AppState.currentLessonIdx = lastLesson;
+            loadState(); initSelectors();
+            document.getElementById('lessonSelect').value = AppState.currentLessonIdx;
+            populatePageSelector();
+            const lastPage = Number(localStorage.getItem('chao_last_page') || 0);
+            initDB(); loadPage(lastLesson >= 0 && lastPage < hskDatabase[AppState.currentLessonIdx].pages.length ? lastPage : 0); updatePointsUI(); startStudyTimer();
             window.addEventListener('beforeunload', cleanupAllMedia);
         }
         function startStudyTimer() {
@@ -1214,6 +1073,14 @@
         // takes the full width and scrolls with the rest of the platform.
         const FORMA_FIT = window.matchMedia('(min-width: 1101px) and (min-height: 700px)');
         let formaResize = null;
+        function formaRatio(forma) {
+            const [w, h] = String(forma.aspect || '2342/3190').split('/').map(Number), crop = forma.crop || {};
+            return (w / h || 0.734) * (1 - (crop.left || 0) - (crop.right || 0));
+        }
+        function lessonFormaRatio() {
+            const lesson = hskDatabase[AppState.currentLessonIdx];
+            return Math.max(0, ...((lesson && lesson.pages) || []).filter(p => p.type === 'forma' && p.forma).map(p => formaRatio(p.forma)));
+        }
         function sizeFormaPage(stage, forma) {
             const root = stage.querySelector('.forma-page-root'), sheet = root && root.querySelector('.forma-sheet');
             if (!sheet) return;
@@ -1230,7 +1097,10 @@
             // height; the dictionary and the study panel share the rest.
             const grid = document.getElementById('mainStageGrid'), book = stage.closest('.book-page');
             if (fit && book) {
-                const want = Math.round(Math.max(320, Math.min(grid.clientWidth * 0.55, height * ratio + (book.offsetWidth - stage.clientWidth))));
+                // One width for the whole lesson (its widest page), so the
+                // column does not change as pages are turned.
+                const colRatio = Math.max(ratio, lessonFormaRatio());
+                const want = Math.round(Math.max(320, Math.min(grid.clientWidth * 0.55, height * colRatio + (book.offsetWidth - stage.clientWidth))));
                 const now = parseFloat(grid.style.getPropertyValue('--book-col')) || 0;
                 if (Math.abs(now - want) > 2) grid.style.setProperty('--book-col', want + 'px');
             } else grid.style.removeProperty('--book-col');
@@ -1365,6 +1235,8 @@
             else document.getElementById('mainStageGrid').style.removeProperty('--book-col');
             updateLevelLabels(lesson, data);
             markPageVisited(lesson, idx);
+            localStorage.setItem('chao_last_lesson', String(lesson.lessonId));
+            localStorage.setItem('chao_last_page', String(idx));
             document.getElementById('taskQuestion').textContent = data.task;
             document.getElementById('pageSelect').value = idx;
             const lessonVocab = getActiveVocab(); renderVocabColumn();
