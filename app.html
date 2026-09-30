@@ -477,7 +477,8 @@
         .forma-sheet > .hsk-page { width:var(--forma-w,100%); margin-left:var(--forma-ml,0); }
         .forma-sheet .hsk-bubble { cursor:pointer; }
         .forma-sheet .hsk-bubble.playing { box-shadow:0 0 0 2px rgba(31,95,97,.45); }
-        .forma-sheet .hsk-word-inline { border-bottom:1px dotted rgba(31,95,97,.55); }
+        /* lesson words on a textbook page: a quiet underline, no box over the print */
+        .forma-sheet .hsk-word-inline { background:transparent; padding:0; margin:0; border-radius:0; border-bottom:1px dotted rgba(31,95,97,.55); }
     </style>
 </head>
 <body>
