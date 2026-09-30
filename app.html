@@ -454,11 +454,15 @@
         .electronic-art { width:100%; height:100%; object-fit:contain; }
         .electronic-source-toggle { position:absolute; top:8px; right:8px; z-index:5; margin:0; padding:5px 8px; font-size:11px; }
         /* pages published from Forma Studio */
-        .forma-page-root { width:100%; height:100%; min-height:0; overflow:auto; display:flex; flex-direction:column; align-items:center; gap:6px; }
-        .forma-toolbar { position:sticky; top:0; z-index:6; display:flex; gap:4px; align-self:flex-end; padding:3px; border-radius:9px; background:rgba(255,255,255,.94); box-shadow:0 1px 6px rgba(0,0,0,.12); }
+        .forma-page-root { position:relative; width:100%; height:100%; min-height:0; overflow:auto; display:flex; flex-direction:column; align-items:center; }
+        /* whole page in view: the sheet is sized to the stage (see sizeFormaPage) */
+        .forma-page-root.fit { overflow:hidden; justify-content:flex-start; }
+        .forma-toolbar { position:absolute; top:6px; right:6px; z-index:6; display:flex; gap:4px; padding:3px; border-radius:9px; background:rgba(255,255,255,.94); box-shadow:0 1px 6px rgba(0,0,0,.12); opacity:.55; transition:opacity .15s; }
+        .forma-page-root:hover .forma-toolbar, .forma-toolbar:focus-within { opacity:1; }
         .forma-toolbar button { margin:0; padding:4px 9px; border:0; border-radius:6px; background:transparent; color:#333; font-size:11px; cursor:pointer; }
         .forma-toolbar button[aria-pressed="true"] { background:var(--hsk5-teal, #1f5f61); color:#fff; }
-        .forma-sheet { width:100%; flex:none; box-shadow:0 2px 12px rgba(0,0,0,.12); }
+        .forma-sheet { width:100%; flex:none; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.12); }
+        .forma-sheet > .hsk-page { width:var(--forma-w,100%); margin-left:var(--forma-ml,0); }
         .forma-sheet .hsk-bubble { cursor:pointer; }
         .forma-sheet .hsk-bubble.playing { box-shadow:0 0 0 2px rgba(31,95,97,.45); }
         .forma-sheet .hsk-word-inline { border-bottom:1px dotted rgba(31,95,97,.55); }
@@ -1065,13 +1069,21 @@
             if (window.FormaPage) return Promise.resolve();
             return new Promise(resolve => { const s = document.createElement('script'); s.src = forma.script; s.onload = resolve; s.onerror = resolve; document.head.append(s); });
         }
+        // Cropping: the page inside is wider than the sheet and shifted left,
+        // so the blank strip stays outside the sheet's visible area.
+        function formaCropStyle(f) {
+            const l = Math.max(0, Math.min(.2, Number(f.crop && f.crop.left) || 0)), r = Math.max(0, Math.min(.2, Number(f.crop && f.crop.right) || 0));
+            if (!l && !r) return '';
+            const keep = 1 - l - r;
+            return `overflow:hidden;--forma-w:${(100 / keep).toFixed(4)}%;--forma-ml:${(-100 * l / keep).toFixed(4)}%`;
+        }
         function renderFormaPage(page) {
             const f = page.forma;
             return `<div class="forma-page-root"><div class="forma-toolbar" role="group" aria-label="Язык страницы">
                 <button type="button" data-forma-lang="ru" aria-pressed="${FormaView.lang === 'ru'}">Русский</button>
                 <button type="button" data-forma-lang="orig" aria-pressed="${FormaView.lang === 'orig'}">Оригинал</button>
                 <button type="button" data-forma-pinyin aria-pressed="${FormaView.pinyin}">Пиньинь</button></div>
-                <div class="forma-sheet">${f.html}</div></div>`;
+                <div class="forma-sheet" style="${formaCropStyle(f)}">${f.html}</div></div>`;
         }
         // Lesson words on the page become the platform's clickable words
         // (hanzi text only: not pinyin, not translations).
@@ -1094,7 +1106,30 @@
                 node.replaceWith(frag);
             }
         }
+        // The whole page fits the stage without scrolling: its width follows
+        // the space available in height. On narrow screens (phones) the page
+        // takes the full width and scrolls with the rest of the platform.
+        const FORMA_FIT = window.matchMedia('(min-width: 1101px) and (min-height: 700px)');
+        let formaResize = null;
+        function sizeFormaPage(stage, forma) {
+            const root = stage.querySelector('.forma-page-root'), sheet = root && root.querySelector('.forma-sheet');
+            if (!sheet) return;
+            const [w, h] = String(forma.aspect || '2342/3190').split('/').map(Number);
+            // Visible part of the page: the white binding strip is cut off.
+            const crop = forma.crop || {}, keep = 1 - (crop.left || 0) - (crop.right || 0);
+            const ratio = (w / h || 0.734) * keep;
+            const fit = FORMA_FIT.matches && stage.clientHeight > 200;
+            root.classList.toggle('fit', fit);
+            // In the stacked layout (narrow windows) the page is still kept
+            // within the window's height, so it is seen whole.
+            const height = fit ? stage.clientHeight : window.innerHeight - 16;
+            sheet.style.width = Math.floor(Math.min(fit ? stage.clientWidth : root.clientWidth, height * ratio)) + 'px';
+        }
         function mountFormaPage(stage, page) {
+            sizeFormaPage(stage, page.forma);
+            if (formaResize) formaResize.disconnect();
+            formaResize = new ResizeObserver(() => sizeFormaPage(stage, page.forma));
+            formaResize.observe(stage);
             ensureFormaRuntime(page.forma).then(() => {
                 const sheet = stage.querySelector('.hsk-page');
                 if (!sheet) return;

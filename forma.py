@@ -66,6 +66,10 @@ def validate_forma_meta(meta: Any):
         _text(page.get(key), limit, f"page.{key}")
     if not re.fullmatch(r"[0-9]{2,5}/[0-9]{2,5}", page["aspect"]):
         raise ValueError("page.aspect: пропорции страницы вида 2342/3190")
+    crop = page.get("crop", {})
+    if not isinstance(crop, dict) or any(k not in ("left", "right") or type(v) not in (int, float) or not 0 <= v <= 0.2
+                                         for k, v in crop.items()):
+        raise ValueError("page.crop: обрезка полей left/right от 0 до 0.2")
     words = page.get("builderWords")
     if not isinstance(words, list) or len(words) > 12 or not all(isinstance(w, str) and 0 < len(w) <= 40 for w in words):
         raise ValueError("page.builderWords: до 12 непустых строк")
@@ -174,7 +178,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                 "type": "forma", "level": data["book"]["level"], "pageNum": p["pageNum"], "navLabel": p["navLabel"],
                 "chaoIntro": p["chaoIntro"], "task": p["task"], "builderWords": p["builderWords"],
                 "systemPrompt": p["systemPrompt"], "content": {"vocab": p["vocab"]},
-                "forma": {"html": html, "aspect": p["aspect"], "base": base, "sourcePage": n,
+                "forma": {"html": html, "aspect": p["aspect"], "crop": p.get("crop", {}), "base": base, "sourcePage": n,
                           "css": f"/forma/components.css?v={int(time.time())}", "script": f"/forma/forma-page.js?v={int(time.time())}"},
             }
             record = {**data, "platformPage": platform_page, "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
