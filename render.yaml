@@ -16,3 +16,5 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      - key: FORMA_PUBLISH_TOKEN
+        sync: false

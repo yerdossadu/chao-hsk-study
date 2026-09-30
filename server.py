@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from lesson_validation import validate_ai_draft, validate_lesson
 from layout import group_ocr_lines
+import forma
 
 APP_DIR = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("CHAO_DATA_DIR", "/var/data"))
@@ -55,6 +56,11 @@ def init_db():
             id TEXT PRIMARY KEY, book_id TEXT NOT NULL, filename TEXT NOT NULL,
             stored_name TEXT NOT NULL, media_type TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
+        # Lessons published from Forma Studio are ordered by section and
+        # lesson number, not by the time of their latest page update.
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(lessons)")}
+        if "sort_key" not in columns:
+            db.execute("ALTER TABLE lessons ADD COLUMN sort_key TEXT DEFAULT ''")
 
 init_db()
 
@@ -104,7 +110,7 @@ def scan_page(book_id: str, page_num: int):
 @app.get("/api/lessons")
 def lessons():
     with connect_db() as db:
-        rows = db.execute("SELECT payload FROM lessons ORDER BY created_at, id").fetchall()
+        rows = db.execute("SELECT payload FROM lessons ORDER BY COALESCE(sort_key, ''), created_at, id").fetchall()
     return [json.loads(row["payload"]) for row in rows]
 
 @app.get("/api/books")
@@ -433,6 +439,9 @@ def publish_lesson(body: dict[str, Any], _: bool = Depends(require_teacher)):
         db.execute("INSERT OR REPLACE INTO lessons(id,book_id,title,level,payload) VALUES(?,?,?,?,?)",
                    (lesson_id, book_id, title, level, json.dumps(lesson, ensure_ascii=False)))
     return {"ok": True, "lesson": lesson}
+
+forma.mount(app, DATA_DIR, connect_db, require_teacher)
+
 
 @app.post("/api/tutor")
 def tutor(body: dict[str, Any]):

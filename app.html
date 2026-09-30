@@ -453,6 +453,15 @@
         .electronic-text { margin:0; font-family:Arial,sans-serif; line-height:1.12; white-space:nowrap; }
         .electronic-art { width:100%; height:100%; object-fit:contain; }
         .electronic-source-toggle { position:absolute; top:8px; right:8px; z-index:5; margin:0; padding:5px 8px; font-size:11px; }
+        /* pages published from Forma Studio */
+        .forma-page-root { width:100%; height:100%; min-height:0; overflow:auto; display:flex; flex-direction:column; align-items:center; gap:6px; }
+        .forma-toolbar { position:sticky; top:0; z-index:6; display:flex; gap:4px; align-self:flex-end; padding:3px; border-radius:9px; background:rgba(255,255,255,.94); box-shadow:0 1px 6px rgba(0,0,0,.12); }
+        .forma-toolbar button { margin:0; padding:4px 9px; border:0; border-radius:6px; background:transparent; color:#333; font-size:11px; cursor:pointer; }
+        .forma-toolbar button[aria-pressed="true"] { background:var(--hsk5-teal, #1f5f61); color:#fff; }
+        .forma-sheet { width:100%; flex:none; box-shadow:0 2px 12px rgba(0,0,0,.12); }
+        .forma-sheet .hsk-bubble { cursor:pointer; }
+        .forma-sheet .hsk-bubble.playing { box-shadow:0 0 0 2px rgba(31,95,97,.45); }
+        .forma-sheet .hsk-word-inline { border-bottom:1px dotted rgba(31,95,97,.55); }
     </style>
 </head>
 <body>
@@ -998,8 +1007,11 @@
             AppState.masteredWords = JSON.parse(localStorage.getItem(`mastered_words_lesson_${lessonId}`) || '[]');
         }
         function initSelectors() {
-            document.getElementById('lessonSelect').innerHTML = hskDatabase.map((les, i) => 
-                `<option value="${i}">${les.badge}: ${les.title} (${les.subtitle})</option>`).join('');
+            // Lessons grouped by section (e.g. "HSK 1 v3.0" from Forma Studio).
+            const option = (les, i) => `<option value="${i}">${escapeHtml(les.badge)}: ${escapeHtml(les.title)}${les.subtitle ? ` (${escapeHtml(les.subtitle)})` : ''}</option>`;
+            const groups = [];
+            hskDatabase.forEach((les, i) => { const name = les.section || ''; let g = groups.find(x => x.name === name); if (!g) groups.push(g = { name, items: [] }); g.items.push(option(les, i)); });
+            document.getElementById('lessonSelect').innerHTML = groups.map(g => g.name ? `<optgroup label="${escapeHtml(g.name)}">${g.items.join('')}</optgroup>` : g.items.join('')).join('');
             populatePageSelector();
         }
         function populatePageSelector() {
@@ -1015,6 +1027,14 @@
             const lesson = hskDatabase[AppState.currentLessonIdx];
             const activePage = lesson.pages[AppState.activePageIndex];
             if (activePage && activePage.type === "scanned") return (activePage.content && activePage.content.vocab) || [];
+            // Forma pages: the page's own new words, or the whole lesson's
+            // words on pages without a word table.
+            if (activePage && activePage.type === "forma") {
+                const own = (activePage.content && activePage.content.vocab) || [];
+                if (own.length) return own;
+                const seen = new Set();
+                return lesson.pages.flatMap(p => (p.content && p.content.vocab) || []).filter(v => !seen.has(v.word) && seen.add(v.word));
+            }
             const textbookPage = lesson.pages.find(p => p.type === "textbook") || lesson.pages[0];
             return (textbookPage.content && textbookPage.content.vocab) ? textbookPage.content.vocab : [];
         }
@@ -1033,8 +1053,70 @@
             });
             return result;
         }
+        // ---- Forma Studio pages ----
+        // The page HTML comes ready from Forma; its styles and text-fitting
+        // script are loaded once from the platform (/forma/...), and fonts
+        // from Google Fonts, like on Forma's own exported pages.
+        const FORMA_FONTS = 'https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,700;1,400&family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@500;700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap';
+        const FormaView = { lang: localStorage.getItem('forma_lang') || 'ru', pinyin: localStorage.getItem('forma_pinyin') !== 'off' };
+        function ensureFormaRuntime(forma) {
+            const addCss = (href, id) => { if (document.getElementById(id)?.getAttribute('href') === href) return; document.getElementById(id)?.remove(); const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.id = id; document.head.append(l); };
+            addCss(FORMA_FONTS, 'formaFonts'); addCss(forma.css, 'formaCss');
+            if (window.FormaPage) return Promise.resolve();
+            return new Promise(resolve => { const s = document.createElement('script'); s.src = forma.script; s.onload = resolve; s.onerror = resolve; document.head.append(s); });
+        }
+        function renderFormaPage(page) {
+            const f = page.forma;
+            return `<div class="forma-page-root"><div class="forma-toolbar" role="group" aria-label="Язык страницы">
+                <button type="button" data-forma-lang="ru" aria-pressed="${FormaView.lang === 'ru'}">Русский</button>
+                <button type="button" data-forma-lang="orig" aria-pressed="${FormaView.lang === 'orig'}">Оригинал</button>
+                <button type="button" data-forma-pinyin aria-pressed="${FormaView.pinyin}">Пиньинь</button></div>
+                <div class="forma-sheet">${f.html}</div></div>`;
+        }
+        // Lesson words on the page become the platform's clickable words
+        // (hanzi text only: not pinyin, not translations).
+        function linkFormaVocab(root, vocab) {
+            const words = [...new Set((vocab || []).map(v => v.word).filter(Boolean))].sort((a, b) => b.length - a.length);
+            if (!words.length) return;
+            const skip = 'rt, .py, .en, .ru, .hsk-name-py, .hsk-word-inline, script, style';
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest(skip) || !/[一-鿿]/.test(n.nodeValue) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+            const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+            const re = new RegExp('(' + words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')');
+            for (const node of nodes) {
+                const parts = node.nodeValue.split(re);
+                if (parts.length < 2) continue;
+                const frag = document.createDocumentFragment();
+                parts.forEach((part, i) => {
+                    if (!part) return;
+                    if (i % 2) { const s = document.createElement('span'); s.className = 'hsk-word-inline'; s.dataset.word = part; s.textContent = part; frag.append(s); }
+                    else frag.append(part);
+                });
+                node.replaceWith(frag);
+            }
+        }
+        function mountFormaPage(stage, page) {
+            ensureFormaRuntime(page.forma).then(() => {
+                const sheet = stage.querySelector('.hsk-page');
+                if (!sheet) return;
+                sheet.dataset.lang = FormaView.lang; sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
+                linkFormaVocab(sheet, getActiveVocab());
+                if (window.FormaPage) window.FormaPage.autoFit(sheet);
+            });
+        }
+        document.getElementById('pageContentStage').addEventListener('click', e => {
+            const lang = e.target.closest('[data-forma-lang]'), pin = e.target.closest('[data-forma-pinyin]');
+            if (!lang && !pin) return;
+            if (lang) { FormaView.lang = lang.dataset.formaLang; localStorage.setItem('forma_lang', FormaView.lang); }
+            if (pin) { FormaView.pinyin = !FormaView.pinyin; localStorage.setItem('forma_pinyin', FormaView.pinyin ? 'on' : 'off'); }
+            const root = e.target.closest('.forma-page-root'), sheet = root.querySelector('.hsk-page');
+            sheet.dataset.lang = FormaView.lang; sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
+            root.querySelectorAll('[data-forma-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.formaLang === FormaView.lang)));
+            root.querySelector('[data-forma-pinyin]').setAttribute('aria-pressed', String(FormaView.pinyin));
+            if (window.FormaPage) window.FormaPage.fit(sheet);
+        });
         function renderPageFromData(page) {
             const c = page.content;
+            if (page.type === "forma" && page.forma) return renderFormaPage(page);
             if (page.type === "electronic" && page.layout) {
                 const layout = page.layout;
                 const blocks = layout.blocks.map(block => {
@@ -1131,6 +1213,7 @@
             document.getElementById('lessonSubTitle').textContent = lesson.subtitle;
             document.getElementById('pageNavIndicator').textContent = `Страница ${idx + 1} из ${lesson.pages.length} (${data.pageNum})`;
             document.getElementById('pageContentStage').innerHTML = renderPageFromData(data);
+            if (data.type === "forma" && data.forma) mountFormaPage(document.getElementById('pageContentStage'), data);
             document.getElementById('taskQuestion').textContent = data.task;
             document.getElementById('pageSelect').value = idx;
             const lessonVocab = getActiveVocab(); renderMiddleVocabTable(lessonVocab);
@@ -1405,6 +1488,15 @@
             const wordSpan = e.target.closest('.hsk-word-inline');
             const dialogueLine = e.target.closest('.dialogue-text-line');
             const scanWord = e.target.closest('.scan-word');
+            const bubble = e.target.closest('.forma-sheet .hsk-bubble');
+            if (bubble && !wordSpan) {
+                // A reply in a Forma dialogue: read the whole line aloud.
+                const hz = bubble.querySelector('.hz');
+                const text = hz ? [...hz.childNodes].map(n => n.nodeType === 3 ? n.nodeValue : (n.matches('rt') ? '' : [...n.childNodes].filter(k => !(k.matches && k.matches('rt'))).map(k => k.textContent).join(''))).join('') : '';
+                document.querySelectorAll('.forma-sheet .hsk-bubble').forEach(b => b.classList.remove('playing'));
+                if (text.trim()) { bubble.classList.add('playing'); speakChinese(text.trim(), bubble); }
+                return;
+            }
             if (wordSpan) {
                 selectVocabWord(wordSpan.dataset.word, wordSpan);
             } else if (dialogueLine) {
