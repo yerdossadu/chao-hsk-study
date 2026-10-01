@@ -949,7 +949,7 @@
         }
         function initSelectors() {
             // Lessons grouped by section (e.g. "HSK 1 v3.0" from Forma Studio).
-            const option = (les, i) => `<option value="${i}">${escapeHtml(les.badge)}: ${escapeHtml(les.title)}${les.subtitle ? ` (${escapeHtml(les.subtitle)})` : ''}</option>`;
+            const option = (les, i) => { const sub = localized(les, 'subtitle'); return `<option value="${i}">${escapeHtml(les.badge)}: ${escapeHtml(les.title)}${sub ? ` (${escapeHtml(sub)})` : ''}</option>`; };
             const groups = [];
             hskDatabase.forEach((les, i) => { const name = les.section || ''; let g = groups.find(x => x.name === name); if (!g) groups.push(g = { name, items: [] }); g.items.push(option(les, i)); });
             document.getElementById('lessonSelect').innerHTML = groups.map(g => g.name ? `<optgroup label="${escapeHtml(g.name)}">${g.items.join('')}</optgroup>` : g.items.join('')).join('');
@@ -1111,6 +1111,224 @@
             } else grid.style.removeProperty('--book-col');
             sheet.style.width = Math.floor(Math.min(fit ? stage.clientWidth : root.clientWidth, height * ratio)) + 'px';
         }
+        // ---- Interface language ----
+        // The page language (RU / EN / KZ) is the whole platform's language: every label,
+        // button and hint outside the textbook page follows it. Russian is written in the
+        // markup and the code; this table gives English and Kazakh, and the translator keeps
+        // the Russian original of each text, so switching back is exact.
+        const uiLang = () => FormaView.lang === 'kz' ? 'kz' : FormaView.lang === 'orig' ? 'en' : 'ru';
+        const UI = {
+            'Прогресс и отчёт для родителей': ['Progress and report for parents', 'Үлгерім және ата-аналарға есеп'],
+            'Слов выучено': ['Words learned', 'Үйренген сөздер'],
+            'Время на уроке ⏱️': ['Time in lesson ⏱️', 'Сабақтағы уақыт ⏱️'],
+            'Всего на платформе': ['Total on the platform', 'Платформада барлығы'],
+            'Дней на платформе 🔥': ['Days on the platform 🔥', 'Платформадағы күндер 🔥'],
+            '📈 Динамика активности': ['📈 Activity', '📈 Белсенділік динамикасы'],
+            'Неделя': ['Week', 'Апта'], 'Месяц': ['Month', 'Ай'],
+            '⏱️ Время на уроке (мин)': ['⏱️ Time in lesson (min)', '⏱️ Сабақтағы уақыт (мин)'],
+            '🎴 Выучено иероглифов (слов)': ['🎴 Characters learned (words)', '🎴 Үйренген иероглифтер (сөздер)'],
+            'Отчёт для родителей (для мессенджера)': ['Report for parents (for messengers)', 'Ата-аналарға есеп (мессенджерге)'],
+            'Загрузка отчета...': ['Loading report...', 'Есеп жүктелуде...'],
+            'Скопировать отчёт для родителя': ['Copy the report for a parent', 'Ата-анаға есепті көшіру'],
+            'Загрузка перевода...': ['Loading translation...', 'Аударма жүктелуде...'],
+            'В карточки': ['To flashcards', 'Карточкаларға'],
+            'Спросить Чао': ['Ask Chao', 'Чаодан сұрау'],
+            'Урок': ['Lesson', 'Сабақ'], 'Урок:': ['Lesson:', 'Сабақ:'], 'Страница': ['Page', 'Бет'], 'Раздел': ['Section', 'Бөлім'], 'Всего': ['Total', 'Барлығы'],
+            'Прогресс и отчёт': ['Progress and report', 'Үлгерім және есеп'],
+            'Тёмная тема': ['Dark theme', 'Қараңғы тақырып'], 'Светлая тема': ['Light theme', 'Ашық тақырып'], 'Сменить тему': ['Change theme', 'Тақырыпты ауыстыру'],
+            'Словарь урока': ['Lesson dictionary', 'Сабақ сөздігі'],
+            'Сяо Чао (小潮)': ['Xiao Chao (小潮)', 'Сяо Чао (小潮)'],
+            'Привет! Загружаю урок...': ['Hi! Loading the lesson...', 'Сәлем! Сабақты жүктеп жатырмын...'],
+            'Разбор': ['Breakdown', 'Талдау'], '📖 Разбор': ['📖 Breakdown', '📖 Талдау'], 'Карточки': ['Flashcards', 'Карточкалар'], 'Студия': ['Studio', 'Студия'],
+            'Время китайской школьной зарядки (课间操)!': ['Time for Chinese school exercises (课间操)!', 'Қытай мектебінің жаттығу уақыты (课间操)!'],
+            'Прошло 15 минут! Давайте разомнемся по традициям китайских школ: помашем руками, поприседаем и выучим полезные фразы!': ['15 minutes have passed! Let’s stretch the Chinese school way: wave your arms, do some squats and learn useful phrases!', '15 минут өтті! Қытай мектептерінің дәстүрімен сергиік: қолды сермеп, отырып-тұрып, пайдалы тіркестерді үйренейік!'],
+            '🤸‍♂️ Начать зарядку': ['🤸‍♂️ Start exercises', '🤸‍♂️ Жаттығуды бастау'],
+            'Пропустить': ['Skip', 'Өткізіп жіберу'],
+            'Минутка зарядки (课间操)': ['Exercise break (课间操)', 'Жаттығу минуты (课间操)'],
+            '«Вытянем руки, поднимем ноги!»': ['«Stretch your arms, raise your legs!»', '«Қолды созайық, аяқты көтерейік!»'],
+            '«Вытянем руки, помашем ногами!»': ['«Stretch your arms, swing your legs!»', '«Қолды созайық, аяқты сермейік!»'],
+            '«Покрутим шеей, глубокий вдох!»': ['«Roll your neck, take a deep breath!»', '«Мойынды айналдырайық, терең дем алайық!»'],
+            '«Поднимем руки вверх, спина прямая!»': ['«Arms up, back straight!»', '«Қолды жоғары көтерейік, арқа түзу!»'],
+            '«Расслабим всё тело, отдохнем!»': ['«Relax your whole body and rest!»', '«Бүкіл денені босатып, демалайық!»'],
+            'Озвучить фразу': ['Play the phrase', 'Тіркесті дыбыстау'],
+            '✍️ К уроку (+20 XP)': ['✍️ Back to the lesson (+20 XP)', '✍️ Сабаққа (+20 XP)'],
+            'Устное задание': ['Speaking task', 'Ауызша тапсырма'],
+            'Подсказка −50 XP': ['Hint −50 XP', 'Кеңес −50 XP'], 'Подсказка стоит 50 XP': ['A hint costs 50 XP', 'Кеңес 50 XP тұрады'],
+            'Соберите предложение': ['Build the sentence', 'Сөйлемді құрастырыңыз'],
+            'Ответить устно': ['Answer aloud', 'Ауызша жауап беру'],
+            'Ваш ответ': ['Your answer', 'Сіздің жауабыңыз'],
+            '← Назад': ['← Back', '← Артқа'],
+            'Проверить ответ': ['Check the answer', 'Жауапты тексеру'],
+            'Цитата из текста (Эмоциональный якорь):': ['Quote from the text (emotional anchor):', 'Мәтіннен үзінді (эмоциялық тірек):'],
+            'Перевод:': ['Translation:', 'Аударма:'], 'Перевод': ['Translation', 'Аударма'],
+            'Разбор от Чао:': ['Chao’s breakdown:', 'Чаоның талдауы:'],
+            'Вариант носителя:': ['Native speaker’s version:', 'Тіл иесінің нұсқасы:'],
+            '🔁 Повторение': ['🔁 Review', '🔁 Қайталау'],
+            '👆 Клик на иероглиф — озвучка | Клик по карте — перевод': ['👆 Click a character to hear it | Click the card for the translation', '👆 Иероглифті басыңыз — дыбыстау | Карточканы басыңыз — аударма'],
+            'Легко': ['Easy', 'Оңай'], 'Сложно': ['Hard', 'Қиын'],
+            '👆 Кликните, чтобы вернуть иероглиф': ['👆 Click to go back to the character', '👆 Иероглифке оралу үшін басыңыз'],
+            'Слушайте эталон и произносите слово': ['Listen to the model and say the word', 'Үлгіні тыңдап, сөзді айтыңыз'],
+            'Видео-ответ (+50 XP)': ['Video answer (+50 XP)', 'Бейне-жауап (+50 XP)'],
+            'Камера': ['Camera', 'Камера'], 'Экран': ['Screen', 'Экран'], '2 в 1': ['2 in 1', '2-уі 1-де'],
+            '🔴 Начать запись': ['🔴 Start recording', '🔴 Жазуды бастау'],
+            'Скачать': ['Download', 'Жүктеп алу'], 'Заново': ['Again', 'Қайтадан'],
+            '📁 Галерея ответов': ['📁 Answer gallery', '📁 Жауаптар галереясы'],
+            'Уроков пока нет': ['No lessons yet', 'Әзірге сабақ жоқ'],
+            'Уроки появятся здесь, как только преподаватель опубликует страницы учебника из Forma Studio.': ['Lessons will appear here as soon as the teacher publishes textbook pages from Forma Studio.', 'Мұғалім Forma Studio-дан оқулық беттерін жариялағанда, сабақтар осында пайда болады.'],
+            'Показать английский оригинал': ['Show the English original', 'Ағылшынша түпнұсқаны көрсету'],
+            'Показать русский перевод': ['Show the Russian translation', 'Орысша аударманы көрсету'],
+            'Привет': ['Hello', 'Сәлем'], 'Диалоги': ['Dialogues', 'Диалогтар'], 'Новые слова': ['New words', 'Жаңа сөздер'], 'Значение:': ['Meaning:', 'Мағынасы:'],
+            'Страница загружается...': ['The page is loading...', 'Бет жүктелуде...'],
+            'послушайте эталон': ['listen to the model', 'үлгіні тыңдаңыз'],
+            'Записей пока нет.': ['No recordings yet.', 'Әзірге жазба жоқ.'],
+            'Активное припоминание': ['Active recall', 'Белсенді еске түсіру'],
+            'Сформулируй мысль по-китайски': ['Put a thought into Chinese', 'Ойыңызды қытайша айтыңыз'],
+            'Проверить и получить подсказку': ['Check and get a hint', 'Тексеріп, кеңес алу'],
+            'Попробовать ещё раз': ['Try again', 'Қайта көру'],
+            'Понятно — запомнить': ['Got it — remember', 'Түсінікті — есте сақтау'],
+            'Пока трудно': ['Still hard', 'Әзірге қиын'],
+            '✓ Смысл понятен': ['✓ The meaning is clear', '✓ Мағынасы түсінікті'],
+            'Есть что улучшить — это нормально': ['Some things to improve — that’s normal', 'Жетілдіретін жері бар — бұл қалыпты'],
+            'Ещё естественный вариант:': ['Another natural version:', 'Тағы бір табиғи нұсқа:'],
+            'Озвучить / Пауза': ['Play / Pause', 'Дыбыстау / Үзіліс'],
+            'Баллы за занятия': ['Study points', 'Сабақ ұпайлары'],
+            'Дашборд прогресса и отчёт для родителей': ['Progress dashboard and report for parents', 'Үлгерім тақтасы және ата-аналарға есеп'],
+            'Ключ API (sk-sp-...)': ['API key (sk-sp-...)', 'API кілті (sk-sp-...)'],
+            'Предыдущая страница': ['Previous page', 'Алдыңғы бет'], 'Следующая страница': ['Next page', 'Келесі бет'],
+            'Номер страницы в учебнике и позиция в уроке': ['Textbook page number and place in the lesson', 'Оқулықтағы бет нөмірі және сабақтағы орны'],
+            'Пройденные страницы урока': ['Lesson pages done', 'Сабақтың өтілген беттері'],
+            'Какие слова показать': ['Which words to show', 'Қай сөздерді көрсету'],
+            'Иероглиф, пиньинь или перевод': ['Character, pinyin or translation', 'Иероглиф, пиньинь немесе аударма'],
+            'Поиск по словарю': ['Search the dictionary', 'Сөздіктен іздеу'],
+            'Говорите или пишите по-китайски...': ['Speak or write in Chinese...', 'Қытайша сөйлеңіз немесе жазыңыз...'],
+            'Надиктовать голосом': ['Dictate by voice', 'Дауыспен айту'],
+            'Кликните на карту для переворота': ['Click the card to flip it', 'Аудару үшін карточканы басыңыз'],
+            'Нажмите, чтобы послушать': ['Click to listen', 'Тыңдау үшін басыңыз'],
+            'Привет! Как только появятся уроки, начнём заниматься вместе.': ['Hi! As soon as lessons appear, we’ll study together.', 'Сәлем! Сабақтар пайда болғанда, бірге оқимыз.'],
+            'Язык страницы': ['Page language', 'Бет тілі'], 'Русский перевод': ['Russian translation', 'Орысша аударма'],
+            'Пиньинь над иероглифами': ['Pinyin above the characters', 'Иероглифтер үстіндегі пиньинь'],
+            'Оригинал страницы учебника (скан PDF)': ['Original textbook page (PDF scan)', 'Оқулық бетінің түпнұсқасы (PDF скан)'],
+            'Оригинал страницы учебника': ['Original textbook page', 'Оқулық бетінің түпнұсқасы'],
+            'Ничего не найдено.': ['Nothing found.', 'Ештеңе табылмады.'], 'Выучено': ['Learned', 'Үйренілді'],
+            'Отлично! Предложение собрано верно. Теперь нажми «Ответить устно» и произнеси его в микрофон ✨': ['Great! The sentence is right. Now press «Answer aloud» and say it into the microphone ✨', 'Керемет! Сөйлем дұрыс құрастырылды. Енді «Ауызша жауап беру» батырмасын басып, микрофонға айтыңыз ✨'],
+            'Сяо Чао: Вы уже использовали максимум (2) подсказки для этого задания!': ['Xiao Chao: you have already used the maximum (2) hints for this task!', 'Сяо Чао: бұл тапсырма үшін ең көп кеңесті (2) пайдаландыңыз!'],
+            'Сяо Чао: Недостаточно баллов XP! Нужно минимум 50 XP для подсказки.': ['Xiao Chao: not enough XP! A hint needs at least 50 XP.', 'Сяо Чао: XP ұпайы жеткіліксіз! Кеңес үшін кемінде 50 XP керек.'],
+            'Введите или наговорите ответ на китайском!': ['Type or say your answer in Chinese!', 'Жауапты қытайша жазыңыз немесе айтыңыз!'],
+            'ОЖИДАЙТЕ...': ['PLEASE WAIT...', 'КҮТІҢІЗ...'],
+            'Сяо Чао думает над ответом... 💭': ['Xiao Chao is thinking... 💭', 'Сяо Чао ойланып жатыр... 💭'],
+            'Перевод готов': ['Translation ready', 'Аударма дайын'], 'Всё отлично!': ['All good!', 'Бәрі тамаша!'],
+            'Перевод текста:': ['Translation of the text:', 'Мәтін аудармасы:'], 'Смысл ответа:': ['Meaning of the answer:', 'Жауаптың мағынасы:'],
+            'Объяснение от Чао:': ['Chao’s explanation:', 'Чаоның түсіндірмесі:'], 'Совет от Чао:': ['Chao’s advice:', 'Чаоның кеңесі:'],
+            '✕ Закрыть разбор': ['✕ Close the breakdown', '✕ Талдауды жабу'],
+            'Разбор готов!': ['Breakdown ready!', 'Талдау дайын!'],
+            'Разбор ответа готов! Посмотри вариант носителя ниже ✨': ['The breakdown is ready! See the native speaker’s version below ✨', 'Жауап талдауы дайын! Төменде тіл иесінің нұсқасын қараңыз ✨'],
+            'Ошибка API:': ['API error:', 'API қатесі:'], 'Фраза': ['Phrase', 'Тіркес'],
+            'Нажмите «Спросить Чао» для полного разбора': ['Press «Ask Chao» for a full breakdown', 'Толық талдау үшін «Чаодан сұрау» батырмасын басыңыз'],
+            'Пн': ['Mon', 'Дс'], 'Вт': ['Tue', 'Сс'], 'Ср': ['Wed', 'Ср'], 'Чт': ['Thu', 'Бс'], 'Пт': ['Fri', 'Жм'], 'Сб': ['Sat', 'Сн'], 'Вс': ['Sun', 'Жс'],
+            'Отчет скопирован в буфер обмена! Теперь его можно отправить в Telegram или WhatsApp.': ['The report is copied! Now you can send it in Telegram or WhatsApp.', 'Есеп көшірілді! Енді оны Telegram немесе WhatsApp арқылы жіберуге болады.'],
+            'Слушаю вас прямо сейчас...': ['Listening to you now...', 'Сізді тыңдап тұрмын...'],
+            'Ответьте по-китайски...': ['Answer in Chinese...', 'Қытайша жауап беріңіз...'],
+            'Слушаю произношение... 🎧': ['Listening to your pronunciation... 🎧', 'Айтылымды тыңдап жатырмын... 🎧'],
+            '🎉 Все слова пройдены!': ['🎉 All words done!', '🎉 Барлық сөз өтілді!'],
+            'Ошибка доступа к устройствам:': ['Device access error:', 'Құрылғыларға қол жеткізу қатесі:'],
+            'Готово!': ['Done!', 'Дайын!'], 'Закрыть': ['Close', 'Жабу'],
+            'Практика: мысль по-китайски': ['Practice: a thought in Chinese', 'Жаттығу: қытайша ой'],
+            'Напиши свой вариант по-китайски. Можно использовать голосовой ввод клавиатуры.': ['Write your version in Chinese. You can use your keyboard’s voice input.', 'Өз нұсқаңызды қытайша жазыңыз. Пернетақтаның дауыспен енгізуін қолдануға болады.'],
+            'По возможности используй одно из слов:': ['If you can, use one of these words:', 'Мүмкін болса, мына сөздердің бірін қолданыңыз:'],
+            'Следующее повторение:': ['Next review:', 'Келесі қайталау:'],
+            'Открой платформу на сервере, чтобы ответ проверил ИИ.': ['Open the platform on the server so AI can check the answer.', 'Жауапты ЖИ тексеруі үшін платформаны серверде ашыңыз.'],
+            'Проверяю ответ…': ['Checking the answer…', 'Жауапты тексеріп жатырмын…'],
+            'Сяо Чао проверяет смысл и грамматику…': ['Xiao Chao is checking meaning and grammar…', 'Сяо Чао мағына мен грамматиканы тексеріп жатыр…'],
+            'Не удалось проверить ответ.': ['Could not check the answer.', 'Жауапты тексеру мүмкін болмады.'],
+            'Эта практика уже запланирована; дата не меняется.': ['This practice is already scheduled; the date stays.', 'Бұл жаттығу жоспарланған; күні өзгермейді.'],
+            'Выбери срок повторения — прогресс хранится в этом браузере.': ['Choose when to review — progress is kept in this browser.', 'Қайталау мерзімін таңдаңыз — үлгерім осы браузерде сақталады.'],
+            'Проверить ещё раз': ['Check again', 'Қайта тексеру'],
+            'Теперь попробуй написать фразу ещё раз своими словами…': ['Now try writing the phrase again in your own words…', 'Енді тіркесті өз сөзіңізбен қайта жазып көріңіз…'],
+            'Опирайся на исправленный вариант выше и попробуй ещё раз.': ['Use the corrected version above and try again.', 'Жоғарыдағы түзетілген нұсқаға сүйеніп, қайта көріңіз.'],
+            'дн.': ['d', 'күн'], 'ч': ['h', 'сағ'], '1 день': ['1 day', '1 күн'], '0.0 ч': ['0.0 h', '0.0 сағ']
+        };
+        // Texts with numbers and names inside.
+        const UI_RX = [
+            [/^(\d+) слов(?:о|а)?$/, m => [`${m[1]} words`, `${m[1]} сөз`]],
+            [/^Слов выучено \((\d+)\)$/, m => [`Words learned (${m[1]})`, `Үйренген сөздер (${m[1]})`]],
+            [/^Карточки (.+)$/, m => [`Flashcards ${m[1]}`, `Карточкалар ${m[1]}`]],
+            [/^Вариант носителя \((.+)\):$/, m => [`Native speaker’s version (${m[1]}):`, `Тіл иесінің нұсқасы (${m[1]}):`]],
+            [/^Диалог (\d+)$/, m => [`Dialogue ${m[1]}`, `${m[1]}-диалог`]],
+            [/^Мы на странице (.+)\. Выделяй слова для перевода или отвечай в микрофон!$/, m => [`We are on page ${m[1]}. Select words to translate them or answer into the microphone!`, `Біз ${m[1]} беттеміз. Аудару үшін сөздерді белгілеңіз немесе микрофонға жауап беріңіз!`]],
+            [/^Стр\. (\S+)(.*)$/, m => [`P. ${m[1]}${m[2]}`, `${m[1]}-бет${m[2]}`]],
+            [/^с\. (\S+)$/, m => [`p. ${m[1]}`, `${m[1]}-б.`]],
+            [/^([\d.,]+) ч$/, m => [`${m[1]} h`, `${m[1]} сағ`]],
+            [/^(\d+) мин$/, m => [`${m[1]} min`, `${m[1]} мин`]],
+            [/^(\d+) (?:дн\.|день|дня|дней)$/, m => [`${m[1]} ${m[1] === '1' ? 'day' : 'days'}`, `${m[1]} күн`]],
+            [/^Нед (\d+)$/, m => [`Wk ${m[1]}`, `${m[1]}-апта`]],
+            [/^Сяо Чао помог поставить кусок (\d+)-й из (\d+) \(-50 XP\) 💡$/, m => [`Xiao Chao placed piece ${m[1]} of ${m[2]} (−50 XP) 💡`, `Сяо Чао ${m[2]} бөліктің ${m[1]}-сін орналастырды (−50 XP) 💡`]],
+            [/^✔ Верно! Распознано: «(.+)»$/, m => [`✔ Correct! Heard: «${m[1]}»`, `✔ Дұрыс! Танылды: «${m[1]}»`]],
+            [/^Услышано: «(.+)»\. Попробуйте ещё раз или послушайте эталон$/, m => [`Heard: «${m[1]}». Try again or listen to the model`, `Естілді: «${m[1]}». Қайта көріңіз немесе үлгіні тыңдаңыз`]],
+            [/^Ответ: (.+) \((.+)\)$/, m => [`Answer: ${m[1]} (${m[2]})`, `Жауап: ${m[1]} (${m[2]})`]],
+            [/^Сохранено\. Напоминание появится примерно через (.+)$/, m => [`Saved. The reminder will appear in about ${uiNum(m[1], 'en')}`, `Сақталды. Еске салу шамамен ${uiNum(m[1], 'kz')} кейін шығады`]],
+            [/^· повторений: (\d+)$/, m => [`· reviews: ${m[1]}`, `· қайталау: ${m[1]}`]],
+            [/^(\d+)[‑-]?(?:й|я) урок$/, m => [`Lesson ${m[1]}`, `${m[1]}-сабақ`]],
+            [/^Сформулируй одну свою мысль по-китайски на тему «(.+)»\. Напиши естественное короткое предложение\.(?: По возможности используй одно из слов: (.+)\.)?$/,
+                m => [`Put one thought of your own into Chinese on the topic «${m[1]}». Write a short natural sentence.${m[2] ? ` If you can, use one of these words: ${m[2]}.` : ''}`,
+                      `«${m[1]}» тақырыбына бір ойыңызды қытайша айтыңыз. Қысқа табиғи сөйлем жазыңыз.${m[2] ? ` Мүмкін болса, мына сөздердің бірін қолданыңыз: ${m[2]}.` : ''}`]],
+        ];
+        const uiNum = (s, lang) => s.replace(/(\d+)\s*(?:дн\.|день|дня|дней)/g, (_, n) => lang === 'en' ? `${n} ${n === '1' ? 'day' : 'days'}` : `${n} күн`);
+        function uiTr(text) {
+            const lang = uiLang(); if (lang === 'ru') return text;
+            const core = text.replace(/\s+/g, ' ').trim(); if (!core) return text;
+            const k = lang === 'en' ? 0 : 1, hit = UI[core];
+            let out = hit ? hit[k] : null;
+            if (out == null) for (const [rx, f] of UI_RX) { const m = core.match(rx); if (m) { out = f(m)[k]; break; } }
+            return out == null ? text : text.replace(core, out);
+        }
+        // Text nodes and labels outside the textbook page; the Russian original is kept per node.
+        const uiOrig = new WeakMap(), uiShown = new WeakMap(), UI_ATTRS = ['placeholder', 'title', 'aria-label'];
+        const uiSkip = el => el && el.closest('.forma-sheet, script, style, textarea, input[type="text"]:not([placeholder]), [data-no-i18n]');
+        let uiBusy = false;
+        function translateUi(root) {
+            uiBusy = true;
+            try {
+                root = root || document.body;
+                const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => uiSkip(n.parentElement) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+                for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+                    // The app wrote a new text since we last translated: that is the new original.
+                    if (!uiOrig.has(n) || n.nodeValue !== uiShown.get(n)) { if (!/[А-Яа-яЁё]/.test(n.nodeValue)) continue; uiOrig.set(n, n.nodeValue); }
+                    const out = uiTr(uiOrig.get(n));
+                    if (n.nodeValue !== out) n.nodeValue = out;
+                    uiShown.set(n, out);
+                }
+                for (const el of (root.querySelectorAll ? root.querySelectorAll('[placeholder],[title],[aria-label]') : [])) {
+                    if (uiSkip(el)) continue;
+                    for (const a of UI_ATTRS) {
+                        const v = el.getAttribute(a); if (v == null) continue;
+                        const key = 'data-i18n-' + a, shown = 'data-i18n-shown-' + a;
+                        if (!el.hasAttribute(key) || v !== el.getAttribute(shown)) { if (!/[А-Яа-яЁё]/.test(v)) continue; el.setAttribute(key, v); }
+                        const out = uiTr(el.getAttribute(key));
+                        if (v !== out) el.setAttribute(a, out);
+                        el.setAttribute(shown, out);
+                    }
+                }
+                document.documentElement.lang = uiLang() === 'kz' ? 'kk' : uiLang();
+            } finally { uiBusy = false; }
+        }
+        // Whatever the app draws later (panels, dialogs, results) is translated as it appears.
+        let uiQueued = false;
+        new MutationObserver(() => { if (uiBusy || uiQueued) return; uiQueued = true; requestAnimationFrame(() => { uiQueued = false; translateUi(); }); })
+            .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: UI_ATTRS });
+        // Page texts that came from the studio in every language (task, Xiaoyu's intro, lesson subtitle).
+        const localized = (obj, key) => { const l = uiLang(); return (l !== 'ru' && obj && obj.i18n && obj.i18n[l] && obj.i18n[l][key]) || (obj && obj[key]) || ''; };
+        const tutorLang = () => ({ ru: 'русский', en: 'английский', kz: 'казахский' })[uiLang()];
+        function refreshLocalized() {
+            const lesson = hskDatabase[AppState.currentLessonIdx], page = lesson && lesson.pages && lesson.pages[AppState.activePageIndex];
+            if (!lesson) return;
+            const sub = document.getElementById('lessonSubTitle'); if (sub) sub.textContent = localized(lesson, 'subtitle');
+            document.querySelectorAll('#lessonSelect option').forEach(o => { const les = hskDatabase[Number(o.value)]; if (les) { const s = localized(les, 'subtitle'); o.textContent = `${les.badge}: ${les.title}${s ? ` (${s})` : ''}`; } });
+            if (page) {
+                const t = document.getElementById('taskQuestion'); if (t) t.textContent = localized(page, 'task');
+                const c = document.getElementById('chaoSpeech'); if (c && localized(page, 'chaoIntro')) c.textContent = localized(page, 'chaoIntro');
+            }
+        }
+
         // Word meanings follow the page language: EN on the original, KZ when the page has it, otherwise Russian.
         function vocabText(v, key) {
             if (!v) return '';
@@ -1153,7 +1371,7 @@
             root.querySelector('[data-forma-pinyin]').setAttribute('aria-pressed', String(FormaView.pinyin));
             if (window.FormaPage) window.FormaPage.fit(sheet);
             // The dictionary and the flashcard speak the page's language too.
-            if (lang) { renderVocabColumn(); const item = getActiveVocab()[AppState.currentCardIdx], fc = document.getElementById('fcTrans'); if (item && fc) fc.textContent = vocabText(item, 'trans'); }
+            if (lang) { renderVocabColumn(); const item = getActiveVocab()[AppState.currentCardIdx], fc = document.getElementById('fcTrans'); if (item && fc) fc.textContent = vocabText(item, 'trans'); refreshLocalized(); translateUi(); }
         });
         function renderPageFromData(page) {
             const c = page.content;
@@ -1251,7 +1469,7 @@
             document.getElementById('bookPageNum').textContent = data.pageNum;
             document.getElementById('lessonBadge').textContent = lesson.badge;
             document.getElementById('lessonTitle').textContent = lesson.title;
-            document.getElementById('lessonSubTitle').textContent = lesson.subtitle;
+            document.getElementById('lessonSubTitle').textContent = localized(lesson, 'subtitle');
             document.getElementById('pageNavIndicator').textContent = `${idx + 1}/${lesson.pages.length}`;
             document.getElementById('prevPageBtn').disabled = idx === 0;
             document.getElementById('nextPageBtn').disabled = idx === lesson.pages.length - 1;
@@ -1262,10 +1480,10 @@
             markPageVisited(lesson, idx);
             localStorage.setItem('chao_last_lesson', String(lesson.lessonId));
             localStorage.setItem('chao_last_page', String(idx));
-            document.getElementById('taskQuestion').textContent = data.task;
+            document.getElementById('taskQuestion').textContent = localized(data, 'task');
             document.getElementById('pageSelect').value = idx;
             const lessonVocab = getActiveVocab(); renderVocabColumn();
-            document.getElementById('chaoSpeech').textContent = data.chaoIntro || `Мы на странице ${data.pageNum}. Выделяй слова для перевода или отвечай в микрофон!`;
+            document.getElementById('chaoSpeech').textContent = localized(data, 'chaoIntro') || `Мы на странице ${data.pageNum}. Выделяй слова для перевода или отвечай в микрофон!`;
             closeCurrentAnalysis(); document.getElementById('selectionPopup').style.display = 'none';
             AppState.hintCount = 0;
             initSentenceBuilder(data.builderWords || []);
@@ -1529,10 +1747,10 @@
                 const cleanedOriginal = text.replace('请小潮解释：“', '').replace(/”*$/, ''); AppState.currentOriginalVoice = cleanedOriginal;
                 document.getElementById('taskFlipWrapper').style.display = 'none'; document.getElementById('originalQuoteBox').style.display = 'block';
                 document.getElementById('originalQuoteText').textContent = cleanedOriginal;
-                promptText = `Ты наставник ${answerLevel}. Объясни фразу ученику через пример из реальной жизни уровня ${answerLevel}.\nОтветь СТРОГО в 5 строк, разделённых ###. Никакого дополнительного текста до или после:\nСтрока 1: Естественный литературный перевод фразы на русский язык\nСтрока 2: Толковый разбор (2-3 предложения) с примером из жизни\nСтрока 3: Одно естественное предложение носителя с этой фразой ТОЛЬКО китайскими иероглифами\nСтрока 4: Полный пиньинь с тонами к этому предложению\nСтрока 5: Русский перевод этого предложения носителя\nФраза для разбора: "${cleanedOriginal}"`;
+                promptText = `Ты наставник ${answerLevel}. Объясни фразу ученику через пример из реальной жизни уровня ${answerLevel}.\nОтветь СТРОГО в 5 строк, разделённых ###. Никакого дополнительного текста до или после:\nСтрока 1: Естественный литературный перевод фразы на ${tutorLang()} язык\nСтрока 2: Толковый разбор (2-3 предложения) с примером из жизни, на ${tutorLang()} языке\nСтрока 3: Одно естественное предложение носителя с этой фразой ТОЛЬКО китайскими иероглифами\nСтрока 4: Полный пиньинь с тонами к этому предложению\nСтрока 5: Перевод этого предложения носителя на ${tutorLang()} язык\nФраза для разбора: "${cleanedOriginal}"`;
             } else {
                 document.getElementById('taskFlipWrapper').style.display = 'block'; document.getElementById('originalQuoteBox').style.display = 'none';
-                promptText = `Ты наставник ${answerLevel}. Оцени устный ответ на вопрос: "${curPage.task}". ${answerLevel === "HSK 5" ? "Используй логику 起承转合." : "Используй лексику и грамматику соответствующего уровня ${answerLevel}."}\nОтветь СТРОГО в 5 строк, разделённых ###. Никакого дополнительного текста до или после:\nСтрока 1: Точный перевод ответа ученика на русский\nСтрока 2: Совет от Чао (2-3 предложения): разбери ошибки, похвали за удачные слова.\nСтрока 3: Идеальное предложение уровня ${answerLevel} ТОЛЬКО иероглифами\nСтрока 4: Пиньинь с тонами к предложению\nСтрока 5: Русский перевод этого идеального предложения\nОтвет ученика: "${text}"`;
+                promptText = `Ты наставник ${answerLevel}. Оцени устный ответ на вопрос: "${curPage.task}". ${answerLevel === "HSK 5" ? "Используй логику 起承转合." : "Используй лексику и грамматику соответствующего уровня ${answerLevel}."}\nОтветь СТРОГО в 5 строк, разделённых ###. Никакого дополнительного текста до или после:\nСтрока 1: Точный перевод ответа ученика на ${tutorLang()} язык\nСтрока 2: Совет от Чао (2-3 предложения) на ${tutorLang()} языке: разбери ошибки, похвали за удачные слова.\nСтрока 3: Идеальное предложение уровня ${answerLevel} ТОЛЬКО иероглифами\nСтрока 4: Пиньинь с тонами к предложению\nСтрока 5: Перевод этого идеального предложения на ${tutorLang()} язык\nОтвет ученика: "${text}"`;
             }
             try {
                 let res;
@@ -2025,7 +2243,7 @@
         if(typeof SERVER_MODE==="undefined" || !SERVER_MODE){el("recallStatus").textContent="Открой платформу на сервере, чтобы ответ проверил ИИ.";return;}
         const button=el("recallCheck"); button.disabled=true; button.textContent="Проверяю ответ…"; el("recallStatus").textContent="Сяо Чао проверяет смысл и грамматику…";
         try {
-            const response=await fetch("/api/practice/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({answer:answer,prompt:practice.prompt,theme:practice.theme,level:practice.level,vocab:practice.vocab,reference:reference})});
+            const response=await fetch("/api/practice/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lang:uiLang(),answer:answer,prompt:practice.prompt,theme:practice.theme,level:practice.level,vocab:practice.vocab,reference:reference})});
             const result=await response.json(); if(!response.ok)throw new Error(result.detail || "Не удалось проверить ответ.");
             const feedback=el("recallFeedback"); feedback.innerHTML='<div style="font-weight:800;color:'+(result.understood?"var(--success-green)":"var(--tea-gold)")+ ';margin-bottom:5px">'+(result.understood?"✓ Смысл понятен":"Есть что улучшить — это нормально")+'</div><div style="display:flex;align-items:center;gap:8px"><div class="recall-hanzi chinese-sans">'+esc(result.corrected_sentence)+'</div><button id="recallSpeak" class="sound-icon-btn" type="button" title="Озвучить исправленную фразу">🔊</button></div>'+(result.natural_alternative?'<div style="margin-top:7px"><strong>Ещё естественный вариант:</strong><div class="chinese-sans" style="font-size:17px;font-weight:700">'+esc(result.natural_alternative)+'</div></div>':"")+'<div style="margin-top:7px">'+esc(result.explanation)+'</div>';
             feedback.classList.add("visible"); reference=result.corrected_sentence || ""; attempt++;

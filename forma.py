@@ -71,6 +71,17 @@ def validate_forma_meta(meta: Any):
     if not isinstance(crop, dict) or any(k not in ("left", "right") or type(v) not in (int, float) or not 0 <= v <= 0.2
                                          for k, v in crop.items()):
         raise ValueError("page.crop: обрезка полей left/right от 0 до 0.2")
+    # Texts in the other reading languages (English, Kazakh); Russian stays in the main fields.
+    for owner, keys in ((page, ("chaoIntro", "task")), (meta.get("lesson") or {}, ("subtitle",))):
+        tr = owner.get("i18n")
+        if tr is None:
+            continue
+        if not isinstance(tr, dict) or any(lang not in ("en", "kz") or not isinstance(v, dict) for lang, v in tr.items()):
+            raise ValueError("i18n: языки en/kz со строками")
+        for lang, v in tr.items():
+            for k, s in v.items():
+                if k not in keys or not isinstance(s, str) or len(s) > 600:
+                    raise ValueError(f"i18n.{lang}.{k}: строка до 600 символов")
     # Optional copy of the printed page (a file sent with the page), shown on demand.
     scan = page.get("scan")
     if scan is not None and (not isinstance(scan, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,60}\.(?:webp|png|jpe?g)", scan)
@@ -145,7 +156,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                     "lessonId": lesson_id, "source": "forma", "section": book["section"],
                     "unit": book["section"], "level": book["level"],
                     "badge": f"第 {number} 课" if number else book["section"],
-                    "title": lesson["title"], "subtitle": lesson.get("subtitle", ""),
+                    "title": lesson["title"], "subtitle": lesson.get("subtitle", ""), "i18n": lesson.get("i18n") or {},
                     "pages": [m["platformPage"] for m in items],
                 }
                 db.execute("INSERT INTO lessons(id,book_id,title,level,payload,sort_key) VALUES(?,?,?,?,?,?)",
@@ -183,7 +194,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
             platform_page = {
                 "type": "forma", "level": data["book"]["level"], "pageNum": p["pageNum"], "navLabel": p["navLabel"],
                 "chaoIntro": p["chaoIntro"], "task": p["task"], "builderWords": p["builderWords"],
-                "systemPrompt": p["systemPrompt"], "content": {"vocab": p["vocab"]},
+                "systemPrompt": p["systemPrompt"], "content": {"vocab": p["vocab"]}, "i18n": p.get("i18n") or {},
                 "forma": {"html": html, "aspect": p["aspect"], "crop": p.get("crop", {}), "base": base, "sourcePage": n,
                           **({"scan": base + p["scan"]} if p.get("scan") else {}),
                           "css": f"/forma/components.css?v={int(time.time())}", "script": f"/forma/forma-page.js?v={int(time.time())}"},
