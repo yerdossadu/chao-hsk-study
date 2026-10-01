@@ -597,7 +597,7 @@
         <div id="popupWordTrans" class="popup-trans">Загрузка перевода...</div>
         <div class="popup-actions">
             <button id="popupAddCardBtn" class="popup-btn">В карточки</button>
-            <button id="popupExplainBtn" class="popup-btn">Спросить Чао</button>
+            <button id="popupExplainBtn" class="popup-btn">Спросить Мейли</button>
         </div>
     </div>
     <!-- Menu: a side rail on desktop (the textbook page needs the height),
@@ -681,7 +681,7 @@
                     </svg>
                 </div>
                 <div class="speech-bubble">
-                    <strong><span>Сяо Чао (小潮)</span></strong>
+                    <strong><span>Мейли</span></strong>
                     <span id="chaoSpeech">Привет! Загружаю урок...</span>
                 </div>
             </div>
@@ -770,7 +770,7 @@
                 </div>
                 <div id="resultCard" class="result-card">
                     <div class="res-row"><span style="color:var(--success-green);">✔</span> <strong id="resMeaningLabel">Перевод:</strong> <span id="resMeaning">...</span></div>
-                    <div class="res-row"><span style="color:var(--recording-red);">🔍</span> <strong id="resMistakeLabel">Разбор от Чао:</strong> <span id="resMistake">...</span></div>
+                    <div class="res-row"><span style="color:var(--recording-red);">🔍</span> <strong id="resMistakeLabel">Разбор от Мейли:</strong> <span id="resMistake">...</span></div>
                     <div class="native-box">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
                             <strong style="color:var(--hsk5-teal); font-size:11px;" id="nativeLabel">Вариант носителя:</strong>
@@ -1132,12 +1132,12 @@
             'Скопировать отчёт для родителя': ['Copy the report for a parent', 'Ата-анаға есепті көшіру'],
             'Загрузка перевода...': ['Loading translation...', 'Аударма жүктелуде...'],
             'В карточки': ['To flashcards', 'Карточкаларға'],
-            'Спросить Чао': ['Ask Chao', 'Чаодан сұрау'],
+            'Спросить Мейли': ['Ask Meili', 'Мейлиден сұрау'],
             'Урок': ['Lesson', 'Сабақ'], 'Урок:': ['Lesson:', 'Сабақ:'], 'Страница': ['Page', 'Бет'], 'Раздел': ['Section', 'Бөлім'], 'Всего': ['Total', 'Барлығы'],
             'Прогресс и отчёт': ['Progress and report', 'Үлгерім және есеп'],
             'Тёмная тема': ['Dark theme', 'Қараңғы тақырып'], 'Светлая тема': ['Light theme', 'Ашық тақырып'], 'Сменить тему': ['Change theme', 'Тақырыпты ауыстыру'],
             'Словарь урока': ['Lesson dictionary', 'Сабақ сөздігі'],
-            'Сяо Чао (小潮)': ['Xiao Chao (小潮)', 'Сяо Чао (小潮)'],
+            'Мейли': ['Meili', 'Мейли'],
             'Привет! Загружаю урок...': ['Hi! Loading the lesson...', 'Сәлем! Сабақты жүктеп жатырмын...'],
             'Разбор': ['Breakdown', 'Талдау'], '📖 Разбор': ['📖 Breakdown', '📖 Талдау'], 'Карточки': ['Flashcards', 'Карточкалар'], 'Студия': ['Studio', 'Студия'],
             'Время китайской школьной зарядки (课间操)!': ['Time for Chinese school exercises (课间操)!', 'Қытай мектебінің жаттығу уақыты (课间操)!'],
@@ -1161,7 +1161,7 @@
             'Проверить ответ': ['Check the answer', 'Жауапты тексеру'],
             'Цитата из текста (Эмоциональный якорь):': ['Quote from the text (emotional anchor):', 'Мәтіннен үзінді (эмоциялық тірек):'],
             'Перевод:': ['Translation:', 'Аударма:'], 'Перевод': ['Translation', 'Аударма'],
-            'Разбор от Чао:': ['Chao’s breakdown:', 'Чаоның талдауы:'],
+            'Разбор от Мейли:': ['Meili’s breakdown:', 'Мейлидің талдауы:'],
             'Вариант носителя:': ['Native speaker’s version:', 'Тіл иесінің нұсқасы:'],
             '🔁 Повторение': ['🔁 Review', '🔁 Қайталау'],
             '👆 Клик на иероглиф — озвучка | Клик по карте — перевод': ['👆 Click a character to hear it | Click the card for the translation', '👆 Иероглифті басыңыз — дыбыстау | Карточканы басыңыз — аударма'],
@@ -1211,19 +1211,19 @@
             'Оригинал страницы учебника': ['Original textbook page', 'Оқулық бетінің түпнұсқасы'],
             'Ничего не найдено.': ['Nothing found.', 'Ештеңе табылмады.'], 'Выучено': ['Learned', 'Үйренілді'],
             'Отлично! Предложение собрано верно. Теперь нажми «Ответить устно» и произнеси его в микрофон ✨': ['Great! The sentence is right. Now press «Answer aloud» and say it into the microphone ✨', 'Керемет! Сөйлем дұрыс құрастырылды. Енді «Ауызша жауап беру» батырмасын басып, микрофонға айтыңыз ✨'],
-            'Сяо Чао: Вы уже использовали максимум (2) подсказки для этого задания!': ['Xiao Chao: you have already used the maximum (2) hints for this task!', 'Сяо Чао: бұл тапсырма үшін ең көп кеңесті (2) пайдаландыңыз!'],
-            'Сяо Чао: Недостаточно баллов XP! Нужно минимум 50 XP для подсказки.': ['Xiao Chao: not enough XP! A hint needs at least 50 XP.', 'Сяо Чао: XP ұпайы жеткіліксіз! Кеңес үшін кемінде 50 XP керек.'],
+            'Мейли: Вы уже использовали максимум (2) подсказки для этого задания!': ['Meili: you have already used the maximum (2) hints for this task!', 'Мейли: бұл тапсырма үшін ең көп кеңесті (2) пайдаландыңыз!'],
+            'Мейли: Недостаточно баллов XP! Нужно минимум 50 XP для подсказки.': ['Meili: not enough XP! A hint needs at least 50 XP.', 'Мейли: XP ұпайы жеткіліксіз! Кеңес үшін кемінде 50 XP керек.'],
             'Введите или наговорите ответ на китайском!': ['Type or say your answer in Chinese!', 'Жауапты қытайша жазыңыз немесе айтыңыз!'],
             'ОЖИДАЙТЕ...': ['PLEASE WAIT...', 'КҮТІҢІЗ...'],
-            'Сяо Чао думает над ответом... 💭': ['Xiao Chao is thinking... 💭', 'Сяо Чао ойланып жатыр... 💭'],
+            'Мейли думает над ответом... 💭': ['Meili is thinking... 💭', 'Мейли ойланып жатыр... 💭'],
             'Перевод готов': ['Translation ready', 'Аударма дайын'], 'Всё отлично!': ['All good!', 'Бәрі тамаша!'],
             'Перевод текста:': ['Translation of the text:', 'Мәтін аудармасы:'], 'Смысл ответа:': ['Meaning of the answer:', 'Жауаптың мағынасы:'],
-            'Объяснение от Чао:': ['Chao’s explanation:', 'Чаоның түсіндірмесі:'], 'Совет от Чао:': ['Chao’s advice:', 'Чаоның кеңесі:'],
+            'Объяснение от Мейли:': ['Meili’s explanation:', 'Мейлидің түсіндірмесі:'], 'Совет от Мейли:': ['Meili’s advice:', 'Мейлидің кеңесі:'],
             '✕ Закрыть разбор': ['✕ Close the breakdown', '✕ Талдауды жабу'],
             'Разбор готов!': ['Breakdown ready!', 'Талдау дайын!'],
             'Разбор ответа готов! Посмотри вариант носителя ниже ✨': ['The breakdown is ready! See the native speaker’s version below ✨', 'Жауап талдауы дайын! Төменде тіл иесінің нұсқасын қараңыз ✨'],
             'Ошибка API:': ['API error:', 'API қатесі:'], 'Фраза': ['Phrase', 'Тіркес'],
-            'Нажмите «Спросить Чао» для полного разбора': ['Press «Ask Chao» for a full breakdown', 'Толық талдау үшін «Чаодан сұрау» батырмасын басыңыз'],
+            'Нажмите «Спросить Мейли» для полного разбора': ['Press «Ask Meili» for a full breakdown', 'Толық талдау үшін «Мейлиден сұрау» батырмасын басыңыз'],
             'Пн': ['Mon', 'Дс'], 'Вт': ['Tue', 'Сс'], 'Ср': ['Wed', 'Ср'], 'Чт': ['Thu', 'Бс'], 'Пт': ['Fri', 'Жм'], 'Сб': ['Sat', 'Сн'], 'Вс': ['Sun', 'Жс'],
             'Отчет скопирован в буфер обмена! Теперь его можно отправить в Telegram или WhatsApp.': ['The report is copied! Now you can send it in Telegram or WhatsApp.', 'Есеп көшірілді! Енді оны Telegram немесе WhatsApp арқылы жіберуге болады.'],
             'Слушаю вас прямо сейчас...': ['Listening to you now...', 'Сізді тыңдап тұрмын...'],
@@ -1238,7 +1238,7 @@
             'Следующее повторение:': ['Next review:', 'Келесі қайталау:'],
             'Открой платформу на сервере, чтобы ответ проверил ИИ.': ['Open the platform on the server so AI can check the answer.', 'Жауапты ЖИ тексеруі үшін платформаны серверде ашыңыз.'],
             'Проверяю ответ…': ['Checking the answer…', 'Жауапты тексеріп жатырмын…'],
-            'Сяо Чао проверяет смысл и грамматику…': ['Xiao Chao is checking meaning and grammar…', 'Сяо Чао мағына мен грамматиканы тексеріп жатыр…'],
+            'Мейли проверяет смысл и грамматику…': ['Meili is checking meaning and grammar…', 'Мейли мағына мен грамматиканы тексеріп жатыр…'],
             'Не удалось проверить ответ.': ['Could not check the answer.', 'Жауапты тексеру мүмкін болмады.'],
             'Эта практика уже запланирована; дата не меняется.': ['This practice is already scheduled; the date stays.', 'Бұл жаттығу жоспарланған; күні өзгермейді.'],
             'Выбери срок повторения — прогресс хранится в этом браузере.': ['Choose when to review — progress is kept in this browser.', 'Қайталау мерзімін таңдаңыз — үлгерім осы браузерде сақталады.'],
@@ -1261,7 +1261,7 @@
             [/^(\d+) мин$/, m => [`${m[1]} min`, `${m[1]} мин`]],
             [/^(\d+) (?:дн\.|день|дня|дней)$/, m => [`${m[1]} ${m[1] === '1' ? 'day' : 'days'}`, `${m[1]} күн`]],
             [/^Нед (\d+)$/, m => [`Wk ${m[1]}`, `${m[1]}-апта`]],
-            [/^Сяо Чао помог поставить кусок (\d+)-й из (\d+) \(-50 XP\) 💡$/, m => [`Xiao Chao placed piece ${m[1]} of ${m[2]} (−50 XP) 💡`, `Сяо Чао ${m[2]} бөліктің ${m[1]}-сін орналастырды (−50 XP) 💡`]],
+            [/^Мейли помогла поставить кусок (\d+)-й из (\d+) \(-50 XP\) 💡$/, m => [`Meili placed piece ${m[1]} of ${m[2]} (−50 XP) 💡`, `Мейли ${m[2]} бөліктің ${m[1]}-сін орналастырды (−50 XP) 💡`]],
             [/^✔ Верно! Распознано: «(.+)»$/, m => [`✔ Correct! Heard: «${m[1]}»`, `✔ Дұрыс! Танылды: «${m[1]}»`]],
             [/^Услышано: «(.+)»\. Попробуйте ещё раз или послушайте эталон$/, m => [`Heard: «${m[1]}». Try again or listen to the model`, `Естілді: «${m[1]}». Қайта көріңіз немесе үлгіні тыңдаңыз`]],
             [/^Ответ: (.+) \((.+)\)$/, m => [`Answer: ${m[1]} (${m[2]})`, `Жауап: ${m[1]} (${m[2]})`]],
@@ -1585,11 +1585,11 @@
         }
         document.getElementById('builderHintBtn').addEventListener('click', () => {
             if (AppState.hintCount >= 2) {
-                alert("Сяо Чао: Вы уже использовали максимум (2) подсказки для этого задания!");
+                alert("Мейли: Вы уже использовали максимум (2) подсказки для этого задания!");
                 return;
             }
             if (AppState.points < 50) {
-                alert("Сяо Чао: Недостаточно баллов XP! Нужно минимум 50 XP для подсказки.");
+                alert("Мейли: Недостаточно баллов XP! Нужно минимум 50 XP для подсказки.");
                 return;
             }
             
@@ -1603,7 +1603,7 @@
             let targetChip = Array.from(source.children).find(c => c.dataset.chunk === expectedChunk);
             if (targetChip) {
                 target.appendChild(targetChip);
-                document.getElementById('chaoSpeech').textContent = `Сяо Чао помог поставить кусок ${AppState.hintCount}-й из ${currentBuilderWords.length} (-50 XP) 💡`;
+                document.getElementById('chaoSpeech').textContent = `Мейли помогла поставить кусок ${AppState.hintCount}-й из ${currentBuilderWords.length} (-50 XP) 💡`;
                 
                 const assembled = Array.from(target.children).map(c => c.dataset.chunk).join('').replace(/[\s\p{P}]/gu, "");
                 if (assembled === currentFullSentence) {
@@ -1739,19 +1739,19 @@
             if (!SERVER_MODE && !key) return alert("Enter the API key in standalone mode.");
             if (!text) return alert("Введите или наговорите ответ на китайском!");
             const btn = document.getElementById('analyzeButton'); btn.disabled = true; btn.textContent = 'ОЖИДАЙТЕ...';
-            document.getElementById('chaoSpeech').textContent = "Сяо Чао думает над ответом... 💭";
-            const isExplainingWord = text.includes("请小潮解释");
+            document.getElementById('chaoSpeech').textContent = "Мейли думает над ответом... 💭";
+            const isExplainingWord = text.includes("请解释");
             const answerLevel = curPage.level || (curPage.type === "hsk1_dialogues" ? "HSK 1" : "HSK 5");
             let promptText = "";
             
             if (isExplainingWord) {
-                const cleanedOriginal = text.replace('请小潮解释：“', '').replace(/”*$/, ''); AppState.currentOriginalVoice = cleanedOriginal;
+                const cleanedOriginal = text.replace('请解释：“', '').replace(/”*$/, ''); AppState.currentOriginalVoice = cleanedOriginal;
                 document.getElementById('taskFlipWrapper').style.display = 'none'; document.getElementById('originalQuoteBox').style.display = 'block';
                 document.getElementById('originalQuoteText').textContent = cleanedOriginal;
                 promptText = `Ты наставник ${answerLevel}. Объясни фразу ученику через пример из реальной жизни уровня ${answerLevel}.\nОтветь СТРОГО в 5 строк, разделённых ###. Никакого дополнительного текста до или после:\nСтрока 1: Естественный литературный перевод фразы на ${tutorLang()} язык\nСтрока 2: Толковый разбор (2-3 предложения) с примером из жизни, на ${tutorLang()} языке\nСтрока 3: Одно естественное предложение носителя с этой фразой ТОЛЬКО китайскими иероглифами\nСтрока 4: Полный пиньинь с тонами к этому предложению\nСтрока 5: Перевод этого предложения носителя на ${tutorLang()} язык\nФраза для разбора: "${cleanedOriginal}"`;
             } else {
                 document.getElementById('taskFlipWrapper').style.display = 'block'; document.getElementById('originalQuoteBox').style.display = 'none';
-                promptText = `Ты наставник ${answerLevel}. Оцени устный ответ на вопрос: "${curPage.task}". ${answerLevel === "HSK 5" ? "Используй логику 起承转合." : "Используй лексику и грамматику соответствующего уровня ${answerLevel}."}\nОтветь СТРОГО в 5 строк, разделённых ###. Никакого дополнительного текста до или после:\nСтрока 1: Точный перевод ответа ученика на ${tutorLang()} язык\nСтрока 2: Совет от Чао (2-3 предложения) на ${tutorLang()} языке: разбери ошибки, похвали за удачные слова.\nСтрока 3: Идеальное предложение уровня ${answerLevel} ТОЛЬКО иероглифами\nСтрока 4: Пиньинь с тонами к предложению\nСтрока 5: Перевод этого идеального предложения на ${tutorLang()} язык\nОтвет ученика: "${text}"`;
+                promptText = `Ты наставник ${answerLevel}. Оцени устный ответ на вопрос: "${curPage.task}". ${answerLevel === "HSK 5" ? "Используй логику 起承转合." : "Используй лексику и грамматику соответствующего уровня ${answerLevel}."}\nОтветь СТРОГО в 5 строк, разделённых ###. Никакого дополнительного текста до или после:\nСтрока 1: Точный перевод ответа ученика на ${tutorLang()} язык\nСтрока 2: Совет от Мейли (2-3 предложения) на ${tutorLang()} языке: разбери ошибки, похвали за удачные слова.\nСтрока 3: Идеальное предложение уровня ${answerLevel} ТОЛЬКО иероглифами\nСтрока 4: Пиньинь с тонами к предложению\nСтрока 5: Перевод этого идеального предложения на ${tutorLang()} язык\nОтвет ученика: "${text}"`;
             }
             try {
                 let res;
@@ -1770,7 +1770,7 @@
                 const pinyin = parts[3] || "", ruTrans = parts[4] || "";
                 
                 document.getElementById('resMeaningLabel').textContent = isExplainingWord ? "Перевод текста:" : "Смысл ответа:";
-                document.getElementById('resMistakeLabel').textContent = isExplainingWord ? "Объяснение от Чао:" : "Совет от Чао:";
+                document.getElementById('resMistakeLabel').textContent = isExplainingWord ? "Объяснение от Мейли:" : "Совет от Мейли:";
                 document.getElementById('resMeaning').textContent = meaning; document.getElementById('resMistake').textContent = mistake;
                 document.getElementById('resNative').textContent = hanzi;
                 document.getElementById('resNativePy').textContent = pinyin; document.getElementById('resNativeRu').textContent = ruTrans ? `«${ruTrans}»` : "";
@@ -1837,7 +1837,7 @@
                     document.getElementById('popupWordTrans').textContent = `(${vocabText(match, 'pos')}) ${vocabText(match, 'trans')}`; 
                 } else { 
                     document.getElementById('popupWordPy').textContent = "Фраза " + LevelInfo.name; 
-                    document.getElementById('popupWordTrans').textContent = "Нажмите «Спросить Чао» для полного разбора"; 
+                    document.getElementById('popupWordTrans').textContent = "Нажмите «Спросить Мейли» для полного разбора"; 
                 }
             } else { document.getElementById('selectionPopup').style.display = 'none'; }
         });
@@ -1845,7 +1845,7 @@
         document.getElementById('popupAddCardBtn').addEventListener('click', () => { document.getElementById('tabCards').click(); addPoints(10); document.getElementById('selectionPopup').style.display = 'none'; });
         document.getElementById('popupExplainBtn').addEventListener('click', () => {
             const word = document.getElementById('popupWordChar').textContent; document.getElementById('tabTutor').click();
-            document.getElementById('userSpeechInput').value = `请小潮解释：“${word}”`; AppState.currentOriginalVoice = word;
+            document.getElementById('userSpeechInput').value = `请解释：“${word}”`; AppState.currentOriginalVoice = word;
             document.getElementById('originalQuoteText').textContent = word; document.getElementById('originalQuoteBox').style.display = 'block';
             document.getElementById('taskFlipWrapper').style.display = 'none'; document.getElementById('selectionPopup').style.display = 'none';
             document.getElementById('analyzeButton').click();
@@ -1971,7 +1971,7 @@
             document.getElementById('modalTotalHours').textContent = totalPlatformTime;
             document.getElementById('modalPlatformDays').textContent = `${AppState.platformDays} дн.`;
             renderProgressLineChart('week');
-            const reportText = `📊 Отчёт по китайскому языку (${LevelInfo.name})\n👤 Ученик: Занимается самостоятельно\n⏱️ Время на текущем уроке: ${currentLessonTime}\n⏳ Всего на платформе: ${totalPlatformTime} (${AppState.platformDays} дн.)\n🏆 Набрано баллов: ${AppState.points} XP\n📚 Освоено слов всего: ${AppState.allMasteredHskWords.length} / ${LevelInfo.target} (словарь ${LevelInfo.name})\n🔥 Статус: Успешно пройдены упражнения! Сяо Чао оценивает прогресс как отличный ✨`;
+            const reportText = `📊 Отчёт по китайскому языку (${LevelInfo.name})\n👤 Ученик: Занимается самостоятельно\n⏱️ Время на текущем уроке: ${currentLessonTime}\n⏳ Всего на платформе: ${totalPlatformTime} (${AppState.platformDays} дн.)\n🏆 Набрано баллов: ${AppState.points} XP\n📚 Освоено слов всего: ${AppState.allMasteredHskWords.length} / ${LevelInfo.target} (словарь ${LevelInfo.name})\n🔥 Статус: Успешно пройдены упражнения! Мейли оценивает прогресс как отличный ✨`;
             document.getElementById('reportPreviewText').textContent = reportText;
             parentModal.classList.add('active');
         });
@@ -2242,7 +2242,7 @@
     el("recallCheck").addEventListener("click",async function () {
         const answer=el("recallAnswer").value.trim(); if(!answer){el("recallAnswer").focus();return;}
         if(typeof SERVER_MODE==="undefined" || !SERVER_MODE){el("recallStatus").textContent="Открой платформу на сервере, чтобы ответ проверил ИИ.";return;}
-        const button=el("recallCheck"); button.disabled=true; button.textContent="Проверяю ответ…"; el("recallStatus").textContent="Сяо Чао проверяет смысл и грамматику…";
+        const button=el("recallCheck"); button.disabled=true; button.textContent="Проверяю ответ…"; el("recallStatus").textContent="Мейли проверяет смысл и грамматику…";
         try {
             const response=await fetch("/api/practice/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lang:uiLang(),answer:answer,prompt:practice.prompt,theme:practice.theme,level:practice.level,vocab:practice.vocab,reference:reference})});
             const result=await response.json(); if(!response.ok)throw new Error(result.detail || "Не удалось проверить ответ.");
