@@ -37,9 +37,10 @@ MAX_FILE = 200 * 1024 * 1024
 MAX_FILES = 80
 SLUG = re.compile(r"[a-z0-9][a-z0-9-]{0,63}")
 # Paths a publish may write, relative to the book folder.
-FILE_PATH = re.compile(r"(?:pages/[0-9]{3}/(?:assets/)?|cast/)[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.(?:webp|png|jpe?g|mp4|webm|mov)")
+FILE_PATH = re.compile(r"(?:pages/[0-9]{3}/(?:assets/)?|cast/)[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.(?:webp|png|jpe?g|mp4|webm|mov|mp3|m4a|aac|ogg|wav)")
 MEDIA = {".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
          ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+         ".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".aac": "audio/aac", ".ogg": "audio/ogg", ".wav": "audio/wav",
          ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8"}
 
 
