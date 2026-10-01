@@ -1,4 +1,4 @@
-# Chao HSK Study Studio — мини-сервер
+# Meili HSK Study Studio — мини-сервер
 
 Серверная версия учебной платформы. Сохраняет существующие сценарии приложения и добавляет импорт сканированных PDF:
 
@@ -80,7 +80,7 @@ Forma Studio — консоль управления платформой. В н
 
 Настройка:
 1. В Render добавьте секрет **FORMA_PUBLISH_TOKEN** — длинную случайную строку (не храните её в GitHub).
-2. В Forma Studio → PDF → Web → «Платформа Chao HSK Study» → «Настройки» укажите адрес сервиса и этот токен, проверьте связь.
+2. В Forma Studio → PDF → Web → «Платформа Meili HSK Study» → «Настройки» укажите адрес сервиса и этот токен, проверьте связь.
 
 API (для Forma Studio, с заголовком `Authorization: Bearer <FORMA_PUBLISH_TOKEN>`; пароль преподавателя через Basic тоже принимается):
 - `POST /api/forma/pages` — multipart: `meta` (JSON описания страницы), `html`, `css`, `script`, `files[]`;

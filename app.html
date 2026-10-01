@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chao HSK Study</title>
+    <title>Meili HSK Study</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -604,7 +604,7 @@
          a compact bar on phones. -->
     <header class="toolbar">
         <div class="brand-group">
-            <div class="brand-row"><span class="logo-tag">Chao HSK</span><span class="level-chip" id="levelChip">HSK</span></div>
+            <div class="brand-row"><span class="logo-tag">Meili HSK</span><span class="level-chip" id="levelChip">HSK</span></div>
             <label class="side-field"><span class="side-label">Урок</span><select id="lessonSelect" class="lesson-dropdown"></select></label>
             <label class="side-field"><span class="side-label">Страница</span><select id="pageSelect" class="page-dropdown"></select></label>
             <div class="side-stats">
@@ -899,7 +899,7 @@
                 document.getElementById('pageSelect').innerHTML = '<option>—</option>';
                 ['lessonSelect', 'pageSelect', 'prevPageBtn', 'nextPageBtn'].forEach(id => document.getElementById(id).disabled = true);
                 document.getElementById('lessonTitle').textContent = 'Уроков пока нет';
-                document.getElementById('lessonBadge').textContent = 'Chao HSK';
+                document.getElementById('lessonBadge').textContent = 'Meili HSK';
                 ['lessonSubTitle', 'bookUnit', 'bookPageNum', 'pageNavIndicator'].forEach(id => document.getElementById(id).textContent = '');
                 document.getElementById('pageContentStage').innerHTML = '<div class="book-block-card" style="margin:auto; max-width:420px; text-align:center; line-height:1.6">Уроки появятся здесь, как только преподаватель опубликует страницы учебника из Forma Studio.</div>';
                 document.getElementById('chaoSpeech').textContent = 'Привет! Как только появятся уроки, начнём заниматься вместе.';

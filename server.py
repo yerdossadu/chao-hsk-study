@@ -33,7 +33,7 @@ QWEN_MODEL = os.environ.get("QWEN_MODEL", "qwen3.6-flash")
 OCR_LANG = os.environ.get("OCR_LANG", "chi_sim+rus+eng")
 MAX_UPLOAD_BYTES = 300 * 1024 * 1024
 MAX_LESSON_PAGES = 20
-app = FastAPI(title="Chao HSK Study Studio")
+app = FastAPI(title="Meili HSK Study Studio")
 security = HTTPBasic()
 ai_calls = deque()
 ai_calls_lock = threading.Lock()
