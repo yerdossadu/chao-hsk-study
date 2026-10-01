@@ -70,6 +70,11 @@ def validate_forma_meta(meta: Any):
     if not isinstance(crop, dict) or any(k not in ("left", "right") or type(v) not in (int, float) or not 0 <= v <= 0.2
                                          for k, v in crop.items()):
         raise ValueError("page.crop: обрезка полей left/right от 0 до 0.2")
+    # Optional copy of the printed page (a file sent with the page), shown on demand.
+    scan = page.get("scan")
+    if scan is not None and (not isinstance(scan, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,60}\.(?:webp|png|jpe?g)", scan)
+                             or f"pages/{page['n']:03}/{scan}" not in (meta.get("files") or [])):
+        raise ValueError("page.scan: имя файла скана из списка files")
     words = page.get("builderWords")
     if not isinstance(words, list) or len(words) > 12 or not all(isinstance(w, str) and 0 < len(w) <= 40 for w in words):
         raise ValueError("page.builderWords: до 12 непустых строк")
@@ -179,6 +184,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                 "chaoIntro": p["chaoIntro"], "task": p["task"], "builderWords": p["builderWords"],
                 "systemPrompt": p["systemPrompt"], "content": {"vocab": p["vocab"]},
                 "forma": {"html": html, "aspect": p["aspect"], "crop": p.get("crop", {}), "base": base, "sourcePage": n,
+                          **({"scan": base + p["scan"]} if p.get("scan") else {}),
                           "css": f"/forma/components.css?v={int(time.time())}", "script": f"/forma/forma-page.js?v={int(time.time())}"},
             }
             record = {**data, "platformPage": platform_page, "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}

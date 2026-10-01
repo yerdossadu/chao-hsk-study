@@ -525,6 +525,9 @@
         .forma-toolbar button[aria-pressed="true"] { background:var(--hsk5-teal, #1f5f61); color:#fff; }
         .forma-sheet { width:100%; flex:none; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.12); }
         .forma-sheet > .hsk-page { width:var(--forma-w,100%); margin-left:var(--forma-ml,0); }
+        .forma-sheet { position:relative; }
+        .forma-sheet > .forma-scan { display:none; position:absolute; top:0; left:0; z-index:5; width:var(--forma-w,100%); height:100%; margin-left:var(--forma-ml,0); object-fit:fill; background:#fff; }
+        .forma-page-root.show-scan .forma-sheet > .forma-scan { display:block; }
         .forma-sheet .hsk-bubble { cursor:pointer; }
         .forma-sheet .hsk-bubble.playing { box-shadow:0 0 0 2px rgba(31,95,97,.45); }
         /* lesson words on a textbook page: a quiet underline, no box over the print */
@@ -1044,8 +1047,9 @@
             return `<div class="forma-page-root"><div class="forma-toolbar" role="group" aria-label="Язык страницы">
                 <button type="button" data-forma-lang="ru" aria-pressed="${FormaView.lang === 'ru'}" title="Русский перевод" aria-label="Русский перевод">RU</button>
                 <button type="button" data-forma-lang="orig" aria-pressed="${FormaView.lang === 'orig'}" title="Оригинал (английский)" aria-label="Оригинал (английский)">EN</button>
-                <button type="button" data-forma-pinyin aria-pressed="${FormaView.pinyin}" title="Пиньинь над иероглифами" aria-label="Пиньинь над иероглифами">pīn</button></div>
-                <div class="forma-sheet" style="${formaCropStyle(f)}">${f.html}</div></div>`;
+                <button type="button" data-forma-pinyin aria-pressed="${FormaView.pinyin}" title="Пиньинь над иероглифами" aria-label="Пиньинь над иероглифами">pīn</button>${f.scan ? `
+                <button type="button" data-forma-scan aria-pressed="false" title="Оригинал страницы учебника (скан PDF)" aria-label="Оригинал страницы учебника">📄</button>` : ''}</div>
+                <div class="forma-sheet" style="${formaCropStyle(f)}">${f.html}${f.scan ? `<img class="forma-scan" src="${escapeHtml(f.scan)}" alt="Оригинал страницы ${escapeHtml(String(f.sourcePage || ''))}" loading="lazy">` : ''}</div></div>`;
         }
         // Lesson words on the page become the platform's clickable words
         // (hanzi text only: not pinyin, not translations).
@@ -1120,6 +1124,14 @@
             });
         }
         document.getElementById('pageContentStage').addEventListener('click', e => {
+            const scan = e.target.closest('[data-forma-scan]');
+            if (scan) {
+                // The printed page laid over the electronic one; pressed again, back to it.
+                const on = scan.getAttribute('aria-pressed') !== 'true';
+                scan.setAttribute('aria-pressed', String(on));
+                scan.closest('.forma-page-root').classList.toggle('show-scan', on);
+                return;
+            }
             const lang = e.target.closest('[data-forma-lang]'), pin = e.target.closest('[data-forma-pinyin]');
             if (!lang && !pin) return;
             if (lang) { FormaView.lang = lang.dataset.formaLang; localStorage.setItem('forma_lang', FormaView.lang); }
