@@ -1046,7 +1046,8 @@
             const f = page.forma;
             return `<div class="forma-page-root"><div class="forma-toolbar" role="group" aria-label="Язык страницы">
                 <button type="button" data-forma-lang="ru" aria-pressed="${FormaView.lang === 'ru'}" title="Русский перевод" aria-label="Русский перевод">RU</button>
-                <button type="button" data-forma-lang="orig" aria-pressed="${FormaView.lang === 'orig'}" title="Оригинал (английский)" aria-label="Оригинал (английский)">EN</button>
+                <button type="button" data-forma-lang="orig" aria-pressed="${FormaView.lang === 'orig'}" title="Оригинал (английский)" aria-label="Оригинал (английский)">EN</button>${f.html.includes('data-kz=') ? `
+                <button type="button" data-forma-lang="kz" aria-pressed="${FormaView.lang === 'kz'}" title="Қазақша аударма" aria-label="Қазақша аударма">KZ</button>` : ''}
                 <button type="button" data-forma-pinyin aria-pressed="${FormaView.pinyin}" title="Пиньинь над иероглифами" aria-label="Пиньинь над иероглифами">pīn</button>${f.scan ? `
                 <button type="button" data-forma-scan aria-pressed="false" title="Оригинал страницы учебника (скан PDF)" aria-label="Оригинал страницы учебника">📄</button>` : ''}</div>
                 <div class="forma-sheet" style="${formaCropStyle(f)}">${f.html}${f.scan ? `<img class="forma-scan" src="${escapeHtml(f.scan)}" alt="Оригинал страницы ${escapeHtml(String(f.sourcePage || ''))}" loading="lazy">` : ''}</div></div>`;
@@ -1110,6 +1111,11 @@
             } else grid.style.removeProperty('--book-col');
             sheet.style.width = Math.floor(Math.min(fit ? stage.clientWidth : root.clientWidth, height * ratio)) + 'px';
         }
+        // Kazakh is the Russian layer with its texts swapped (FormaPage.setLang); a page without it stays Russian.
+        function applyFormaLang(sheet) {
+            if (window.FormaPage && window.FormaPage.setLang) window.FormaPage.setLang(sheet, FormaView.lang);
+            else sheet.dataset.lang = FormaView.lang === 'kz' ? 'ru' : FormaView.lang;
+        }
         function mountFormaPage(stage, page) {
             sizeFormaPage(stage, page.forma);
             if (formaResize) formaResize.disconnect();
@@ -1118,7 +1124,7 @@
             ensureFormaRuntime(page.forma).then(() => {
                 const sheet = stage.querySelector('.hsk-page');
                 if (!sheet) return;
-                sheet.dataset.lang = FormaView.lang; sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
+                applyFormaLang(sheet); sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
                 linkFormaVocab(sheet, getActiveVocab());
                 if (window.FormaPage) window.FormaPage.autoFit(sheet);
             });
@@ -1137,7 +1143,7 @@
             if (lang) { FormaView.lang = lang.dataset.formaLang; localStorage.setItem('forma_lang', FormaView.lang); }
             if (pin) { FormaView.pinyin = !FormaView.pinyin; localStorage.setItem('forma_pinyin', FormaView.pinyin ? 'on' : 'off'); }
             const root = e.target.closest('.forma-page-root'), sheet = root.querySelector('.hsk-page');
-            sheet.dataset.lang = FormaView.lang; sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
+            applyFormaLang(sheet); sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
             root.querySelectorAll('[data-forma-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.formaLang === FormaView.lang)));
             root.querySelector('[data-forma-pinyin]').setAttribute('aria-pressed', String(FormaView.pinyin));
             if (window.FormaPage) window.FormaPage.fit(sheet);
