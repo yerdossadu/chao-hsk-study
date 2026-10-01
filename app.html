@@ -1315,6 +1315,7 @@
         let uiQueued = false;
         new MutationObserver(() => { if (uiBusy || uiQueued) return; uiQueued = true; requestAnimationFrame(() => { uiQueued = false; translateUi(); }); })
             .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: UI_ATTRS });
+        translateUi();
         // Page texts that came from the studio in every language (task, Xiaoyu's intro, lesson subtitle).
         const localized = (obj, key) => { const l = uiLang(); return (l !== 'ru' && obj && obj.i18n && obj.i18n[l] && obj.i18n[l][key]) || (obj && obj[key]) || ''; };
         const tutorLang = () => ({ ru: 'русский', en: 'английский', kz: 'казахский' })[uiLang()];
