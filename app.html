@@ -1494,8 +1494,12 @@
             document.getElementById('lessonTitle').textContent = lesson.title;
             document.getElementById('lessonSubTitle').textContent = localized(lesson, 'subtitle');
             document.getElementById('pageNavIndicator').textContent = `${idx + 1}/${lesson.pages.length}`;
-            document.getElementById('prevPageBtn').disabled = idx === 0;
-            document.getElementById('nextPageBtn').disabled = idx === lesson.pages.length - 1;
+            // At the ends of a lesson the arrows lead on to the neighbouring lesson of the same book and section.
+            const prevBtn = document.getElementById('prevPageBtn'), nextBtn = document.getElementById('nextPageBtn');
+            const before = idx === 0 ? neighbourLesson(-1) : -1, after = idx === lesson.pages.length - 1 ? neighbourLesson(1) : -1;
+            prevBtn.disabled = idx === 0 && before < 0; nextBtn.disabled = idx === lesson.pages.length - 1 && after < 0;
+            prevBtn.title = before >= 0 ? 'Предыдущий урок: ' + hskDatabase[before].badge : 'Предыдущая страница';
+            nextBtn.title = after >= 0 ? 'Следующий урок: ' + hskDatabase[after].badge : 'Следующая страница';
             document.getElementById('pageContentStage').innerHTML = renderPageFromData(data);
             if (data.type === "forma" && data.forma) mountFormaPage(document.getElementById('pageContentStage'), data);
             else document.getElementById('mainStageGrid').style.removeProperty('--book-col');
@@ -1512,7 +1516,24 @@
             initSentenceBuilder(data.builderWords || []);
             if (lessonVocab && lessonVocab.length) { AppState.currentCardIdx = 0; renderFlashcard(lessonVocab); }
         }
-        document.getElementById('prevPageBtn').addEventListener('click', () => { if (AppState.activePageIndex > 0) loadPage(AppState.activePageIndex - 1); });
+        // The lesson before / after this one in the same book (textbook or workbook) and section; -1 when none.
+        function neighbourLesson(step) {
+            const cur = hskDatabase[AppState.currentLessonIdx];
+            for (let i = AppState.currentLessonIdx + step; i >= 0 && i < hskDatabase.length; i += step) {
+                const les = hskDatabase[i];
+                if (bookKindOf(les) === bookKindOf(cur) && (les.section || '') === (cur.section || '') && les.pages && les.pages.length) return i;
+            }
+            return -1;
+        }
+        function openLesson(i, pageIdx) {
+            AppState.currentLessonIdx = i; loadState(); populatePageSelector();
+            document.getElementById('lessonSelect').value = i;
+            loadPage(pageIdx === 'last' ? hskDatabase[i].pages.length - 1 : 0);
+        }
+        document.getElementById('prevPageBtn').addEventListener('click', () => {
+            if (AppState.activePageIndex > 0) return loadPage(AppState.activePageIndex - 1);
+            const i = neighbourLesson(-1); if (i >= 0) openLesson(i, 'last');
+        });
         // ← / → turn pages when no field is being typed in.
         document.addEventListener('keydown', e => {
             if (e.altKey || e.ctrlKey || e.metaKey || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
@@ -1521,7 +1542,8 @@
         });
         document.getElementById('nextPageBtn').addEventListener('click', () => {
             const lesson = hskDatabase[AppState.currentLessonIdx];
-            if (AppState.activePageIndex < lesson.pages.length - 1) loadPage(AppState.activePageIndex + 1);
+            if (AppState.activePageIndex < lesson.pages.length - 1) return loadPage(AppState.activePageIndex + 1);
+            const i = neighbourLesson(1); if (i >= 0) openLesson(i, 0);
         });
         // Dictionary column: words of this page, the lesson or the whole
         // section, filtered by a search; learned words are marked.
