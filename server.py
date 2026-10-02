@@ -14,6 +14,11 @@ from pathlib import Path
 from typing import Any
 
 import fitz
+try:   # trust the system's certificates (a Windows PC behind antivirus/proxy TLS); optional, not needed on Render
+    import truststore
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
 import requests
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
