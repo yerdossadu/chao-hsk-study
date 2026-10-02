@@ -154,6 +154,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                 lesson_id = f"forma-{slug}-{number:03}"
                 payload = {
                     "lessonId": lesson_id, "source": "forma", "section": book["section"],
+                    "kind": "workbook" if ("workbook" in slug or "тетрад" in book["section"].lower()) else "textbook",
                     "unit": book["section"], "level": book["level"],
                     "badge": f"第 {number} 课" if number else book["section"],
                     "title": lesson["title"], "subtitle": lesson.get("subtitle", ""), "i18n": lesson.get("i18n") or {},

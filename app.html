@@ -99,6 +99,11 @@
         .brand-row { display: flex; align-items: center; gap: 6px; }
         .level-chip { padding: 3px 7px; border-radius: 6px; border: 1px solid var(--hsk5-teal); color: var(--hsk5-teal); font-size: 11px; font-weight: 800; white-space: nowrap; }
         .side-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .book-kind { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--chao-purple-light, #eef0f4); }
+        .book-kind[hidden] { display: none; }
+        .book-kind button { flex: 1 1 0; border: 0; border-radius: 8px; padding: 7px 6px; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .book-kind button[aria-selected="true"] { background: var(--paper-white, #fff); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+        .toolbar .book-kind { order: 4; flex: 1 1 100%; }
         .side-label { display: none; font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--ink-gray); }
         .side-stats { display: flex; gap: 6px; }
         .side-stats .reward-badge, .side-stats .timer-badge-header { min-width: 0; padding: 5px 10px; }
@@ -605,6 +610,7 @@
     <header class="toolbar">
         <div class="brand-group">
             <div class="brand-row"><span class="logo-tag">Meili HSK</span><span class="level-chip" id="levelChip">HSK</span></div>
+            <div class="book-kind" id="bookKind" role="tablist" aria-label="Книга" hidden><button type="button" role="tab" data-kind="textbook">Учебник</button><button type="button" role="tab" data-kind="workbook">Рабочая тетрадь</button></div>
             <label class="side-field"><span class="side-label">Урок</span><select id="lessonSelect" class="lesson-dropdown"></select></label>
             <label class="side-field"><span class="side-label">Страница</span><select id="pageSelect" class="page-dropdown"></select></label>
             <div class="side-stats">
@@ -910,6 +916,7 @@
             // Open the lesson the learner was on last time.
             const lastLesson = hskDatabase.findIndex(l => String(l.lessonId) === localStorage.getItem('chao_last_lesson'));
             if (lastLesson >= 0) AppState.currentLessonIdx = lastLesson;
+            AppState.bookKind = lastLesson >= 0 ? bookKindOf(hskDatabase[lastLesson]) : (localStorage.getItem('chao_book_kind') || 'textbook');
             loadState(); initSelectors();
             document.getElementById('lessonSelect').value = AppState.currentLessonIdx;
             populatePageSelector();
@@ -948,10 +955,14 @@
             AppState.masteredWords = JSON.parse(localStorage.getItem(`mastered_words_lesson_${lessonId}`) || '[]');
         }
         function initSelectors() {
-            // Lessons grouped by section (e.g. "HSK 1 v3.0" from Forma Studio).
+            // Lessons of the chosen book (textbook / workbook), grouped by section (e.g. "HSK 1 v3.0" from Forma Studio).
             const option = (les, i) => { const sub = localized(les, 'subtitle'); return `<option value="${i}">${escapeHtml(les.badge)}: ${escapeHtml(les.title)}${sub ? ` (${escapeHtml(sub)})` : ''}</option>`; };
             const groups = [];
-            hskDatabase.forEach((les, i) => { const name = les.section || ''; let g = groups.find(x => x.name === name); if (!g) groups.push(g = { name, items: [] }); g.items.push(option(les, i)); });
+            const kinds = new Set(hskDatabase.map(bookKindOf)), switcher = document.getElementById('bookKind');
+            switcher.hidden = kinds.size < 2;
+            if (!kinds.has(AppState.bookKind)) AppState.bookKind = bookKindOf(hskDatabase[AppState.currentLessonIdx] || hskDatabase[0]);
+            switcher.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.kind === AppState.bookKind)));
+            hskDatabase.forEach((les, i) => { if (bookKindOf(les) !== AppState.bookKind) return; const name = les.section || ''; let g = groups.find(x => x.name === name); if (!g) groups.push(g = { name, items: [] }); g.items.push(option(les, i)); });
             document.getElementById('lessonSelect').innerHTML = groups.map(g => g.name ? `<optgroup label="${escapeHtml(g.name)}">${g.items.join('')}</optgroup>` : g.items.join('')).join('');
             populatePageSelector();
         }
@@ -960,6 +971,17 @@
             document.getElementById('pageSelect').innerHTML = lesson.pages.map((p, i) => 
                 `<option value="${i}">${p.navLabel || p.pageNum}</option>`).join('');
         }
+        // Textbook or workbook: a Forma lesson says which; older lessons are textbook.
+        function bookKindOf(les) { return les && les.kind === 'workbook' ? 'workbook' : 'textbook'; }
+        document.getElementById('bookKind').addEventListener('click', (e) => {
+            const kind = e.target.closest('[data-kind]')?.dataset.kind;
+            if (!kind || kind === AppState.bookKind) return;
+            localStorage.setItem('chao_last_lesson_' + AppState.bookKind, String(hskDatabase[AppState.currentLessonIdx]?.lessonId || ''));
+            AppState.bookKind = kind; localStorage.setItem('chao_book_kind', kind);
+            const remembered = hskDatabase.findIndex(l => String(l.lessonId) === localStorage.getItem('chao_last_lesson_' + kind));
+            AppState.currentLessonIdx = remembered >= 0 ? remembered : hskDatabase.findIndex(l => bookKindOf(l) === kind);
+            loadState(); initSelectors(); document.getElementById('lessonSelect').value = AppState.currentLessonIdx; loadPage(0);
+        });
         document.getElementById('lessonSelect').addEventListener('change', (e) => {
             AppState.currentLessonIdx = parseInt(e.target.value); loadState(); populatePageSelector(); loadPage(0);
         });
@@ -1133,7 +1155,7 @@
             'Загрузка перевода...': ['Loading translation...', 'Аударма жүктелуде...'],
             'В карточки': ['To flashcards', 'Карточкаларға'],
             'Спросить Мейли': ['Ask Meili', 'Мейлиден сұрау'],
-            'Урок': ['Lesson', 'Сабақ'], 'Урок:': ['Lesson:', 'Сабақ:'], 'Страница': ['Page', 'Бет'], 'Раздел': ['Section', 'Бөлім'], 'Всего': ['Total', 'Барлығы'],
+            'Урок': ['Lesson', 'Сабақ'], 'Учебник': ['Textbook', 'Оқулық'], 'Рабочая тетрадь': ['Workbook', 'Жұмыс дәптері'], 'Урок:': ['Lesson:', 'Сабақ:'], 'Страница': ['Page', 'Бет'], 'Раздел': ['Section', 'Бөлім'], 'Всего': ['Total', 'Барлығы'],
             'Прогресс и отчёт': ['Progress and report', 'Үлгерім және есеп'],
             'Тёмная тема': ['Dark theme', 'Қараңғы тақырып'], 'Светлая тема': ['Light theme', 'Ашық тақырып'], 'Сменить тему': ['Change theme', 'Тақырыпты ауыстыру'],
             'Словарь урока': ['Lesson dictionary', 'Сабақ сөздігі'],
