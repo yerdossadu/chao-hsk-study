@@ -472,6 +472,7 @@ def tutor(body: dict[str, Any]):
 TTS_URL = "https://token-plan.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer"
 TTS_MODEL = os.environ.get("TTS_MODEL", "qwen-audio-3.0-tts-plus")
 TTS_VOICES = {"f": "longanlingxin", "m": "longanlufeng"}
+TTS_FALLBACK_VOICE = "longanhuan_v3.6"
 TTS_DIR = DATA_DIR / "tts"
 TTS_DIR.mkdir(parents=True, exist_ok=True)
 tts_locks: dict[str, threading.Lock] = {}
@@ -494,14 +495,24 @@ def tts(text: str, voice: str = "f"):
         if not path.is_file():
             guard_ai_usage()
             try:
-                response = requests.post(TTS_URL, headers={"Authorization": f"Bearer {api_key}"},
-                                         json={"model": TTS_MODEL, "input": {"text": text, "voice": name,
-                                                                            "format": "mp3", "sample_rate": 24000}},
-                                         timeout=60)
-                data = response.json() if response.content else {}
-                url = ((data.get("output") or {}).get("audio") or {}).get("url")
-                if not response.ok or not url:
-                    raise RuntimeError(data.get("message") or f"HTTP {response.status_code}")
+                url, why = None, ""
+                # The Token Plan's own default voice is the fallback when the chosen one is refused.
+                for attempt in dict.fromkeys([name, TTS_FALLBACK_VOICE]):
+                    response = requests.post(TTS_URL, headers={"Authorization": f"Bearer {api_key}"},
+                                             json={"model": TTS_MODEL, "input": {"text": text, "voice": attempt,
+                                                                                "format": "mp3", "sample_rate": 24000}},
+                                             timeout=60)
+                    try:
+                        data = response.json()
+                    except ValueError:
+                        data = {}
+                    url = ((data.get("output") or {}).get("audio") or {}).get("url")
+                    if response.ok and url:
+                        break
+                    why = f"{attempt}: " + (data.get("message") or f"HTTP {response.status_code} {response.text[:200]!r}")
+                    print(f"[tts] {why}", flush=True)
+                if not url:
+                    raise RuntimeError(why)
                 audio = requests.get(url, timeout=60)
                 audio.raise_for_status()
                 tmp = path.with_suffix(".part")
