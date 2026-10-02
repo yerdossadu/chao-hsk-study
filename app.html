@@ -652,7 +652,7 @@
                     <span class="tag-cn">生词表</span>
                     <span class="chinese-serif" style="font-size:14px; font-weight:700;">Словарь урока</span>
                 </div>
-                <span class="vocab-head-side"><select id="ttsVoice" class="tts-voice" hidden title="Голос озвучки слов" aria-label="Голос озвучки слов"><option value="longanlingxin">Линсинь · жен., тёплый</option><option value="longanlufeng">Луфэн · муж., бодрый</option><option value="longanlingxi">Линси · жен., нежный</option><option value="longanxiaoxin">Сяосинь · жен., живой</option><option value="longanhuan_v3.6">Хуань · жен., спокойный</option></select><span id="vocabWordCountBadge" style="font-size:12px; font-weight:700; color:var(--hsk5-teal);">0 слов</span></span>
+                <span class="vocab-head-side"><select id="ttsVoice" class="tts-voice" hidden title="Голос озвучки слов" aria-label="Голос озвучки слов"><option value="longanlingxin">Линсинь · жен., тёплый</option><option value="longanlufeng">Луфэн · муж., бодрый</option><option value="longanlingxi">Линси · жен., нежный</option><option value="longanxiaoxin">Сяосинь · жен., живой</option><option value="longanhuan_v3.6">Хуань · жен., спокойный</option><option value="browser">Голос Windows (Microsoft)</option></select><span id="vocabWordCountBadge" style="font-size:12px; font-weight:700; color:var(--hsk5-teal);">0 слов</span></span>
             </div>
             <!-- The dictionary grows with the course: search it and choose how
                  much of it to see. -->
@@ -1769,7 +1769,7 @@
         // so a click plays at once from the server's (and the browser's) store.
         const ttsWarm = new Set(); let ttsQueue = [], ttsBusy = 0;
         function warmSpeech(words) {
-            if (!SERVER_MODE || ttsOff) return;
+            if (!SERVER_MODE || ttsOff || ttsVoice() === 'browser') return;
             for (const u of ttsQueue) ttsWarm.delete(u);   // what is in view now goes first
             ttsQueue = [];
             for (const w of words) {
@@ -1803,7 +1803,7 @@
             if (stopSpeaking()) return;
             if (btnElement) btnElement.classList.add('playing');
             const done = () => { if (btnElement) btnElement.classList.remove('playing'); };
-            if (SERVER_MODE && !ttsOff && /[㐀-鿿]/.test(text) && text.length <= 120) {
+            if (SERVER_MODE && !ttsOff && ttsVoice() !== 'browser' && /[㐀-鿿]/.test(text) && text.length <= 120) {
                 const audio = new Audio(); ttsAudio = audio;
                 fetch(ttsUrl(text))
                     .then(r => { if (r.status === 503) ttsOff = true; if (!r.ok) throw Error('HTTP ' + r.status); return r.blob(); })
