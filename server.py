@@ -473,6 +473,8 @@ TTS_URL = "https://token-plan.ap-southeast-1.maas.aliyuncs.com/api/v1/services/a
 TTS_MODEL = os.environ.get("TTS_MODEL", "qwen-audio-3.0-tts-plus")
 TTS_VOICES = {"f": "longanlingxin", "m": "longanlufeng"}
 TTS_FALLBACK_VOICE = "longanhuan_v3.6"
+# Learners need words a little slower than the natural pace (1.0); 0.5–2.0 are accepted.
+TTS_RATE = float(os.environ.get("TTS_RATE", "0.8"))
 TTS_DIR = DATA_DIR / "tts"
 TTS_DIR.mkdir(parents=True, exist_ok=True)
 tts_locks: dict[str, threading.Lock] = {}
@@ -484,7 +486,7 @@ def tts(text: str, voice: str = "f"):
     if not text or len(text) > 120 or not re.search(r"[㐀-鿿]", text):
         raise HTTPException(400, "Озвучиваются только китайские слова и фразы до 120 знаков.")
     name = TTS_VOICES.get(voice, TTS_VOICES["f"])
-    path = TTS_DIR / (hashlib.sha1(f"{TTS_MODEL}|{name}|{text}".encode("utf-8")).hexdigest() + ".mp3")
+    path = TTS_DIR / (hashlib.sha1(f"{TTS_MODEL}|{name}|{TTS_RATE}|{text}".encode("utf-8")).hexdigest() + ".mp3")
     headers = {"Cache-Control": "public, max-age=31536000, immutable"}
     if path.is_file():
         return FileResponse(path, media_type="audio/mpeg", headers=headers)
@@ -499,7 +501,7 @@ def tts(text: str, voice: str = "f"):
                 # The Token Plan's own default voice is the fallback when the chosen one is refused.
                 for attempt in dict.fromkeys([name, TTS_FALLBACK_VOICE]):
                     response = requests.post(TTS_URL, headers={"Authorization": f"Bearer {api_key}"},
-                                             json={"model": TTS_MODEL, "input": {"text": text, "voice": attempt,
+                                             json={"model": TTS_MODEL, "input": {"text": text, "voice": attempt, "rate": TTS_RATE,
                                                                                 "format": "mp3", "sample_rate": 24000}},
                                              timeout=60)
                     try:

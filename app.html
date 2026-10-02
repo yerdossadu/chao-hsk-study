@@ -1769,7 +1769,7 @@
             const done = () => { if (btnElement) btnElement.classList.remove('playing'); };
             if (SERVER_MODE && !ttsOff && /[㐀-鿿]/.test(text) && text.length <= 120) {
                 const audio = new Audio(); ttsAudio = audio;
-                fetch('/api/tts?text=' + encodeURIComponent(text))
+                fetch('/api/tts?v=2&text=' + encodeURIComponent(text))   // v: a new pace or voice gets a new address (the old answer stays cached)
                     .then(r => { if (r.status === 503) ttsOff = true; if (!r.ok) throw Error('HTTP ' + r.status); return r.blob(); })
                     .then(blob => { if (ttsAudio !== audio) return; audio.src = URL.createObjectURL(blob); audio.onended = () => { done(); URL.revokeObjectURL(audio.src); if (ttsAudio === audio) ttsAudio = null; }; return audio.play(); })
                     .catch(() => { if (ttsAudio !== audio) return; ttsAudio = null; browserSpeak(text, btnElement, done); });
