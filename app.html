@@ -521,7 +521,9 @@
         .electronic-art { width:100%; height:100%; object-fit:contain; }
         .electronic-source-toggle { position:absolute; top:8px; right:8px; z-index:5; margin:0; padding:5px 8px; font-size:11px; }
         /* pages published from Forma Studio */
-        .forma-page-root { position:relative; width:100%; height:100%; min-height:0; overflow:auto; display:flex; flex-direction:column; align-items:center; }
+        .vocab-head-side { display:flex; align-items:center; gap:8px; min-width:0; }
+.tts-voice { max-width:150px; min-width:0; padding:2px 4px; font-size:11px; border:1px solid var(--hsk5-border, #d8d8d8); border-radius:6px; background:transparent; color:inherit; cursor:pointer; }
+.forma-page-root { position:relative; width:100%; height:100%; min-height:0; overflow:auto; display:flex; flex-direction:column; align-items:center; }
         /* whole page in view: the sheet is sized to the stage (see sizeFormaPage) */
         .forma-page-root.fit { overflow:hidden; justify-content:flex-start; }
         .forma-toolbar { position:absolute; top:6px; right:6px; z-index:6; display:flex; gap:4px; padding:3px; border-radius:9px; background:rgba(255,255,255,.94); box-shadow:0 1px 6px rgba(0,0,0,.12); opacity:.55; transition:opacity .15s; }
@@ -650,7 +652,7 @@
                     <span class="tag-cn">生词表</span>
                     <span class="chinese-serif" style="font-size:14px; font-weight:700;">Словарь урока</span>
                 </div>
-                <span id="vocabWordCountBadge" style="font-size:12px; font-weight:700; color:var(--hsk5-teal);">0 слов</span>
+                <span class="vocab-head-side"><select id="ttsVoice" class="tts-voice" hidden title="Голос озвучки слов" aria-label="Голос озвучки слов"><option value="longanlingxin">Линсинь · жен., тёплый</option><option value="longanlufeng">Луфэн · муж., бодрый</option><option value="longanlingxi">Линси · жен., нежный</option><option value="longanxiaoxin">Сяосинь · жен., живой</option><option value="longanhuan_v3.6">Хуань · жен., спокойный</option></select><span id="vocabWordCountBadge" style="font-size:12px; font-weight:700; color:var(--hsk5-teal);">0 слов</span></span>
             </div>
             <!-- The dictionary grows with the course: search it and choose how
                  much of it to see. -->
@@ -893,6 +895,9 @@
                 const healthResponse = await fetch('/api/health');
                 if (healthResponse.ok) {
                     SERVER_MODE = true;
+                    // Alibaba voices only when the server has its key; otherwise the browser reads, without a choice.
+                    const health = await healthResponse.json().catch(() => ({}));
+                    ttsOff = !health.qwen_ready; document.getElementById('ttsVoice').hidden = ttsOff;
                     document.getElementById('apiKeyInput').style.display = 'none';
                     const remoteResponse = await fetch('/api/lessons');
                     if (remoteResponse.ok) hskDatabase.push(...await remoteResponse.json());
@@ -1579,6 +1584,7 @@
             const learned = new Set(AppState.allMasteredHskWords || []);
             const done = vocabList.filter(v => learned.has(v.word)).length;
             document.getElementById('vocabWordCountBadge').textContent = `${vocabList.length} слов${done ? ` · выучено ${done}` : ''}`;
+            warmSpeech(vocabList.slice(0, 40).map(v => v.word));
             tbody.innerHTML = vocabList.map((v, i) => `
                 <div class="vocab-row${learned.has(v.word) ? ' learned' : ''}" data-word="${escapeHtml(v.word)}"${learned.has(v.word) ? ' title="Выучено"' : ''}>
                     <span class="vr-num">${learned.has(v.word) ? '✓' : i + 1}</span><span class="vr-word chinese-serif">${escapeHtml(v.word)}</span>
@@ -1723,6 +1729,7 @@
         });
         function renderFlashcard(vocabList, direction = null) {
             const vocab = vocabList || getActiveVocab(); if (!vocab.length) return;
+            warmSpeech([vocab[AppState.currentCardIdx], vocab[AppState.currentCardIdx + 1]].map(v => v && v.word));   // this card and the next
             if (direction === 'next' && AppState.masteredWords.length > 2 && Math.random() < 0.25) {
                 const randomMasteredWord = AppState.masteredWords[Math.floor(Math.random() * AppState.masteredWords.length)];
                 const foundIdx = vocab.findIndex(v => v.word === randomMasteredWord);
@@ -1754,6 +1761,35 @@
         // Chinese words are read by Alibaba's Qwen-Audio voice from the server (each word is made once
         // and kept there); without the server or its key the browser's own voice reads instead.
         let ttsAudio = null, ttsOff = false;
+        const TTS_VOICE_KEY = 'chao_tts_voice';
+        const ttsVoice = () => localStorage.getItem(TTS_VOICE_KEY) || 'longanlingxin';
+        // v: a new pace or voice gets a new address (the old answer stays in the browser cache).
+        const ttsUrl = text => '/api/tts?v=2&voice=' + encodeURIComponent(ttsVoice()) + '&text=' + encodeURIComponent(text);
+        // A new word takes Alibaba ~2-3 s; the words in view are made ahead in the background (two at a time),
+        // so a click plays at once from the server's (and the browser's) store.
+        const ttsWarm = new Set(); let ttsQueue = [], ttsBusy = 0;
+        function warmSpeech(words) {
+            if (!SERVER_MODE || ttsOff) return;
+            for (const u of ttsQueue) ttsWarm.delete(u);   // what is in view now goes first
+            ttsQueue = [];
+            for (const w of words) {
+                if (!w || w.length > 120 || !/[\u3400-\u9fff]/.test(w)) continue;
+                const u = ttsUrl(w); if (ttsWarm.has(u)) continue;
+                ttsWarm.add(u); ttsQueue.push(u);
+            }
+            pumpWarm();
+        }
+        function pumpWarm() {
+            while (ttsBusy < 2 && ttsQueue.length) {
+                const u = ttsQueue.shift(); ttsBusy++;
+                fetch(u).then(r => { if (r.status === 503) ttsOff = true; if (!r.ok) ttsWarm.delete(u); return r.blob(); })
+                    .catch(() => ttsWarm.delete(u)).finally(() => { ttsBusy--; pumpWarm(); });
+            }
+        }
+        // The voice that reads words is the learner's choice, remembered in this browser.
+        const ttsVoiceSelect = document.getElementById('ttsVoice');
+        ttsVoiceSelect.value = ttsVoice(); if (!ttsVoiceSelect.value) { localStorage.removeItem(TTS_VOICE_KEY); ttsVoiceSelect.value = ttsVoice(); }
+        ttsVoiceSelect.addEventListener('change', e => { localStorage.setItem(TTS_VOICE_KEY, e.target.value); stopSpeaking(); renderVocabColumn(); speakChinese('你好！'); });
         function stopSpeaking() {
             const was = Boolean(ttsAudio) || window.speechSynthesis.speaking;   // a word still loading counts as playing
             if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
@@ -1769,7 +1805,7 @@
             const done = () => { if (btnElement) btnElement.classList.remove('playing'); };
             if (SERVER_MODE && !ttsOff && /[㐀-鿿]/.test(text) && text.length <= 120) {
                 const audio = new Audio(); ttsAudio = audio;
-                fetch('/api/tts?v=2&text=' + encodeURIComponent(text))   // v: a new pace or voice gets a new address (the old answer stays cached)
+                fetch(ttsUrl(text))
                     .then(r => { if (r.status === 503) ttsOff = true; if (!r.ok) throw Error('HTTP ' + r.status); return r.blob(); })
                     .then(blob => { if (ttsAudio !== audio) return; audio.src = URL.createObjectURL(blob); audio.onended = () => { done(); URL.revokeObjectURL(audio.src); if (ttsAudio === audio) ttsAudio = null; }; return audio.play(); })
                     .catch(() => { if (ttsAudio !== audio) return; ttsAudio = null; browserSpeak(text, btnElement, done); });
