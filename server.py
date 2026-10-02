@@ -74,6 +74,10 @@ def home():
 def manager():
     return FileResponse(APP_DIR / "manager.html")
 
+@app.get("/memory", response_class=HTMLResponse)
+def memory_game():
+    return FileResponse(APP_DIR / "memory-game.html")
+
 def shutil_which(name: str):
     import shutil
     return shutil.which(name)
