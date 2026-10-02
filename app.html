@@ -1751,22 +1751,37 @@
             if (AppState.audioCtx.state === 'suspended') AppState.audioCtx.resume();
         }
         document.addEventListener('click', initAudioContext, { once: true });
+        // Chinese words are read by Alibaba's Qwen-Audio voice from the server (each word is made once
+        // and kept there); without the server or its key the browser's own voice reads instead.
+        let ttsAudio = null, ttsOff = false;
+        function stopSpeaking() {
+            const was = Boolean(ttsAudio) || window.speechSynthesis.speaking;   // a word still loading counts as playing
+            if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+            window.speechSynthesis.cancel();
+            document.querySelectorAll('.sound-icon-btn, .fc-char, .fc-py, .card-stage, .dialogue-text-line').forEach(b => b.classList.remove('playing'));
+            return was;
+        }
         function speakChinese(text, btnElement = null) {
             if (!text) return;
             initAudioContext();
-            
-            if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-                document.querySelectorAll('.sound-icon-btn, .fc-char, .fc-py, .card-stage, .dialogue-text-line').forEach(b => b.classList.remove('playing'));
+            if (stopSpeaking()) return;
+            if (btnElement) btnElement.classList.add('playing');
+            const done = () => { if (btnElement) btnElement.classList.remove('playing'); };
+            if (SERVER_MODE && !ttsOff && /[㐀-鿿]/.test(text) && text.length <= 120) {
+                const audio = new Audio(); ttsAudio = audio;
+                fetch('/api/tts?text=' + encodeURIComponent(text))
+                    .then(r => { if (r.status === 503) ttsOff = true; if (!r.ok) throw Error('HTTP ' + r.status); return r.blob(); })
+                    .then(blob => { if (ttsAudio !== audio) return; audio.src = URL.createObjectURL(blob); audio.onended = () => { done(); URL.revokeObjectURL(audio.src); if (ttsAudio === audio) ttsAudio = null; }; return audio.play(); })
+                    .catch(() => { if (ttsAudio !== audio) return; ttsAudio = null; browserSpeak(text, btnElement, done); });
                 return;
             }
+            browserSpeak(text, btnElement, done);
+        }
+        function browserSpeak(text, btnElement, done) {
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'zh-CN';
             u.rate = 0.85;
-            if (btnElement) {
-                btnElement.classList.add('playing');
-                u.onend = u.onerror = () => btnElement.classList.remove('playing');
-            }
+            u.onend = u.onerror = done;
             window.speechSynthesis.speak(u);
         }
         function closeCurrentAnalysis() {
@@ -2071,7 +2086,7 @@
             if (AppState.gym.timer) clearInterval(AppState.gym.timer);
             if (AppState.gym.stepInterval) clearInterval(AppState.gym.stepInterval);
             if (AppState.studio.pipDrawInterval) clearInterval(AppState.studio.pipDrawInterval);
-            window.speechSynthesis.cancel();
+            stopSpeaking();
         }
         let db = null;
         function initDB() {

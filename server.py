@@ -462,6 +462,50 @@ def tutor(body: dict[str, Any]):
     except Exception as exc:
         raise HTTPException(502, f"Ошибка Qwen: {str(exc)[:350]}")
 
+# Chinese speech for flashcards and the dictionary (Alibaba Qwen-Audio TTS, Token Plan).
+# Each word or phrase is synthesised once and kept on disk; later plays cost nothing.
+TTS_URL = "https://token-plan.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer"
+TTS_MODEL = os.environ.get("TTS_MODEL", "qwen-audio-3.0-tts-plus")
+TTS_VOICES = {"f": "longanlingxin", "m": "longanlufeng"}
+TTS_DIR = DATA_DIR / "tts"
+TTS_DIR.mkdir(parents=True, exist_ok=True)
+tts_locks: dict[str, threading.Lock] = {}
+
+@app.get("/api/tts")
+def tts(text: str, voice: str = "f"):
+    import hashlib
+    text = re.sub(r"\s+", " ", text).strip()
+    if not text or len(text) > 120 or not re.search(r"[㐀-鿿]", text):
+        raise HTTPException(400, "Озвучиваются только китайские слова и фразы до 120 знаков.")
+    name = TTS_VOICES.get(voice, TTS_VOICES["f"])
+    path = TTS_DIR / (hashlib.sha1(f"{TTS_MODEL}|{name}|{text}".encode("utf-8")).hexdigest() + ".mp3")
+    headers = {"Cache-Control": "public, max-age=31536000, immutable"}
+    if path.is_file():
+        return FileResponse(path, media_type="audio/mpeg", headers=headers)
+    api_key = os.environ.get("ALI_TOKEN_PLAN_API_KEY", "")
+    if not api_key:
+        raise HTTPException(503, "Озвучка Alibaba не настроена на сервере.")
+    with tts_locks.setdefault(path.name, threading.Lock()):   # two clicks on a new word: one request
+        if not path.is_file():
+            guard_ai_usage()
+            try:
+                response = requests.post(TTS_URL, headers={"Authorization": f"Bearer {api_key}"},
+                                         json={"model": TTS_MODEL, "input": {"text": text, "voice": name,
+                                                                            "format": "mp3", "sample_rate": 24000}},
+                                         timeout=60)
+                data = response.json() if response.content else {}
+                url = ((data.get("output") or {}).get("audio") or {}).get("url")
+                if not response.ok or not url:
+                    raise RuntimeError(data.get("message") or f"HTTP {response.status_code}")
+                audio = requests.get(url, timeout=60)
+                audio.raise_for_status()
+                tmp = path.with_suffix(".part")
+                tmp.write_bytes(audio.content)
+                tmp.replace(path)
+            except Exception as exc:
+                raise HTTPException(502, f"Озвучка Alibaba: {str(exc)[:300]}")
+    return FileResponse(path, media_type="audio/mpeg", headers=headers)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("server:app", host="0.0.0.0", port=int(os.environ.get("PORT", "8000")))
