@@ -262,15 +262,17 @@
         .hw-steps { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--ink-gray); }
         .hw-steps .active { color: var(--hsk5-teal); font-weight: 700; }
         .hw-timer { font: 700 12px/1 monospace; color: var(--hsk5-teal); }
-        .hw-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+        .hw-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; width: 0; min-width: 100%; flex: none; }
         .hw-strip.concealed .hw-chip { color: transparent; }
         .hw-chip { flex: none; display: grid; justify-items: center; gap: 1px; min-width: 46px; padding: 4px 6px; border: 1px solid var(--hsk5-border); border-radius: 10px; background: var(--paper-white); color: var(--ink-black); font: 600 20px/1.1 "Noto Serif SC", serif; cursor: pointer; }
         .hw-chip small { font: 500 9px/1.2 system-ui, sans-serif; color: var(--ink-gray); }
+        .hw-chip-hand { font-size: 18px; font-weight: 400; line-height: 1; }
         .hw-chip.active { border-color: var(--hsk5-teal); background: var(--hsk5-teal-light); }
         .hw-chip.learned small { color: var(--success-green); }
         .hw-chip:disabled { cursor: default; }
-        .hw-stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .hw-stage canvas { width: 100%; height: 300px; touch-action: none; border-radius: 12px; background: var(--desk-bg); }
+        .hw-stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 0; min-height: 190px; }
+        .hw-pad { position: relative; width: 100%; flex: 1 1 0; min-height: 0; max-height: 340px; }   /* fills the panel’s free height: no scrolling */
+        .hw-pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; border-radius: 12px; background: var(--desk-bg); }
         .hw-meaning { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 8px; }
         .hw-meaning[hidden] { display: none; }
         .hw-word { font-size: 20px; font-weight: 700; color: var(--ink-black); }
@@ -280,11 +282,12 @@
         .hw-text { text-align: center; }
         .hw-title { display: block; font-size: 15px; color: var(--ink-black); }
         .hw-instr { margin-top: 3px; font-size: 12px; line-height: 1.45; color: var(--ink-gray); }
-        .hw-actions { display: flex; justify-content: center; gap: 8px; }
+        .hw-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 8px; }
         .hw-actions button { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--hsk5-border); background: var(--paper-white); color: var(--ink-black); font-weight: 600; cursor: pointer; }
         .hw-actions .hw-primary { background: var(--hsk5-teal); border-color: var(--hsk5-teal); color: #fff; }
         .hw-actions [hidden] { display: none; }
         .hw-status { text-align: center; font-size: 11px; color: var(--ink-gray); }
+        .hw-style { padding: 7px 8px; border: 1px solid var(--hsk5-border); border-radius: 10px; background: var(--paper-white); color: var(--ink-black); font-size: 12px; }
         .task-flip-wrapper { perspective: 1000px; width: 100%; margin-bottom: 4px; }
         .task-flip-card { width: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1); border-radius: 12px; }
         .task-flip-card.flipped { transform: rotateY(180deg); }
@@ -868,7 +871,7 @@
                     <button id="fcNextBtn" class="fc-nav-btn">→</button>
                 </div>
             </div>
-            <!-- «Письмо»: a lesson's characters remembered by hand, with the «Пауза Мейли» distraction (hanzi/hanzi-write.js). -->
+            <!-- «Письмо»: a lesson's characters remembered by hand, printed and handwritten, with the «Пауза Мейли» distraction (hanzi/hanzi-write.js). -->
             <div id="writeSection" class="bento-module write-card"><div id="hanziWrite"></div></div>
             <div id="studioSection" class="bento-module studio-card">
                 <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom:6px;">

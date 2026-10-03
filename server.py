@@ -81,9 +81,12 @@ def require_teacher(credentials: HTTPBasicCredentials = Depends(security)):
 def home():
     return FileResponse(APP_DIR / "app.html")
 
-# «Письмо» (hanzi/): the writing exercise and its stroke data (Make Me a Hanzi, Arphic PL — licences alongside).
+# «Письмо» (hanzi/): the writing exercise and its stroke data (Make Me a Hanzi, Arphic PL — licences alongside),
+# and the handwritten font subsets for its copybook steps (Liu Jian Mao Cao, Long Cang — SIL OFL alongside).
 HANZI_FILES = {"hanzi-write.js": "text/javascript", "strokes.json": "application/json",
-               "ARPHICPL.TXT": "text/plain; charset=utf-8", "HANZI-LICENSE.txt": "text/plain; charset=utf-8"}
+               "ARPHICPL.TXT": "text/plain; charset=utf-8", "HANZI-LICENSE.txt": "text/plain; charset=utf-8",
+               "cursive-liujianmaocao.woff": "font/woff", "cursive-longcang.woff": "font/woff",
+               "LIUJIAN-OFL.txt": "text/plain; charset=utf-8", "LONGCANG-OFL.txt": "text/plain; charset=utf-8"}
 
 @app.get("/hanzi/{name}")
 def hanzi_file(name: str):
