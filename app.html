@@ -255,6 +255,36 @@
         .tab-btn.close-mode { color: #C25E2E !important; background: #FFF0E6 !important; }
         .tutor-card, .flashcard-card, .studio-card { display: none; flex-direction: column; gap: 10px; width: 100%; flex-grow: 1; overflow: hidden; }
         .tutor-card.active, .flashcard-card.active, .studio-card.active { display: flex; }
+        .write-card { display: none; flex-direction: column; width: 100%; flex-grow: 1; overflow: auto; }
+        .write-card.active { display: flex; }
+        .hw { display: flex; flex-direction: column; gap: 8px; min-height: 0; flex: 1; }
+        .hw-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .hw-steps { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--ink-gray); }
+        .hw-steps .active { color: var(--hsk5-teal); font-weight: 700; }
+        .hw-timer { font: 700 12px/1 monospace; color: var(--hsk5-teal); }
+        .hw-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+        .hw-strip.concealed .hw-chip { color: transparent; }
+        .hw-chip { flex: none; display: grid; justify-items: center; gap: 1px; min-width: 46px; padding: 4px 6px; border: 1px solid var(--hsk5-border); border-radius: 10px; background: var(--paper-white); color: var(--ink-black); font: 600 20px/1.1 "Noto Serif SC", serif; cursor: pointer; }
+        .hw-chip small { font: 500 9px/1.2 system-ui, sans-serif; color: var(--ink-gray); }
+        .hw-chip.active { border-color: var(--hsk5-teal); background: var(--hsk5-teal-light); }
+        .hw-chip.learned small { color: var(--success-green); }
+        .hw-chip:disabled { cursor: default; }
+        .hw-stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .hw-stage canvas { width: 100%; height: 300px; touch-action: none; border-radius: 12px; background: var(--desk-bg); }
+        .hw-meaning { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 8px; }
+        .hw-meaning[hidden] { display: none; }
+        .hw-word { font-size: 20px; font-weight: 700; color: var(--ink-black); }
+        .hw-py { color: var(--hsk5-teal); font-weight: 600; }
+        .hw-tr { color: var(--ink-gray); font-size: 13px; }
+        .hw-say { border: 0; background: none; cursor: pointer; font-size: 15px; }
+        .hw-text { text-align: center; }
+        .hw-title { display: block; font-size: 15px; color: var(--ink-black); }
+        .hw-instr { margin-top: 3px; font-size: 12px; line-height: 1.45; color: var(--ink-gray); }
+        .hw-actions { display: flex; justify-content: center; gap: 8px; }
+        .hw-actions button { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--hsk5-border); background: var(--paper-white); color: var(--ink-black); font-weight: 600; cursor: pointer; }
+        .hw-actions .hw-primary { background: var(--hsk5-teal); border-color: var(--hsk5-teal); color: #fff; }
+        .hw-actions [hidden] { display: none; }
+        .hw-status { text-align: center; font-size: 11px; color: var(--ink-gray); }
         .task-flip-wrapper { perspective: 1000px; width: 100%; margin-bottom: 4px; }
         .task-flip-card { width: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1); border-radius: 12px; }
         .task-flip-card.flipped { transform: rotateY(180deg); }
@@ -697,6 +727,7 @@
             <div class="tab-switcher">
                 <button id="tabTutor" class="tab-btn active">Разбор</button>
                 <button id="tabCards" class="tab-btn">Карточки</button>
+                <button id="tabWrite" class="tab-btn">Письмо</button>
                 <button id="tabStudio" class="tab-btn">Студия</button>
             </div>
             
@@ -837,6 +868,8 @@
                     <button id="fcNextBtn" class="fc-nav-btn">→</button>
                 </div>
             </div>
+            <!-- «Письмо»: a lesson's characters remembered by hand, with the «Пауза Мейли» distraction (hanzi/hanzi-write.js). -->
+            <div id="writeSection" class="bento-module write-card"><div id="hanziWrite"></div></div>
             <div id="studioSection" class="bento-module studio-card">
                 <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom:6px;">
                     <span style="font-size:11px; font-weight:700; color:var(--hsk5-teal); text-transform:uppercase; letter-spacing:0.5px;">Видео-ответ (+50 XP)</span>
@@ -865,6 +898,7 @@
             </div>
         </aside>
     </main>
+    <script src="/hanzi/hanzi-write.js"></script>
     <script>
         // Lessons come from the server: pages published from Forma Studio (the
         // management console) and lessons made with the manager.
@@ -1166,7 +1200,7 @@
             'Словарь урока': ['Lesson dictionary', 'Сабақ сөздігі'],
             'Мейли': ['Meili', 'Мейли'],
             'Привет! Загружаю урок...': ['Hi! Loading the lesson...', 'Сәлем! Сабақты жүктеп жатырмын...'],
-            'Разбор': ['Breakdown', 'Талдау'], '📖 Разбор': ['📖 Breakdown', '📖 Талдау'], 'Карточки': ['Flashcards', 'Карточкалар'], 'Студия': ['Studio', 'Студия'],
+            'Разбор': ['Breakdown', 'Талдау'], '📖 Разбор': ['📖 Breakdown', '📖 Талдау'], 'Карточки': ['Flashcards', 'Карточкалар'], 'Письмо': ['Writing', 'Жазу'], 'Студия': ['Studio', 'Студия'],
             'Время китайской школьной зарядки (课间操)!': ['Time for Chinese school exercises (课间操)!', 'Қытай мектебінің жаттығу уақыты (课间操)!'],
             'Прошло 15 минут! Давайте разомнемся по традициям китайских школ: помашем руками, поприседаем и выучим полезные фразы!': ['15 minutes have passed! Let’s stretch the Chinese school way: wave your arms, do some squats and learn useful phrases!', '15 минут өтті! Қытай мектептерінің дәстүрімен сергиік: қолды сермеп, отырып-тұрып, пайдалы тіркестерді үйренейік!'],
             '🤸‍♂️ Начать зарядку': ['🤸‍♂️ Start exercises', '🤸‍♂️ Жаттығуды бастау'],
@@ -1520,6 +1554,7 @@
             AppState.hintCount = 0;
             initSentenceBuilder(data.builderWords || []);
             if (lessonVocab && lessonVocab.length) { AppState.currentCardIdx = 0; renderFlashcard(lessonVocab); }
+            if (document.getElementById('writeSection').classList.contains('active')) openWriting();
         }
         // The lesson before / after this one in the same book (textbook or workbook) and section; -1 when none.
         function neighbourLesson(step) {
@@ -2157,17 +2192,38 @@
                 }
             };
         };
-        ['tabTutor', 'tabCards', 'tabStudio'].forEach((tabId, idx) => {
+        const TABS = ['tabTutor', 'tabCards', 'tabWrite', 'tabStudio'], TAB_SECTIONS = ['tutorSection', 'cardsSection', 'writeSection', 'studioSection'];
+        TABS.forEach((tabId, idx) => {
             document.getElementById(tabId).addEventListener('click', () => {
                 document.getElementById('gymSection').classList.remove('active'); document.getElementById('teaPromptBanner').style.display = 'none';
                 if (idx === 0 && AppState.isAnalysisActive) { closeCurrentAnalysis(); return; }
                 cleanupAllMedia();
-                ['tabTutor', 'tabCards', 'tabStudio'].forEach(t => document.getElementById(t).classList.remove('active'));
-                ['tutorSection', 'cardsSection', 'studioSection'].forEach(s => document.getElementById(s).classList.remove('active'));
-                document.getElementById(tabId).classList.add('active'); document.getElementById(['tutorSection', 'cardsSection', 'studioSection'][idx]).classList.add('active');
-                if (idx === 1) renderFlashcard(); else if (idx === 2) initStudioStreams();
+                TABS.forEach(t => document.getElementById(t).classList.remove('active'));
+                TAB_SECTIONS.forEach(s => document.getElementById(s).classList.remove('active'));
+                document.getElementById(tabId).classList.add('active'); document.getElementById(TAB_SECTIONS[idx]).classList.add('active');
+                if (tabId === 'tabCards') renderFlashcard(); else if (tabId === 'tabWrite') openWriting(); else if (tabId === 'tabStudio') initStudioStreams();
             });
         });
+        // «Письмо»: the characters of this lesson's words (those with stroke data), each with the word it came from.
+        let hanziWriter = null;
+        async function openWriting() {
+            if (!window.HanziWrite) return;
+            if (!hanziWriter) hanziWriter = HanziWrite.mount(document.getElementById('hanziWrite'), {
+                speak: (text, btn) => speakChinese(text, btn),
+                onResult: (glyph, passed) => { if (passed) addPoints(10); }   // only a character recalled without a hint earns XP
+            });
+            const strokes = await HanziWrite.loadStrokes(), lesson = hskDatabase[AppState.currentLessonIdx];
+            const words = uniqueWords(lesson.pages.flatMap(pageWords)), all = uniqueWords(hskDatabase.flatMap(l => l.pages.flatMap(pageWords)));
+            const seen = new Set(), chars = [];
+            for (const v of words) for (const ch of v.word) {
+                if (seen.has(ch) || !strokes.has(ch)) continue;
+                seen.add(ch);
+                const s = strokes.get(ch), own = all.find(x => x.word === ch);
+                chars.push({ glyph: ch, medians: s.medians, paths: s.paths, pinyin: own ? own.py : (s.pinyin || ''), translation: own ? vocabText(own, 'trans') : (s.translation || ''),
+                             word: v.word, wordPy: v.py, wordTr: vocabText(v, 'trans') });
+            }
+            hanziWriter.setChars(chars);
+        }
         async function initStudioStreams() {
             cleanupAllMedia(); initAudioContext();
             document.getElementById('studioPlaybackVideo').style.display = 'none'; document.getElementById('studioLiveVideo').style.display = 'block';

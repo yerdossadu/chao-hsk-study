@@ -81,6 +81,16 @@ def require_teacher(credentials: HTTPBasicCredentials = Depends(security)):
 def home():
     return FileResponse(APP_DIR / "app.html")
 
+# «Письмо» (hanzi/): the writing exercise and its stroke data (Make Me a Hanzi, Arphic PL — licences alongside).
+HANZI_FILES = {"hanzi-write.js": "text/javascript", "strokes.json": "application/json",
+               "ARPHICPL.TXT": "text/plain; charset=utf-8", "HANZI-LICENSE.txt": "text/plain; charset=utf-8"}
+
+@app.get("/hanzi/{name}")
+def hanzi_file(name: str):
+    if name not in HANZI_FILES or not (APP_DIR / "hanzi" / name).is_file():
+        raise HTTPException(404, "Файл не найден")
+    return FileResponse(APP_DIR / "hanzi" / name, media_type=HANZI_FILES[name], headers={"Cache-Control": "no-cache"})
+
 @app.get("/manage", response_class=HTMLResponse)
 def manager():
     return FileResponse(APP_DIR / "manager.html")

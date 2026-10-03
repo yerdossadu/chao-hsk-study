@@ -1,0 +1,308 @@
+// «Письмо»: the shape and stroke order of a lesson's characters, remembered by hand.
+// Look → trace → assemble → «Пауза Мейли» (a short distraction) → write from memory.
+// Ported from the «Дистракт игра» prototype (Hanzi · память формы). Stroke data: Make Me a Hanzi
+// (graphics.txt, Arphic Public License — see ARPHICPL.TXT and HANZI-LICENSE.txt next to this file).
+// Strokes are checked as paths (start, direction, shape) by discrete Fréchet distance, not as calligraphy.
+(function () {
+  'use strict';
+  const KEY = 'chao_hanzi_progress', SESSION = 600, REST = 8, BEAT = 1.1;
+  const DAYS = [0, 1, 3, 7, 14, 30];
+
+  // ---- geometry ----
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function frechet(a, b) {
+    if (!a.length || !b.length) return Infinity;
+    let prev = new Array(b.length).fill(Infinity);
+    for (let i = 0; i < a.length; i++) {
+      const row = new Array(b.length);
+      for (let j = 0; j < b.length; j++) {
+        const d = dist(a[i], b[j]);
+        row[j] = i === 0 && j === 0 ? d : Math.max(d, Math.min(i ? prev[j] : Infinity, j ? row[j - 1] : Infinity, i && j ? prev[j - 1] : Infinity));
+      }
+      prev = row;
+    }
+    return prev[b.length - 1];
+  }
+  function resample(points, steps = 32) {
+    if (points.length < 2) return points;
+    const sums = [0];
+    for (let i = 1; i < points.length; i++) sums.push(sums[i - 1] + dist(points[i - 1], points[i]));
+    const total = sums[sums.length - 1];
+    if (!total) return [points[0]];
+    let j = 1;
+    return Array.from({ length: steps + 1 }, (_, i) => {
+      const d = total * i / steps;
+      while (j < sums.length - 1 && sums[j] < d) j++;
+      const t = (d - sums[j - 1]) / (sums[j] - sums[j - 1] || 1);
+      return { x: points[j - 1].x + (points[j].x - points[j - 1].x) * t, y: points[j - 1].y + (points[j].y - points[j - 1].y) * t };
+    });
+  }
+
+  // ---- spaced repetition: on your own → 1, 3, 7, 14, 30 days; with a hint → again in a minute ----
+  function review(p, passed, now = Date.now()) {
+    p = p || { successes: 0, attempts: 0, level: 0, due: 0 };
+    const level = passed ? Math.min(p.level + 1, 5) : 0;
+    return { successes: p.successes + (passed ? 1 : 0), attempts: p.attempts + 1, level, due: now + (passed ? DAYS[level] * 86400000 : 60000) };
+  }
+  const loadProgress = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || '{}'); return v && typeof v === 'object' ? v : {}; } catch { return {}; } };
+  const saveProgress = r => { try { localStorage.setItem(KEY, JSON.stringify(r)); } catch { /* private window: the session still works */ } };
+
+  let strokes = null;
+  const loadStrokes = () => strokes || (strokes = fetch('/hanzi/strokes.json').then(r => r.ok ? r.json() : []).then(list => new Map(list.map(c => [c.glyph, c]))).catch(() => new Map()));
+
+  const STEPS = [['study', 'Посмотреть'], ['trace', 'Провести'], ['assemble', 'Собрать'], ['rest', 'Пауза Мейли'], ['recall', 'Вспомнить']];
+  const TEXT = {
+    study: ['Рассмотрите форму', 'Светящаяся точка показывает порядок и направление черт. Начните, когда будете готовы.'],
+    trace: ['Проведите по дорожке', 'Начните с подсвеченной точки и ведите черту целиком. Скорость — любая.'],
+    assemble: ['Соберите иероглиф', 'Перетащите черты в рамку. Точки в рамке — середины черт.'],
+    rest: ['Пауза Мейли', 'Касайтесь только светящейся фигуры. Короткое отвлечение не даёт держать иероглиф в голове — через 8 секунд вы вспомните его по-настоящему.'],
+    recall: ['Напишите по памяти', 'Черты — в изученном порядке. Образец скрыт; подсказка покажет его на 2,5 секунды, но повторение засчитается как с помощью.'],
+    end: ['Сессия завершена', 'Прогресс сохранён. Можно начать новую короткую сессию.']
+  };
+
+  function mount(root, opts = {}) {
+    root.classList.add('hw');
+    root.innerHTML = `
+      <div class="hw-top"><div class="hw-steps">${STEPS.map(([k, t], i) => `<span data-hw-step="${k}">${i + 1} · ${t}</span>`).join('')}</div><span class="hw-timer" title="Сессия — 10 минут">10:00</span></div>
+      <div class="hw-strip" aria-label="Иероглифы урока"></div>
+      <div class="hw-stage"><canvas aria-label="Поле для изучения и написания иероглифа"></canvas>
+        <div class="hw-meaning" hidden><button type="button" class="hw-say" title="Послушать">🔊</button><span class="hw-word chinese-serif"></span><span class="hw-py chinese-sans"></span><span class="hw-tr"></span></div></div>
+      <div class="hw-text"><strong class="hw-title"></strong><p class="hw-instr"></p></div>
+      <div class="hw-actions"><button type="button" class="hw-hint">Подсказка</button><button type="button" class="hw-primary">Начать</button><button type="button" class="hw-pause" hidden>Пауза</button></div>
+      <div class="hw-status"></div>`;
+    const $ = s => root.querySelector(s), canvas = $('canvas'), ctx = canvas.getContext('2d');
+    let list = [], records = loadProgress(), current = 0, phase = 'study', w = 400, h = 300, size = 220;
+    let stroke = 0, phaseTime = 0, last = performance.now(), sessionStart = 0, paused = false, finished = false, assisted = false;
+    let trace = [], accepted = [], pieces = [], selected = -1, offset = { x: 0, y: 0 }, hintUntil = 0, flash = 0, flashGood = true, restTarget = 0, colors = null, colorsAt = 0;
+
+    const glyph = () => list[current];
+    const center = () => ({ x: w / 2, y: h * .46 });
+    const toCanvas = p => ({ x: center().x + (p.x - 50) * size / 100, y: center().y + (p.y - 50) * size / 100 });
+    const median = i => glyph().medians[i].map(([x, y]) => ({ x: x / 1024 * 100, y: (900 - y) / 1024 * 100 }));
+    const reference = i => resample(median(i).map(toCanvas), 48);
+    const midpoint = i => { const p = reference(i); return p[Math.floor(p.length / 2)]; };
+    // Colours follow the platform theme (light / dark).
+    function palette() {
+      const now = performance.now();
+      if (colors && now - colorsAt < 500) return colors;
+      const s = getComputedStyle(root), v = (n, f) => (s.getPropertyValue(n) || '').trim() || f;
+      colorsAt = now;
+      return colors = { teal: v('--hsk5-teal', '#1F5F61'), border: v('--hsk5-border', '#CBD9D9'), gold: v('--tea-gold', '#B87333'), green: v('--success-green', '#2E7D5A'), gray: v('--ink-gray', '#55514B'), paper: v('--paper-white', '#FFFEFA') };
+    }
+
+    function strip() {
+      const box = $('.hw-strip'), hide = phase === 'rest' || phase === 'recall';
+      box.replaceChildren();
+      box.classList.toggle('concealed', hide);
+      list.forEach((c, i) => {
+        const p = records[c.glyph], b = document.createElement('button');
+        b.type = 'button'; b.className = 'hw-chip' + (i === current ? ' active' : '') + (p && p.level ? ' learned' : '');
+        b.textContent = c.glyph;
+        const small = document.createElement('small');
+        small.textContent = !p ? 'новый' : p.due <= Date.now() ? 'повторить' : 'ур. ' + p.level;
+        b.append(small); b.disabled = hide; b.title = c.word && c.word !== c.glyph ? `${c.glyph} — из слова ${c.word}` : c.glyph;
+        b.onclick = () => { if (finished) return; current = i; setPhase('study'); };
+        box.append(b);
+      });
+      const learned = list.filter(c => records[c.glyph] && records[c.glyph].level).length, due = list.filter(c => records[c.glyph] && records[c.glyph].due <= Date.now()).length;
+      $('.hw-status').textContent = list.length ? `Вспомнено самостоятельно: ${learned} из ${list.length} · к повторению: ${due}` : '';
+    }
+    function ui() {
+      if (!list.length) return;
+      const show = phase === 'study' || phase === 'result', c = glyph();
+      $('.hw-meaning').hidden = !show;
+      $('.hw-word').textContent = show ? (c.word && c.word !== c.glyph ? c.word : c.glyph) : '';
+      $('.hw-py').textContent = show ? (c.word && c.word !== c.glyph ? c.wordPy || c.pinyin || '' : c.pinyin || c.wordPy || '') : '';
+      $('.hw-tr').textContent = show ? (c.word && c.word !== c.glyph ? c.wordTr || c.translation || '' : c.translation || c.wordTr || '') : '';
+      const t = phase === 'result'
+        ? (assisted ? ['Вернёмся к этой форме ещё раз', 'Подсказка помогла. Иероглиф вернётся скоро — для самостоятельного повторения.'] : ['Форма восстановлена', 'Вы вспомнили сами. Следующее повторение назначено по вашему прогрессу.'])
+        : TEXT[phase];
+      $('.hw-title').textContent = t[0];
+      $('.hw-instr').textContent = (phase === 'trace' || phase === 'recall' ? `Черта ${stroke + 1} из ${c.medians.length}. ` : '') + t[1];
+      const primary = $('.hw-primary');
+      primary.hidden = ['trace', 'assemble', 'rest', 'recall'].includes(phase);
+      primary.textContent = phase === 'study' ? 'Начать' : phase === 'result' ? 'Следующий иероглиф' : 'Новая сессия';
+      $('.hw-hint').hidden = !['trace', 'assemble', 'recall'].includes(phase);
+      $('.hw-pause').hidden = !sessionStart || phase === 'end';
+      $('.hw-pause').textContent = paused ? 'Продолжить' : 'Пауза';
+      root.querySelectorAll('[data-hw-step]').forEach(el => el.classList.toggle('active', el.dataset.hwStep === phase));
+      strip();
+    }
+    function setPhase(next) {
+      phase = next; phaseTime = 0; trace = []; selected = -1; hintUntil = 0;
+      if (next === 'study') { stroke = 0; accepted = []; assisted = false; }
+      if (next === 'trace' || next === 'recall') { stroke = 0; accepted = []; }
+      if (next === 'assemble') pieces = glyph().medians.map((_, i) => ({ x: w * (i + 1) / (glyph().medians.length + 1), y: h * .88, locked: false }));
+      if (next === 'rest') restTarget = Math.floor(Math.random() * 3);
+      ui();
+    }
+    function feedback(ok) { flashGood = ok; flash = ok ? .6 : .4; if (ok) navigator.vibrate?.(20); }
+    function nextIndex(exclude) {
+      const now = Date.now(), rank = p => !p ? 1 : p.due <= now ? 0 : 2;
+      const order = list.map((c, i) => i).filter(i => list[i].glyph !== exclude);
+      order.sort((a, b) => { const x = records[list[a].glyph], y = records[list[b].glyph]; return rank(x) - rank(y) || ((x && x.due) || 0) - ((y && y.due) || 0) || a - b; });
+      return order.length ? order[0] : current;
+    }
+    function completeRecall() {
+      const passed = !assisted, g = glyph().glyph;
+      records[g] = review(records[g], passed); saveProgress(records);
+      feedback(true); opts.onResult?.(g, passed);
+      setPhase('result');
+    }
+    function endSession() {
+      finished = true; paused = false; setPhase('end'); saveProgress(records);
+      root.dispatchEvent(new CustomEvent('distractorcomplete', { bubbles: true }));
+      window.onDistractorComplete?.();
+    }
+
+    // ---- drawing ----
+    function line(p, color, width = 8) {
+      if (!p.length) return;
+      ctx.beginPath(); p.forEach((v, i) => i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y));
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+    }
+    function glyphFill(color, alpha = 1) {
+      ctx.save(); const c = center();
+      ctx.globalAlpha = alpha; ctx.translate(c.x - size / 2, c.y - size / 2); ctx.scale(size / 1024, -size / 1024); ctx.translate(0, -900);
+      ctx.fillStyle = color; for (const path of glyph().paths) ctx.fill(new Path2D(path));
+      ctx.restore();
+    }
+    function dot(p, r = 6) { const k = palette(); ctx.fillStyle = k.gold; ctx.shadowColor = k.gold; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; }
+    function grid() {
+      const c = center(), s = size, k = palette();
+      ctx.strokeStyle = k.border; ctx.lineWidth = 1; ctx.strokeRect(c.x - s / 2, c.y - s / 2, s, s);
+      ctx.setLineDash([4, 7]); line([{ x: c.x - s / 2, y: c.y }, { x: c.x + s / 2, y: c.y }], k.border, 1); line([{ x: c.x, y: c.y - s / 2 }, { x: c.x, y: c.y + s / 2 }], k.border, 1); ctx.setLineDash([]);
+    }
+    const visible = () => root.offsetParent !== null && !document.hidden;
+    function frame(now) {
+      requestAnimationFrame(frame);
+      const dt = Math.min(.1, (now - last) / 1000); last = now;
+      if (!visible()) { if (sessionStart && !finished && !paused) { paused = true; trace = []; selected = -1; ui(); } return; }
+      if (sessionStart && !finished && !paused) {
+        const remain = Math.max(0, SESSION - (now - sessionStart) / 1000);
+        $('.hw-timer').textContent = `${String(Math.floor(remain / 60)).padStart(2, '0')}:${String(Math.floor(remain % 60)).padStart(2, '0')}`;
+        if (remain === 0) endSession();
+      }
+      if (!paused) phaseTime += dt;
+      flash = Math.max(0, flash - dt);
+      ctx.clearRect(0, 0, w, h);
+      if (!list.length) return;
+      const k = palette(), c = center(), thick = Math.max(5, size * .026);
+      if (phase === 'study' || phase === 'result') {
+        grid(); glyphFill(k.teal, .85);
+        if (phase === 'study') { const n = glyph().medians.length, i = Math.floor(phaseTime / BEAT) % n, p = reference(i), t = (phaseTime % BEAT) / BEAT; line(p.slice(0, Math.max(1, Math.floor(t * p.length))), k.gold, 5); dot(p[Math.min(p.length - 1, Math.floor(t * p.length))]); }
+      }
+      if (phase === 'trace' || phase === 'recall') {
+        grid();
+        if (phase === 'trace' || now < hintUntil) { glyphFill(k.teal, .16); const p = reference(stroke); line(p, k.border, 5); dot(p[0]); if (phase === 'trace') dot(p[Math.floor(((phaseTime % BEAT) / BEAT) * (p.length - 1))], 4); }
+        for (const p of accepted) line(p, k.green, thick);
+        line(trace, k.gold, thick);
+      }
+      if (phase === 'assemble') {
+        grid(); if (now < hintUntil) glyphFill(k.teal, .16);
+        pieces.forEach((p, i) => {
+          const m = midpoint(i);
+          if (!p.locked) { ctx.fillStyle = k.gray; ctx.beginPath(); ctx.arc(m.x, m.y, 3, 0, Math.PI * 2); ctx.fill(); }
+          line(reference(i).map(v => ({ x: v.x + p.x - m.x, y: v.y + p.y - m.y })), p.locked ? k.green : k.gold, thick);
+        });
+      }
+      if (phase === 'rest') {
+        const y = h * .44;
+        for (let i = 0; i < 3; i++) {
+          const x = w * (i + 1) / 4, on = i === restTarget;
+          ctx.fillStyle = on ? k.gold : k.border; ctx.strokeStyle = on ? k.gold : k.border; ctx.lineWidth = 2;
+          if (on) { ctx.shadowColor = k.gold; ctx.shadowBlur = 16; }
+          ctx.beginPath();
+          if (i === 0) ctx.arc(x, y, 25, 0, Math.PI * 2);
+          if (i === 1) ctx.rect(x - 22, y - 22, 44, 44);
+          if (i === 2) { ctx.moveTo(x, y - 28); ctx.lineTo(x + 27, y + 23); ctx.lineTo(x - 27, y + 23); ctx.closePath(); }
+          ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+        }
+        ctx.beginPath(); ctx.strokeStyle = k.teal; ctx.lineWidth = 3; ctx.arc(c.x, h * .8, 18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, phaseTime / REST)); ctx.stroke();
+        if (phaseTime >= REST && !paused) setPhase('recall');
+      }
+      if (phase === 'end') { ctx.font = '56px serif'; ctx.textAlign = 'center'; ctx.fillStyle = k.teal; ctx.fillText('◎', c.x, c.y + 18); }
+      if (flash > 0) { ctx.globalAlpha = flash; ctx.strokeStyle = flashGood ? k.green : k.gold; ctx.lineWidth = 3; ctx.strokeRect(c.x - size / 2 - 7, c.y - size / 2 - 7, size + 14, size + 14); ctx.globalAlpha = 1; }
+      if (paused) { ctx.globalAlpha = .82; ctx.fillStyle = k.paper; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; ctx.fillStyle = k.teal; ctx.font = '28px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Ⅱ', c.x, c.y); }
+    }
+    function resize() {
+      const oldW = w, oldH = h, r = canvas.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      w = r.width; h = r.height; size = Math.min(w * .7, h * .7, 290);
+      canvas.width = Math.round(w * devicePixelRatio); canvas.height = Math.round(h * devicePixelRatio);
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      trace = []; selected = -1;
+      if (list.length && phase === 'assemble') pieces.forEach((p, i) => { if (p.locked) Object.assign(p, midpoint(i)); else { p.x = p.x / oldW * w; p.y = p.y / oldH * h; } });
+      if (list.length && accepted.length) accepted = Array.from({ length: stroke }, (_, i) => reference(i));
+    }
+    new ResizeObserver(resize).observe(canvas);
+
+    // ---- input ----
+    const at = e => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    canvas.addEventListener('pointerdown', e => {
+      if (paused || finished || !list.length || selected >= 0 || trace.length) return;
+      canvas.setPointerCapture?.(e.pointerId);
+      const p = at(e);
+      if (phase === 'trace' || phase === 'recall') trace = [p];
+      if (phase === 'assemble') {
+        selected = pieces.findLastIndex((b, i) => !b.locked && reference(i).some(v => { const m = midpoint(i); return dist(p, { x: v.x + b.x - m.x, y: v.y + b.y - m.y }) < 18; }));
+        if (selected >= 0) offset = { x: p.x - pieces[selected].x, y: p.y - pieces[selected].y };
+      }
+      if (phase === 'rest' && dist(p, { x: w * (restTarget + 1) / 4, y: h * .44 }) < 36) { feedback(true); restTarget = (restTarget + 1 + Math.floor(Math.random() * 2)) % 3; }
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (paused) return;
+      const p = at(e);
+      if (trace.length && trace.length < 1500 && dist(trace[trace.length - 1], p) > 1) trace.push(p);
+      if (selected >= 0) { pieces[selected].x = p.x - offset.x; pieces[selected].y = p.y - offset.y; }
+    });
+    canvas.addEventListener('pointerup', e => {
+      if (paused) return;
+      if ((phase === 'trace' || phase === 'recall') && trace.length) {
+        trace.push(at(e));
+        const ref = reference(stroke), ok = frechet(resample(trace, 48), ref) < Math.max(13, size * .085);
+        feedback(ok);
+        if (ok) { accepted.push(ref); stroke++; if (stroke === glyph().medians.length) { if (phase === 'trace') setPhase('assemble'); else completeRecall(); } else ui(); }
+        else $('.hw-instr').textContent = 'Ещё раз: проверьте начало, направление и форму черты.';
+        trace = [];
+      }
+      if (phase === 'assemble' && selected >= 0) {
+        const b = pieces[selected], m = midpoint(selected);
+        if (dist(b, m) < Math.max(15, size * .08)) { Object.assign(b, m); b.locked = true; feedback(true); }
+        else { feedback(false); b.x = w * (selected + 1) / (glyph().medians.length + 1); b.y = h * .88; }   // a miss goes back to its place below
+        selected = -1;
+        if (pieces.every(p => p.locked)) setPhase('rest');
+      }
+    });
+    canvas.addEventListener('pointercancel', () => { trace = []; selected = -1; });
+    $('.hw-primary').onclick = () => {
+      if (!list.length) return;
+      if (phase === 'end') { finished = false; sessionStart = 0; paused = false; $('.hw-timer').textContent = '10:00'; current = nextIndex(''); setPhase('study'); return; }
+      if (!sessionStart) sessionStart = performance.now();
+      if (phase === 'study') setPhase('trace');
+      else if (phase === 'result') { current = nextIndex(glyph().glyph); setPhase('study'); }
+    };
+    $('.hw-hint').onclick = () => {
+      if (paused) return;
+      hintUntil = performance.now() + 2500;
+      if (phase === 'recall') { assisted = true; $('.hw-instr').textContent = 'Образец появится на 2,5 секунды. Это повторение засчитается как выполненное с подсказкой.'; }
+    };
+    $('.hw-pause').onclick = () => { paused = !paused; if (!paused) last = performance.now(); trace = []; selected = -1; ui(); };
+    $('.hw-say').onclick = () => { const c = glyph(); if (c) opts.speak?.(c.word || c.glyph, $('.hw-say')); };
+    requestAnimationFrame(frame);
+
+    return {
+      // A new lesson: its characters (those with stroke data), progress kept per character across lessons.
+      setChars(chars) {
+        const same = chars.map(c => c.glyph).join('') === list.map(c => c.glyph).join('');
+        if (same && list.length) return;
+        list = chars; records = loadProgress(); finished = false; sessionStart = 0; paused = false;
+        $('.hw-timer').textContent = '10:00';
+        if (!list.length) { root.querySelector('.hw-title').textContent = 'Для иероглифов этого урока пока нет данных о чертах'; root.querySelector('.hw-instr').textContent = ''; $('.hw-meaning').hidden = true; $('.hw-primary').hidden = true; $('.hw-hint').hidden = true; strip(); return; }
+        current = nextIndex(''); resize(); setPhase('study');
+      }
+    };
+  }
+
+  window.HanziWrite = { mount, loadStrokes };
+})();

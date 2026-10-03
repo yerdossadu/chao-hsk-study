@@ -13,6 +13,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY server.py lesson_validation.py layout.py forma.py app.html manager.html ./
+COPY hanzi ./hanzi
 RUN mkdir -p /var/data
 
 EXPOSE 10000
