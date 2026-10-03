@@ -1,32 +1,12 @@
-// «Письмо»: the shape and stroke order of a lesson's characters, remembered by hand — printed and handwritten.
-// Look → trace → assemble → the handwritten form (trace it) → «Пауза Мейли» (a short distraction) →
-// write the strokes from memory → write the handwritten form from memory → compare.
-// Ported from the «Дистракт игра» prototype (Hanzi · память формы + связная пропись). Stroke data: Make Me a Hanzi
+// «Письмо»: the shape and stroke order of a lesson's characters, remembered by hand.
+// Look → trace → assemble → «Пауза Мейли» (a short distraction) → write from memory.
+// Ported from the «Дистракт игра» prototype (Hanzi · память формы). Stroke data: Make Me a Hanzi
 // (graphics.txt, Arphic Public License — see ARPHICPL.TXT and HANZI-LICENSE.txt next to this file).
 // Strokes are checked as paths (start, direction, shape) by discrete Fréchet distance, not as calligraphy.
-// The handwritten samples are the fonts Liu Jian Mao Cao (草书) and Long Cang (SIL OFL 1.1; subsets built by
-// tools/build_cursive_fonts.py). Joins cannot be recovered from a font outline, so the handwritten steps are
-// not scored: the learner's own lines stay on the paper and the learner compares them with the sample.
 (function () {
   'use strict';
-  const KEY = 'chao_hanzi_progress', STYLE_KEY = 'chao_cursive_style', SESSION = 600, REST = 8, BEAT = 1.1;
+  const KEY = 'chao_hanzi_progress', SESSION = 600, REST = 8, BEAT = 1.1;
   const DAYS = [0, 1, 3, 7, 14, 30];
-  const STYLES = [['ChaoLiuCursive', 'cursive-liujianmaocao.woff', 'Пропись: 草书 · связная'], ['ChaoLongCang', 'cursive-longcang.woff', 'Пропись: разборчивая']];
-  let fonts = null;
-  const loadFonts = () => fonts || (fonts = Promise.all(STYLES.map(([family, file]) => new FontFace(family, `url(/hanzi/${file})`).load().then(f => document.fonts.add(f))))
-    .then(() => true, () => { fonts = null; return false; }));
-
-  // Quadratic smoothing of the learner's handwriting keeps corners legible and never invents joins between strokes.
-  function smooth(points) {
-    if (points.length < 3) return points;
-    const out = [points[0]];
-    for (let i = 1; i < points.length - 1; i++) {
-      const a = out[out.length - 1], b = points[i], c = { x: (b.x + points[i + 1].x) / 2, y: (b.y + points[i + 1].y) / 2 };
-      for (let j = 1; j <= 4; j++) { const t = j / 4; out.push({ x: (1 - t) ** 2 * a.x + 2 * (1 - t) * t * b.x + t * t * c.x, y: (1 - t) ** 2 * a.y + 2 * (1 - t) * t * b.y + t * t * c.y, pressure: b.pressure }); }
-    }
-    out.push(points[points.length - 1]);
-    return out;
-  }
 
   // ---- geometry ----
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -70,39 +50,30 @@
   let strokes = null;
   const loadStrokes = () => strokes || (strokes = fetch('/hanzi/strokes.json').then(r => r.ok ? r.json() : []).then(list => new Map(list.map(c => [c.glyph, c]))).catch(() => new Map()));
 
-  const STEPS = [['study', 'Посмотреть'], ['trace', 'Провести'], ['assemble', 'Собрать'], ['hand', 'Пропись'], ['rest', 'Пауза Мейли'], ['recall', 'Вспомнить'], ['handRecall', 'Пропись по памяти']];
+  const STEPS = [['study', 'Посмотреть'], ['trace', 'Провести'], ['assemble', 'Собрать'], ['rest', 'Пауза Мейли'], ['recall', 'Вспомнить']];
   const TEXT = {
     study: ['Рассмотрите форму', 'Светящаяся точка показывает порядок и направление черт. Начните, когда будете готовы.'],
     trace: ['Проведите по дорожке', 'Начните с подсвеченной точки и ведите черту целиком. Скорость — любая.'],
     assemble: ['Соберите иероглиф', 'Перетащите черты в рамку. Точки в рамке — середины черт.'],
-    hand: ['Рукописная форма', 'Тот же знак, написанный от руки: сравните с печатным — что сокращено, где появились соединения. Обведите бледный образец; линии остаются вашими.'],
     rest: ['Пауза Мейли', 'Касайтесь только светящейся фигуры. Короткое отвлечение не даёт держать иероглиф в голове — через 8 секунд вы вспомните его по-настоящему.'],
     recall: ['Напишите по памяти', 'Черты — в изученном порядке. Образец скрыт; подсказка покажет его на 2,5 секунды, но повторение засчитается как с помощью.'],
-    handRecall: ['Пропись по памяти', 'Теперь напишите тот же знак от руки, рукописной формой. Подсказка покажет образец на 2,5 секунды.'],
     end: ['Сессия завершена', 'Прогресс сохранён. Можно начать новую короткую сессию.']
   };
-  const INK = ['hand', 'handRecall'];
 
   function mount(root, opts = {}) {
     root.classList.add('hw');
     root.innerHTML = `
       <div class="hw-top"><div class="hw-steps">${STEPS.map(([k, t], i) => `<span data-hw-step="${k}">${i + 1} · ${t}</span>`).join('')}</div><span class="hw-timer" title="Сессия — 10 минут">10:00</span></div>
       <div class="hw-strip" aria-label="Иероглифы урока"></div>
-      <div class="hw-stage"><div class="hw-pad"><canvas aria-label="Поле для изучения и написания иероглифа"></canvas></div>
+      <div class="hw-stage"><canvas aria-label="Поле для изучения и написания иероглифа"></canvas>
         <div class="hw-meaning" hidden><button type="button" class="hw-say" title="Послушать">🔊</button><span class="hw-word chinese-serif"></span><span class="hw-py chinese-sans"></span><span class="hw-tr"></span></div></div>
       <div class="hw-text"><strong class="hw-title"></strong><p class="hw-instr"></p></div>
-      <div class="hw-actions"><button type="button" class="hw-undo">↶ Отменить</button><button type="button" class="hw-clear">Очистить</button><button type="button" class="hw-hint">Подсказка</button><button type="button" class="hw-primary">Начать</button><button type="button" class="hw-pause" hidden>Пауза</button>
-        <select class="hw-style" aria-label="Почерк образца">${STYLES.map(([f, , t]) => `<option value="${f}">${t}</option>`).join('')}</select></div>
+      <div class="hw-actions"><button type="button" class="hw-hint">Подсказка</button><button type="button" class="hw-primary">Начать</button><button type="button" class="hw-pause" hidden>Пауза</button></div>
       <div class="hw-status"></div>`;
     const $ = s => root.querySelector(s), canvas = $('canvas'), ctx = canvas.getContext('2d');
     let list = [], records = loadProgress(), current = 0, phase = 'study', w = 400, h = 300, size = 220;
     let stroke = 0, phaseTime = 0, last = performance.now(), sessionStart = 0, paused = false, finished = false, assisted = false;
     let trace = [], accepted = [], pieces = [], selected = -1, offset = { x: 0, y: 0 }, hintUntil = 0, flash = 0, flashGood = true, restTarget = 0, colors = null, colorsAt = 0;
-    // The handwritten steps: the learner's own lines in 0..1 coordinates of the writing square; they run only once the fonts are in.
-    let style = STYLES[0][0], hand = false, ink = [], draft = [], inkPointer = null, overlay = false;
-    try { const s = localStorage.getItem(STYLE_KEY); if (STYLES.some(([f]) => f === s)) style = s; } catch { /* default style */ }
-    $('.hw-style').value = style;
-    loadFonts().then(ok => { hand = ok; ui(); });
 
     const glyph = () => list[current];
     const center = () => ({ x: w / 2, y: h * .46 });
@@ -116,18 +87,17 @@
       if (colors && now - colorsAt < 500) return colors;
       const s = getComputedStyle(root), v = (n, f) => (s.getPropertyValue(n) || '').trim() || f;
       colorsAt = now;
-      return colors = { ink: v('--ink-black', '#272F2B'), teal: v('--hsk5-teal', '#1F5F61'), border: v('--hsk5-border', '#CBD9D9'), gold: v('--tea-gold', '#B87333'), green: v('--success-green', '#2E7D5A'), gray: v('--ink-gray', '#55514B'), paper: v('--paper-white', '#FFFEFA') };
+      return colors = { teal: v('--hsk5-teal', '#1F5F61'), border: v('--hsk5-border', '#CBD9D9'), gold: v('--tea-gold', '#B87333'), green: v('--success-green', '#2E7D5A'), gray: v('--ink-gray', '#55514B'), paper: v('--paper-white', '#FFFEFA') };
     }
 
     function strip() {
-      const box = $('.hw-strip'), hide = phase === 'rest' || phase === 'recall' || phase === 'handRecall';
+      const box = $('.hw-strip'), hide = phase === 'rest' || phase === 'recall';
       box.replaceChildren();
       box.classList.toggle('concealed', hide);
       list.forEach((c, i) => {
         const p = records[c.glyph], b = document.createElement('button');
         b.type = 'button'; b.className = 'hw-chip' + (i === current ? ' active' : '') + (p && p.level ? ' learned' : '');
         b.textContent = c.glyph;
-        if (hand) { const s = document.createElement('span'); s.className = 'hw-chip-hand'; s.style.fontFamily = style; s.textContent = c.glyph; b.append(s); }
         const small = document.createElement('small');
         small.textContent = !p ? 'новый' : p.due <= Date.now() ? 'повторить' : 'ур. ' + p.level;
         b.append(small); b.disabled = hide; b.title = c.word && c.word !== c.glyph ? `${c.glyph} — из слова ${c.word}` : c.glyph;
@@ -148,24 +118,18 @@
         ? (assisted ? ['Вернёмся к этой форме ещё раз', 'Подсказка помогла. Иероглиф вернётся скоро — для самостоятельного повторения.'] : ['Форма восстановлена', 'Вы вспомнили сами. Следующее повторение назначено по вашему прогрессу.'])
         : TEXT[phase];
       $('.hw-title').textContent = t[0];
-      $('.hw-instr').textContent = (phase === 'trace' || phase === 'recall' ? `Черта ${stroke + 1} из ${c.medians.length}. ` : '') + t[1]
-        + (phase === 'result' && ink.length ? ' Ваша пропись — на поле: наложите образец и сравните силуэт, пропорции и соединения.' : '');
-      const primary = $('.hw-primary'), inked = phase === 'result' && ink.length > 0;
+      $('.hw-instr').textContent = (phase === 'trace' || phase === 'recall' ? `Черта ${stroke + 1} из ${c.medians.length}. ` : '') + t[1];
+      const primary = $('.hw-primary');
       primary.hidden = ['trace', 'assemble', 'rest', 'recall'].includes(phase);
-      primary.textContent = { study: 'Начать', hand: 'Дальше → Пауза Мейли', handRecall: 'Сравнить с образцом', result: 'Следующий иероглиф' }[phase] || 'Новая сессия';
-      primary.disabled = INK.includes(phase) && !ink.length;
-      $('.hw-hint').hidden = !['trace', 'assemble', 'recall', 'handRecall'].includes(phase) && !inked;
-      $('.hw-hint').textContent = inked ? (overlay ? 'Скрыть образец' : 'Наложить образец') : 'Подсказка';
-      $('.hw-undo').hidden = $('.hw-clear').hidden = !INK.includes(phase);
-      $('.hw-style').hidden = !hand || !(INK.includes(phase) || inked || phase === 'study');
+      primary.textContent = phase === 'study' ? 'Начать' : phase === 'result' ? 'Следующий иероглиф' : 'Новая сессия';
+      $('.hw-hint').hidden = !['trace', 'assemble', 'recall'].includes(phase);
       $('.hw-pause').hidden = !sessionStart || phase === 'end';
       $('.hw-pause').textContent = paused ? 'Продолжить' : 'Пауза';
       root.querySelectorAll('[data-hw-step]').forEach(el => el.classList.toggle('active', el.dataset.hwStep === phase));
       strip();
     }
     function setPhase(next) {
-      phase = next; phaseTime = 0; trace = []; selected = -1; hintUntil = 0; draft = []; inkPointer = null; overlay = false;
-      if (next === 'study' || INK.includes(next)) ink = [];
+      phase = next; phaseTime = 0; trace = []; selected = -1; hintUntil = 0;
       if (next === 'study') { stroke = 0; accepted = []; assisted = false; }
       if (next === 'trace' || next === 'recall') { stroke = 0; accepted = []; }
       if (next === 'assemble') pieces = glyph().medians.map((_, i) => ({ x: w * (i + 1) / (glyph().medians.length + 1), y: h * .88, locked: false }));
@@ -183,7 +147,7 @@
       const passed = !assisted, g = glyph().glyph;
       records[g] = review(records[g], passed); saveProgress(records);
       feedback(true); opts.onResult?.(g, passed);
-      setPhase(hand ? 'handRecall' : 'result');
+      setPhase('result');
     }
     function endSession() {
       finished = true; paused = false; setPhase('end'); saveProgress(records);
@@ -202,24 +166,6 @@
       ctx.globalAlpha = alpha; ctx.translate(c.x - size / 2, c.y - size / 2); ctx.scale(size / 1024, -size / 1024); ctx.translate(0, -900);
       ctx.fillStyle = color; for (const path of glyph().paths) ctx.fill(new Path2D(path));
       ctx.restore();
-    }
-    // The handwritten sample, fitted into the writing square.
-    function script(color, alpha, c = center(), s = size) {
-      const g = glyph().glyph;
-      ctx.save(); ctx.font = `${s * 1.24}px ${style}`;
-      const m = ctx.measureText(g), inkW = m.actualBoundingBoxLeft + m.actualBoundingBoxRight, inkH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
-      const fit = Math.min(s * .88 / (inkW || 1), s * .88 / (inkH || 1));
-      ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.translate(c.x, c.y); ctx.scale(fit, fit);
-      ctx.fillText(g, -inkW / 2 + m.actualBoundingBoxLeft, inkH / 2 - m.actualBoundingBoxDescent);
-      ctx.restore();
-    }
-    function handwriting(s, color) {
-      const c = center(), x0 = c.x - size / 2, y0 = c.y - size / 2, p = smooth(s);
-      ctx.strokeStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      for (let i = 1; i < p.length; i++) {
-        ctx.lineWidth = (1.4 + (p[i].pressure ?? .5) * 3) * size / 230;
-        ctx.beginPath(); ctx.moveTo(x0 + p[i - 1].x * size, y0 + p[i - 1].y * size); ctx.lineTo(x0 + p[i].x * size, y0 + p[i].y * size); ctx.stroke();
-      }
     }
     function dot(p, r = 6) { const k = palette(); ctx.fillStyle = k.gold; ctx.shadowColor = k.gold; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; }
     function grid() {
@@ -242,24 +188,8 @@
       ctx.clearRect(0, 0, w, h);
       if (!list.length) return;
       const k = palette(), c = center(), thick = Math.max(5, size * .026);
-      if (INK.includes(phase) || (phase === 'result' && ink.length)) {
-        grid();
-        if (phase === 'hand' || (phase === 'handRecall' && now < hintUntil)) script(k.ink, .2);
-        ctx.save(); ctx.beginPath(); ctx.rect(c.x - size / 2, c.y - size / 2, size, size); ctx.clip();
-        for (const s of ink) handwriting(s, k.ink);
-        handwriting(draft, k.ink);
-        if (phase === 'result' && overlay) script(k.gold, .5);
-        ctx.restore();
-      } else if (phase === 'study' || phase === 'result') {
+      if (phase === 'study' || phase === 'result') {
         grid(); glyphFill(k.teal, .85);
-        // Beside the printed form: the same character handwritten, where the field is wide enough.
-        const side = (w - size) / 2, s = Math.min(side - 24, size * .62);
-        if (hand && s >= 70) {
-          const at = { x: c.x + size / 2 + side / 2, y: c.y };
-          script(k.ink, .9, at, s);
-          ctx.font = '11px system-ui, sans-serif'; ctx.fillStyle = k.gray; ctx.textAlign = 'center';
-          ctx.fillText('пропись', at.x, at.y + s / 2 + 16); ctx.textAlign = 'start';
-        }
         if (phase === 'study') { const n = glyph().medians.length, i = Math.floor(phaseTime / BEAT) % n, p = reference(i), t = (phaseTime % BEAT) / BEAT; line(p.slice(0, Math.max(1, Math.floor(t * p.length))), k.gold, 5); dot(p[Math.min(p.length - 1, Math.floor(t * p.length))]); }
       }
       if (phase === 'trace' || phase === 'recall') {
@@ -298,7 +228,6 @@
     function resize() {
       const oldW = w, oldH = h, r = canvas.getBoundingClientRect();
       if (!r.width || !r.height) return;
-      inkPointer = null; draft = [];
       w = r.width; h = r.height; size = Math.min(w * .7, h * .7, 290);
       canvas.width = Math.round(w * devicePixelRatio); canvas.height = Math.round(h * devicePixelRatio);
       ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
@@ -310,28 +239,8 @@
 
     // ---- input ----
     const at = e => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-    // Handwriting: free lines inside the writing square, with the pen's pressure when there is one.
-    const inkAt = e => { const p = at(e), c = center(); return { x: (p.x - c.x) / size + .5, y: (p.y - c.y) / size + .5, pressure: e.pointerType === 'pen' ? Math.max(.15, e.pressure) : .5 }; };
     canvas.addEventListener('pointerdown', e => {
-      if (paused || finished || !INK.includes(phase) || inkPointer !== null) return;
-      const p = inkAt(e);
-      if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1) return;
-      inkPointer = e.pointerId; draft = [p];
-      try { canvas.setPointerCapture(e.pointerId); } catch { /* the stroke still works inside the canvas */ }
-    });
-    canvas.addEventListener('pointermove', e => {
-      if (e.pointerId !== inkPointer) return;
-      const p = inkAt(e), q = draft[draft.length - 1];
-      if (draft.length < 2000 && Math.hypot(p.x - q.x, p.y - q.y) * size > .5) draft.push(p);
-    });
-    canvas.addEventListener('pointerup', e => {
-      if (e.pointerId !== inkPointer) return;
-      draft.push(inkAt(e));
-      if (draft.some(p => Math.hypot(p.x - draft[0].x, p.y - draft[0].y) * size > 1)) ink.push(draft);
-      inkPointer = null; draft = []; ui();
-    });
-    canvas.addEventListener('pointerdown', e => {
-      if (paused || finished || !list.length || INK.includes(phase) || selected >= 0 || trace.length) return;
+      if (paused || finished || !list.length || selected >= 0 || trace.length) return;
       try { canvas.setPointerCapture(e.pointerId); } catch { /* the stroke still works inside the canvas */ }
       const p = at(e);
       if (phase === 'trace' || phase === 'recall') trace = [p];
@@ -362,29 +271,23 @@
         if (dist(b, m) < Math.max(15, size * .08)) { Object.assign(b, m); b.locked = true; feedback(true); }
         else { feedback(false); b.x = w * (selected + 1) / (glyph().medians.length + 1); b.y = h * .88; }   // a miss goes back to its place below
         selected = -1;
-        if (pieces.every(p => p.locked)) setPhase(hand ? 'hand' : 'rest');
+        if (pieces.every(p => p.locked)) setPhase('rest');
       }
     });
-    canvas.addEventListener('pointercancel', () => { trace = []; selected = -1; inkPointer = null; draft = []; });
+    canvas.addEventListener('pointercancel', () => { trace = []; selected = -1; });
     $('.hw-primary').onclick = () => {
       if (!list.length) return;
       if (phase === 'end') { finished = false; sessionStart = 0; paused = false; $('.hw-timer').textContent = '10:00'; current = nextIndex(''); setPhase('study'); return; }
       if (!sessionStart) sessionStart = performance.now();
       if (phase === 'study') setPhase('trace');
-      else if (phase === 'hand') setPhase('rest');
-      else if (phase === 'handRecall') setPhase('result');
       else if (phase === 'result') { current = nextIndex(glyph().glyph); setPhase('study'); }
     };
     $('.hw-hint').onclick = () => {
       if (paused) return;
-      if (phase === 'result') { overlay = !overlay; ui(); return; }
-      hintUntil = performance.now() + 2500;   // in «Пропись по памяти» it does not touch the repetition already scheduled
+      hintUntil = performance.now() + 2500;
       if (phase === 'recall') { assisted = true; $('.hw-instr').textContent = 'Образец появится на 2,5 секунды. Это повторение засчитается как выполненное с подсказкой.'; }
     };
-    $('.hw-undo').onclick = () => { ink.pop(); ui(); };
-    $('.hw-clear').onclick = () => { ink = []; ui(); };
-    $('.hw-style').onchange = e => { style = e.target.value; try { localStorage.setItem(STYLE_KEY, style); } catch { /* default next time */ } ui(); };
-    $('.hw-pause').onclick =() => { paused = !paused; if (!paused) last = performance.now(); trace = []; selected = -1; ui(); };
+    $('.hw-pause').onclick = () => { paused = !paused; if (!paused) last = performance.now(); trace = []; selected = -1; ui(); };
     $('.hw-say').onclick = () => { const c = glyph(); if (c) opts.speak?.(c.word || c.glyph, $('.hw-say')); };
     requestAnimationFrame(frame);
 

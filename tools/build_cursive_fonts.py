@@ -1,14 +1,16 @@
-"""Build the handwritten fonts for the copybook steps of «Письмо»: only the characters the platform needs.
+"""Build the handwritten fonts for «Письмо» → «Прописные»: only the characters the platform needs.
 
 Sources: Liu Jian Mao Cao (草书) and Long Cang from Google Fonts, SIL Open Font License 1.1 (no Reserved
 Font Name, so a subset keeps the name). The full fonts (~5 MB each) stay outside the repo.
 
     python tools/build_cursive_fonts.py <folder with LiuJianMaoCao-Regular.ttf and LongCang-Regular.ttf>
 
-Characters: every glyph of hanzi/strokes.json (the published lessons). Re-run after
-tools/build_hanzi_strokes.py, when new lessons are published. Needs fonttools (pip install fonttools).
+Characters: every glyph of hanzi/strokes.json (the published lessons) plus the theme sets in
+hanzi/hanzi-cursive.js. Re-run after tools/build_hanzi_strokes.py, when new lessons are published.
+Needs fonttools (pip install fonttools).
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -20,7 +22,10 @@ FONTS = {"LiuJianMaoCao-Regular.ttf": "cursive-liujianmaocao.woff", "LongCang-Re
 
 
 def wanted_characters() -> list[str]:
-    return [c["glyph"] for c in json.loads((HANZI / "strokes.json").read_text(encoding="utf-8"))]
+    seen = dict.fromkeys(c["glyph"] for c in json.loads((HANZI / "strokes.json").read_text(encoding="utf-8")))
+    for ch in re.findall(r"glyph: '(.)'", (HANZI / "hanzi-cursive.js").read_text(encoding="utf-8")):
+        seen.setdefault(ch, None)
+    return list(seen)
 
 
 def main() -> None:
