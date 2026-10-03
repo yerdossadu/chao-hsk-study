@@ -146,7 +146,9 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         for meta in pages:
             by_lesson.setdefault(meta["lesson"]["number"], []).append(meta)
         with connect_db() as db:
-            db.execute("DELETE FROM lessons WHERE id LIKE ?", (f"forma-{slug}-%",))
+            # By book, not by id prefix: «forma-hsk1-v3-%» also matched the workbook's «forma-hsk1-v3-workbook-…»,
+            # so publishing a textbook page wiped the workbook's lessons.
+            db.execute("DELETE FROM lessons WHERE book_id = ?", (f"forma:{slug}",))
             for number, items in by_lesson.items():
                 items.sort(key=lambda m: m["page"]["n"])
                 head = items[0]
@@ -163,6 +165,15 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                 db.execute("INSERT INTO lessons(id,book_id,title,level,payload,sort_key) VALUES(?,?,?,?,?,?)",
                            (lesson_id, f"forma:{slug}", lesson["title"], book["level"],
                             json.dumps(payload, ensure_ascii=False), f"forma|{book['section']}|{number:04}"))
+
+    # The published pages are the source of truth: rebuild every book's lessons on start
+    # (this also brings back lessons lost to the old prefix bug).
+    for folder in sorted(books.iterdir()):
+        if folder.is_dir() and SLUG.fullmatch(folder.name):
+            try:
+                rebuild_lessons(folder.name)
+            except (OSError, ValueError, KeyError) as exc:   # one broken book must not stop the platform
+                print(f"forma: lessons of {folder.name} not rebuilt: {exc}")
 
     @app.post("/api/forma/pages")
     async def publish_page(request: Request, meta: str = Form(...), html: str = Form(...),
