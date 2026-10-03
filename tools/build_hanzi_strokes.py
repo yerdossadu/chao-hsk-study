@@ -6,7 +6,8 @@ Arphic Public License) and dictionary.txt (pinyin, LGPL). The full files (~32 MB
     python tools/build_hanzi_strokes.py <folder with graphics.txt and dictionary.txt> [CHAO_DATA_DIR]
 
 Characters are taken from every lesson in the data folder's library.sqlite3: vocabulary words, titles
-and the text of Forma pages. Russian translations already in strokes.json are kept. Re-run after new
+and the text of Forma pages, plus the theme sets of «Прописные» (hanzi/hanzi-cursive.js), whose first
+step shows the stroke order. Russian translations already in strokes.json are kept. Re-run after new
 lessons are published.
 """
 import json
@@ -33,6 +34,8 @@ def main() -> None:
     data = Path(sys.argv[2]) if len(sys.argv) > 2 else Path(__file__).resolve().parent.parent / "data"
     out = Path(__file__).resolve().parent.parent / "hanzi" / "strokes.json"
     wanted = lesson_characters(data / "library.sqlite3")
+    themes = (out.parent / "hanzi-cursive.js").read_text(encoding="utf-8")
+    wanted += [ch for ch in re.findall(r"glyph: '(.)'", themes) if ch not in wanted]
     keep = {c["glyph"]: c for c in json.loads(out.read_text(encoding="utf-8"))} if out.is_file() else {}
     pinyin = {}
     for line in (source / "dictionary.txt").read_text(encoding="utf-8").splitlines():

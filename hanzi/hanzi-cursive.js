@@ -20,8 +20,10 @@
               { glyph: '意', pinyin: 'yì', translation: 'мысль; смысл' }, { glyph: '念', pinyin: 'niàn', translation: 'думать о; вспоминать' }] }
   ];
   const LESSON_TIP = 'Иероглифы этого урока в рукописной форме. Сравните их с печатными: что сокращено, где появились соединения.';
-  const STEPS = [['observe', 'Рассмотреть'], ['trace', 'Обвести'], ['copy', 'Переписать'], ['rest', 'Пауза Мейли'], ['memory', 'По памяти'], ['compare', 'Оценить']];
+  const STEPS = [['order', 'Порядок черт'], ['observe', 'Рассмотреть'], ['trace', 'Обвести'], ['copy', 'Переписать'], ['rest', 'Пауза Мейли'], ['memory', 'По памяти'], ['compare', 'Оценить']];
+  const BEAT = 1.1;
   const TEXT = {
+    order: ['Порядок черт', 'Светящаяся точка показывает, в какой последовательности и в каком направлении пишутся черты. В прописи порядок тот же — черты лишь сокращаются и соединяются. Рядом — рукописная форма.', 'Дальше: сравнить формы'],
     observe: ['Сравните две формы', 'На поле — рукописная форма, над ним — печатный знак. Рассмотрите сокращения и соединения.', 'Начать обводку'],
     trace: ['Обводка образца', 'Обведите бледный рукописный образец в своём темпе. Поднимайте перо там, где это нужно.', 'Писать без подложки'],
     copy: ['Копирование без подложки', 'Перепишите форму с образца в ряду выше в пустую клетку. Линии остаются вашими — эталон их не подменяет.', 'Пауза → по памяти'],
@@ -68,6 +70,11 @@
     let lesson = [], setKey = 'theme0', index = 0, phase = 'observe', ready = false, failed = false, w = 400, h = 300, size = 220;
     let style = STYLES[0][0], practice = loadPractice(), strokes = [], draft = [], pointer = null, overlay = false, hintUntil = 0, assisted = false;
     let used = 0, started = false, finished = false, restTime = 0, restTarget = 0, last = performance.now(), colors = null, colorsAt = 0;
+    // Stroke order comes from the printed stroke data (Make Me a Hanzi): a font outline has no order.
+    let strokeMap = null, orderTime = 0;
+    window.HanziWrite?.loadStrokes().then(m => { strokeMap = m; if (phase === 'observe' && !strokes.length && !finished) setPhase(start()); });
+    const data = () => strokeMap && strokeMap.get(item().glyph);
+    const start = () => data() ? 'order' : 'observe';
     try { const s = localStorage.getItem(STYLE_KEY); if (STYLES.some(([f]) => f === s)) style = s; } catch { /* default style */ }
     $('.hc-style').value = style;
 
@@ -85,11 +92,11 @@
       return colors = { ink: v('--ink-black', '#272F2B'), teal: v('--hsk5-teal', '#1F5F61'), border: v('--hsk5-border', '#CBD9D9'), gold: v('--tea-gold', '#B87333'), gray: v('--ink-gray', '#55514B'), paper: v('--paper-white', '#FFFEFA') };
     }
 
-    function choose(key, i = 0) { if (finished) return; setKey = key; index = i; setPhase('observe'); }
+    function choose(key, i = 0) { if (finished) return; setKey = key; index = i; setPhase(start()); }
     function setPhase(next) {
-      phase = next; pointer = null; draft = []; overlay = false; hintUntil = 0;
+      phase = next; pointer = null; draft = []; overlay = false; hintUntil = 0; orderTime = 0;
       if (writing()) strokes = [];
-      if (next === 'observe') { strokes = []; assisted = false; }
+      if (next === 'order' || next === 'observe') { strokes = []; assisted = false; }
       if (next === 'rest') { restTime = 0; restTarget = Math.floor(Math.random() * 3); }
       ui();
     }
@@ -149,12 +156,12 @@
     }
 
     // ---- drawing (the learner's lines are kept in 0..1 coordinates of the writing square) ----
-    function template(color, alpha) {
-      const g = item().glyph, b = box();
-      ctx.save(); ctx.font = `${size * 1.24}px ${style}`;
+    function template(color, alpha, c = { x: box().x + size / 2, y: box().y + size / 2 }, s = size) {
+      const g = item().glyph;
+      ctx.save(); ctx.font = `${s * 1.24}px ${style}`;
       const m = ctx.measureText(g), inkW = m.actualBoundingBoxLeft + m.actualBoundingBoxRight, inkH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
-      const fit = Math.min(size * .88 / (inkW || 1), size * .88 / (inkH || 1));
-      ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.translate(b.x + size / 2, b.y + size / 2); ctx.scale(fit, fit);
+      const fit = Math.min(s * .88 / (inkW || 1), s * .88 / (inkH || 1));
+      ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.translate(c.x, c.y); ctx.scale(fit, fit);
       ctx.fillText(g, -inkW / 2 + m.actualBoundingBoxLeft, inkH / 2 - m.actualBoundingBoxDescent);
       ctx.restore();
     }
@@ -172,6 +179,39 @@
       ctx.setLineDash([4, 7]); ctx.beginPath();
       ctx.moveTo(x + size / 2, y); ctx.lineTo(x + size / 2, y + size); ctx.moveTo(x, y + size / 2); ctx.lineTo(x + size, y + size / 2);
       ctx.moveTo(x, y); ctx.lineTo(x + size, y + size); ctx.moveTo(x + size, y); ctx.lineTo(x, y + size); ctx.stroke(); ctx.setLineDash([]);
+    }
+    // «Порядок черт»: the printed form, its strokes filled in one by one, a glowing dot running along the current one;
+    // beside it, where the field is wide enough, the handwritten form for comparison.
+    function order(k, dt) {
+      const d = data(), b = box();
+      if (!d) return;
+      orderTime += dt;
+      const n = d.medians.length, i = Math.floor(orderTime / BEAT) % n, t = (orderTime % BEAT) / BEAT;
+      const pt = ([x, y]) => ({ x: b.x + x / 1024 * size, y: b.y + (900 - y) / 1024 * size });
+      ctx.save(); ctx.translate(b.x, b.y); ctx.scale(size / 1024, -size / 1024); ctx.translate(0, -900);
+      d.paths.forEach((p, j) => { ctx.fillStyle = j < i ? k.teal : k.border; ctx.globalAlpha = j < i ? .85 : .5; ctx.fill(new Path2D(p)); });
+      ctx.restore();
+      const m = d.medians[i].map(pt), lens = [0];
+      for (let j = 1; j < m.length; j++) lens.push(lens[j - 1] + dist(m[j - 1], m[j]));
+      const goal = lens[lens.length - 1] * t, path = [m[0]];
+      let head = m[0];
+      for (let j = 1; j < m.length; j++) {
+        if (lens[j] <= goal) { path.push(m[j]); head = m[j]; continue; }
+        const f = (goal - lens[j - 1]) / ((lens[j] - lens[j - 1]) || 1);
+        head = { x: m[j - 1].x + (m[j].x - m[j - 1].x) * f, y: m[j - 1].y + (m[j].y - m[j - 1].y) * f }; path.push(head); break;
+      }
+      ctx.strokeStyle = k.gold; ctx.lineWidth = Math.max(4, size * .03); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); path.forEach((p, j) => j ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
+      ctx.fillStyle = k.gold; ctx.shadowColor = k.gold; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(head.x, head.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.font = '12px system-ui, sans-serif'; ctx.fillStyle = k.gray; ctx.textAlign = 'center';
+      ctx.fillText(`черта ${i + 1} из ${n}`, b.x + size / 2, Math.min(h - 4, b.y + size + 14));
+      const side = (w - size) / 2, s = Math.min(side - 24, size * .62);
+      if (s >= 60) {
+        const at = { x: b.x + size + side / 2, y: b.y + size / 2 };
+        template(k.ink, .9, at, s);
+        ctx.fillStyle = k.gray; ctx.fillText('пропись', at.x, at.y + s / 2 + 16);
+      }
+      ctx.textAlign = 'start';
     }
     const visible = () => root.offsetParent !== null && !document.hidden;
     function frame(now) {
@@ -205,6 +245,7 @@
         return;
       }
       grid(k);
+      if (phase === 'order') { order(k, dt); return; }
       if (phase === 'observe') template(k.ink, .9);
       if (phase === 'trace' || (phase === 'memory' && now < hintUntil)) template(k.ink, .18);
       const b = box();
@@ -217,7 +258,7 @@
     function resize() {
       const r = canvas.getBoundingClientRect();
       if (!r.width || !r.height) return;
-      w = r.width; h = r.height; size = Math.min(w * .72, h * .9, 260);
+      w = r.width; h = r.height; size = Math.min(w * .72, h * .82, 260);
       canvas.width = Math.round(w * devicePixelRatio); canvas.height = Math.round(h * devicePixelRatio);
       ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
       pointer = null; draft = [];
@@ -253,7 +294,7 @@
     $('.hc-style').onchange = e => {
       style = e.target.value;
       try { localStorage.setItem(STYLE_KEY, style); } catch { /* default next time */ }
-      if (!finished) setPhase('observe');
+      if (!finished) setPhase(start());
     };
     $('.hc-undo').onclick = () => { strokes.pop(); ui(); };
     $('.hc-clear').onclick = () => { strokes = []; ui(); };
@@ -261,16 +302,17 @@
       if (phase === 'memory') { assisted = true; hintUntil = performance.now() + 2500; }
       else { overlay = !overlay; ui(); }
     };
-    $('.hc-retry').onclick = () => { record(false); setPhase('observe'); };
+    $('.hc-retry').onclick = () => { record(false); setPhase(start()); };
     $('.hw-primary').onclick = () => {
-      if (finished) { finished = false; started = false; used = 0; $('.hw-timer').textContent = '10:00'; setPhase('observe'); return; }
+      if (finished) { finished = false; started = false; used = 0; $('.hw-timer').textContent = '10:00'; setPhase(start()); return; }
       if (!ready) return;
       started = true;
-      if (phase === 'observe') setPhase('trace');
+      if (phase === 'order') setPhase('observe');
+      else if (phase === 'observe') setPhase('trace');
       else if (phase === 'trace') setPhase('copy');
       else if (phase === 'copy') setPhase('rest');
       else if (phase === 'memory') setPhase('compare');
-      else if (phase === 'compare') { record(true); index = (index + 1) % set().items.length; setPhase('observe'); }
+      else if (phase === 'compare') { record(true); index = (index + 1) % set().items.length; setPhase(start()); }
     };
     $('.hw-say').onclick = () => { const c = item(); if (c) opts.speak?.(c.word || c.glyph, $('.hw-say')); };
 
@@ -285,7 +327,7 @@
         if (next.map(c => c.glyph).join('') === lesson.map(c => c.glyph).join('')) return;
         lesson = next; practice = loadPractice();
         if (lesson.length && (setKey === 'lesson' || !started)) { setKey = 'lesson'; index = 0; }
-        if (!finished) setPhase('observe'); else ui();
+        if (!finished) setPhase(start()); else ui();
       }
     };
   }
