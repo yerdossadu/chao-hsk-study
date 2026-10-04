@@ -394,6 +394,10 @@
         .fc-py { font-size: 17px; font-weight: 700; color: #C25E2E; text-align: center; margin-bottom: 2px; cursor: pointer; display: inline-block; }
         body.dark-mode .fc-py { color: #FFA07A; }
         .fc-trans { font-size: 14px; font-weight: 600; color: var(--ink-gray); text-align: center; }
+        /* A word on its way back: Russian on the front, the Chinese is recalled and checked on the back. */
+        .card-stage.reverse .front .fc-char { font-family: inherit; font-size: 22px; line-height: 1.3; padding: 0 12px; text-align: center; }
+        .card-stage.reverse .back .fc-trans { font-size: 30px; font-weight: 800; color: var(--ink-black); }
+        .vocab-row.seen .vr-num { color: var(--hsk5-teal); font-weight: 800; }
         .card-hint-badge { position: absolute; bottom: 4px; font-size: 10px; font-weight: 600; color: #B56B45; opacity: 0.8; pointer-events: none; }
         
         .effort-rating-row { display: flex; gap: 8px; width: 100%; margin-top: 6px; z-index: 10; }
@@ -1264,6 +1268,18 @@
             '🔁 Повторение': ['🔁 Review', '🔁 Қайталау'],
             '👆 Клик на иероглиф — озвучка | Клик по карте — перевод': ['👆 Click a character to hear it | Click the card for the translation', '👆 Иероглифті басыңыз — дыбыстау | Карточканы басыңыз — аударма'],
             'Легко': ['Easy', 'Оңай'], 'Сложно': ['Hard', 'Қиын'],
+            'Вспомни слово по-китайски, потом нажми на карту': ['Recall the word in Chinese, then click the card', 'Сөзді қытайша есіңе түсір, сосын карточканы бас'],
+            'Хорошо! Карточка вернётся завтра — проверим, помнишь ли.': ['Good! The card comes back tomorrow to check you remember.', 'Жақсы! Карточка ертең қайта келеді — есіңде ме, тексереміз.'],
+            'Ничего страшного — карточка вернётся завтра.': ['No problem — the card comes back tomorrow.', 'Ештеңе етпейді — карточка ертең қайта келеді.'],
+            'Вспомнил в третий раз — слово выучено ✓': ['Recalled a third time — word learned ✓', 'Үшінші рет есіңе түсірдің — сөз үйренілді ✓'],
+            'Это слово уже выучено.': ['This word is already learned.', 'Бұл сөз үйренілген.'],
+            'Тоны на слух': ['Tones by ear', 'Тондарды есту'], 'Какие тоны ты слышишь?': ['Which tones do you hear?', 'Қандай тондарды естисің?'],
+            'Слово звучит разными голосами. Послушай и выбери тоны.': ['The word is read by different voices. Listen and pick the tones.', 'Сөзді әр түрлі дауыстар оқиды. Тыңдап, тондарды таңда.'],
+            'Дальше': ['Next', 'Әрі қарай'], 'Ещё раз': ['Again', 'Тағы да'],
+            'Подсмотреть исправление': ['Peek at the correction', 'Түзетуді қарау'],
+            '✓ Сам, без подсказки — смысл понятен': ['✓ On your own, no hint — the meaning is clear', '✓ Өзің, кеңессіз — мағынасы түсінікті'],
+            'Исправление спрятано — попробуй написать фразу сам. Если совсем трудно, его можно подсмотреть.': ['The correction is hidden — try writing the sentence yourself. If it is too hard, you can peek.', 'Түзету жасырылды — сөйлемді өзің жазып көр. Өте қиын болса, қарауға болады.'],
+            'Посмотри исправление и напиши фразу ещё раз.': ['Look at the correction and write the sentence again.', 'Түзетуді қарап, сөйлемді қайта жаз.'],
             '👆 Кликните, чтобы вернуть иероглиф': ['👆 Click to go back to the character', '👆 Иероглифке оралу үшін басыңыз'],
             'Слушайте эталон и произносите слово': ['Listen to the model and say the word', 'Үлгіні тыңдап, сөзді айтыңыз'],
             'Видео-ответ (+50 XP)': ['Video answer (+50 XP)', 'Бейне-жауап (+50 XP)'],
@@ -1359,6 +1375,9 @@
             [/^(\d+) мин$/, m => [`${m[1]} min`, `${m[1]} мин`]],
             [/^(\d+) (?:дн\.|день|дня|дней)$/, m => [`${m[1]} ${m[1] === '1' ? 'day' : 'days'}`, `${m[1]} күн`]],
             [/^Нед (\d+)$/, m => [`Wk ${m[1]}`, `${m[1]}-апта`]],
+            [/^Помнишь! Следующая проверка через (\d+) дн\.$/, m => [`You remember! Next check in ${m[1]} days.`, `Есіңде! Келесі тексеру ${m[1]} күннен кейін.`]],
+            [/^Помнишь! Следующая проверка завтра\.$/, () => ['You remember! Next check tomorrow.', 'Есіңде! Келесі тексеру ертең.']],
+            [/^Карточка и так вернётся (.+)\.$/, m => [`The card comes back on ${m[1]} anyway.`, `Карточка бәрібір ${m[1]} қайта келеді.`]],
             [/^Мейли помогла поставить кусок (\d+)-й из (\d+) \(-50 XP\) 💡$/, m => [`Meili placed piece ${m[1]} of ${m[2]} (−50 XP) 💡`, `Мейли ${m[2]} бөліктің ${m[1]}-сін орналастырды (−50 XP) 💡`]],
             [/^✔ Верно! Распознано: «(.+)»$/, m => [`✔ Correct! Heard: «${m[1]}»`, `✔ Дұрыс! Танылды: «${m[1]}»`]],
             [/^Услышано: «(.+)»\. Попробуйте ещё раз или послушайте эталон$/, m => [`Heard: «${m[1]}». Try again or listen to the model`, `Естілді: «${m[1]}». Қайта көріңіз немесе үлгіні тыңдаңыз`]],
@@ -1655,11 +1674,14 @@
             }
             const learned = new Set(AppState.allMasteredHskWords || []);
             const done = vocabList.filter(v => learned.has(v.word)).length;
-            document.getElementById('vocabWordCountBadge').textContent = `${vocabList.length} слов${done ? ` · выучено ${done}` : ''}`;
+            const seen = vocabList.filter(v => !learned.has(v.word) && cardReviews[v.word]).length;
+            document.getElementById('vocabWordCountBadge').textContent = `${vocabList.length} слов${done ? ` · выучено ${done}` : ''}${seen ? ` · узнаю ${seen}` : ''}`;
             warmSpeech(vocabList.slice(0, 40).map(v => v.word));
+            const rowState = v => learned.has(v.word) ? ' learned" title="Выучено'
+                : cardReviews[v.word] ? ` seen" title="Узнаю — карточка вернётся ${new Date(cardReviews[v.word].due).toLocaleDateString('ru-RU')}` : '';
             tbody.innerHTML = vocabList.map((v, i) => `
-                <div class="vocab-row${learned.has(v.word) ? ' learned' : ''}" data-word="${escapeHtml(v.word)}"${learned.has(v.word) ? ' title="Выучено"' : ''}>
-                    <span class="vr-num">${learned.has(v.word) ? '✓' : i + 1}</span><span class="vr-word chinese-serif">${escapeHtml(v.word)}</span>
+                <div class="vocab-row${rowState(v)}" data-word="${escapeHtml(v.word)}">
+                    <span class="vr-num">${learned.has(v.word) ? '✓' : cardReviews[v.word] ? '◐' : i + 1}</span><span class="vr-word chinese-serif">${escapeHtml(v.word)}</span>
                     <span class="vr-py">${escapeHtml(v.py)}</span><span class="vr-pos">${vocabText(v, 'pos') ? '(' + escapeHtml(vocabText(v, 'pos')) + ')' : ''}</span><span class="vr-trans">${escapeHtml(vocabText(v, 'trans'))}</span>
                 </div>`).join('');
         }
@@ -1746,7 +1768,31 @@
             document.getElementById('totalHskPercent').textContent = `${totalHskPercent}%`;
             document.getElementById('totalHskProgressBar').style.width = `${Math.min(100, (totalHskCount / LevelInfo.target) * 100)}%`;
             const currentWord = vocab[AppState.currentCardIdx] ? vocab[AppState.currentCardIdx].word : "";
-            document.getElementById('fcReviewTag').style.display = AppState.masteredWords.includes(currentWord) ? 'inline-block' : 'none';
+            document.getElementById('fcReviewTag').style.display = cardDue(currentWord) ? 'inline-block' : 'none';
+        }
+        // Cards come back: «Легко» brings a word back in 1, 3 and 7 days, and only after the third
+        // successful return is it learned (until then «узнаю»). Letting learners drop a card the moment
+        // it feels easy lowers recall (Kornell & Bjork 2008); spaced returns help (Kim & Webb 2022).
+        // Kept in this browser like the rest of the progress.
+        const CARD_REVIEW_KEY = 'chao_card_reviews_v1', CARD_DAYS = [1, 3, 7], DAY_MS = 86400000;
+        let cardReviews = {};
+        try { cardReviews = JSON.parse(localStorage.getItem(CARD_REVIEW_KEY) || '{}') || {}; } catch (_) { cardReviews = {}; }
+        const saveCardReviews = () => { try { localStorage.setItem(CARD_REVIEW_KEY, JSON.stringify(cardReviews)); } catch (_) {} };
+        const cardDue = w => Boolean(cardReviews[w] && cardReviews[w].due <= Date.now());
+        // The 2nd and 3rd returns go the other way: Russian first, the learner recalls the Chinese word.
+        const cardReverse = w => cardDue(w) && cardReviews[w].stage >= 2;
+        const cardShown = new Set();   // due words already brought forward in this visit
+        const daysWord = n => n === 1 ? 'завтра' : `через ${n} дн.`;
+        function cardStatus(text) { const s = document.getElementById('fcStatusText'); s.textContent = text; s.style.color = ''; }
+        // «Легко» or the word said right into the microphone: schedule the next return; returns the message.
+        function cardKnown(w) {
+            const r = cardReviews[w]; let text;
+            if (AppState.allMasteredHskWords.includes(w)) return 'Это слово уже выучено.';
+            if (!r) { cardReviews[w] = { stage: 1, due: Date.now() + CARD_DAYS[0] * DAY_MS }; text = `Хорошо! Карточка вернётся ${daysWord(CARD_DAYS[0])} — проверим, помнишь ли.`; }
+            else if (r.due > Date.now()) return `Карточка и так вернётся ${new Date(r.due).toLocaleDateString('ru-RU')}.`;
+            else if (r.stage >= CARD_DAYS.length) { delete cardReviews[w]; markWordAsMastered(w); text = 'Вспомнил в третий раз — слово выучено ✓'; }
+            else { r.due = Date.now() + CARD_DAYS[r.stage] * DAY_MS; r.stage++; addPoints(5); text = `Помнишь! Следующая проверка ${daysWord(CARD_DAYS[r.stage - 1])}`.replace(/\.?$/, '.'); }
+            saveCardReviews(); renderVocabColumn(); return text;
         }
         function markWordAsMastered(word) {
             if (!word) return;
@@ -1766,12 +1812,15 @@
             event.stopPropagation(); const vocab = getActiveVocab(), item = vocab[AppState.currentCardIdx];
             if (!item) return; const cardStage = document.getElementById('cardStage');
             if (effort === 'easy') {
-                markWordAsMastered(item.word); cardStage.classList.add('success-state');
+                cardStatus(cardKnown(item.word)); updateMasteredProgress(vocab);
+                cardStage.classList.add('success-state');
                 setTimeout(() => {
                     cardStage.classList.remove('success-state');
                     if (AppState.currentCardIdx < vocab.length - 1) { AppState.currentCardIdx++; renderFlashcard(vocab, 'next'); }
                 }, 600);
             } else {
+                // Forgotten on a return: start over from tomorrow.
+                if (cardReviews[item.word]) { cardReviews[item.word] = { stage: 1, due: Date.now() + CARD_DAYS[0] * DAY_MS }; saveCardReviews(); renderVocabColumn(); cardStatus('Ничего страшного — карточка вернётся завтра.'); }
                 cardStage.classList.add('error-state');
                 setTimeout(() => {
                     cardStage.classList.remove('error-state');
@@ -1788,6 +1837,8 @@
         document.getElementById('fcChar').addEventListener('click', function(e) {
             e.stopPropagation();
             const vocab = getActiveVocab();
+            // On a reversed card the front is Russian: playing the word would give the answer away.
+            if (document.getElementById('cardStage').classList.contains('reverse')) { document.getElementById('cardStage').click(); return; }
             if (vocab[AppState.currentCardIdx]) {
                 speakChinese(vocab[AppState.currentCardIdx].word, document.getElementById('cardStage'));
             }
@@ -1802,17 +1853,23 @@
         function renderFlashcard(vocabList, direction = null) {
             const vocab = vocabList || getActiveVocab(); if (!vocab.length) return;
             warmSpeech([vocab[AppState.currentCardIdx], vocab[AppState.currentCardIdx + 1]].map(v => v && v.word));   // this card and the next
-            if (direction === 'next' && AppState.masteredWords.length > 2 && Math.random() < 0.25) {
-                const randomMasteredWord = AppState.masteredWords[Math.floor(Math.random() * AppState.masteredWords.length)];
-                const foundIdx = vocab.findIndex(v => v.word === randomMasteredWord);
-                if (foundIdx !== -1 && foundIdx !== AppState.currentCardIdx) AppState.currentCardIdx = foundIdx;
+            // A card that is due comes first (once per visit), then the lesson goes on where it was.
+            if (direction === 'next') {
+                const dueIdx = vocab.findIndex((v, i) => i !== AppState.currentCardIdx && cardDue(v.word) && !cardShown.has(v.word));
+                if (dueIdx !== -1) AppState.currentCardIdx = dueIdx;
             }
             const item = vocab[AppState.currentCardIdx], cardStage = document.getElementById('cardStage');
+            if (cardDue(item.word)) cardShown.add(item.word);
             const updateCardContent = () => {
+                const reverse = cardReverse(item.word);
                 cardStage.classList.remove('flipped', 'success-state', 'error-state', 'playing');
-                document.getElementById('fcChar').textContent = item.word;
+                cardStage.classList.toggle('reverse', reverse);
+                document.getElementById('fcChar').textContent = reverse ? vocabText(item, 'trans') : item.word;
                 document.getElementById('fcPy').textContent = item.py;
-                document.getElementById('fcTrans').textContent = vocabText(item, 'trans');
+                document.getElementById('fcTrans').textContent = reverse ? item.word : vocabText(item, 'trans');
+                document.getElementById('fcTrans').classList.toggle('chinese-serif', reverse);
+                document.querySelector('#cardStage .front .card-hint-badge').textContent = reverse
+                    ? 'Вспомни слово по-китайски, потом нажми на карту' : '👆 Клик на иероглиф — озвучка | Клик по карте — перевод';
                 updateMasteredProgress(vocab);
             };
             if (direction === 'next') {
@@ -2172,8 +2229,9 @@
                 const currentWord = vocab[AppState.currentCardIdx] ? vocab[AppState.currentCardIdx].word : "";
                 const cleanHeard = rawHeard.replace(/[\s\p{P}]/gu, ""), cleanTarget = currentWord.replace(/[\s\p{P}]/gu, "");
                 if (cleanHeard.length > 0 && cleanTarget.length > 0 && cleanHeard === cleanTarget) {
-                    document.getElementById('cardStage').classList.add('success-state'); fcStatusText.textContent = `✔ Верно! Распознано: «${rawHeard}»`;
-                    fcStatusText.style.color = "var(--success-green)"; markWordAsMastered(currentWord);
+                    document.getElementById('cardStage').classList.add('success-state');
+                    const next = cardKnown(currentWord); fcStatusText.textContent = `✔ Верно! Распознано: «${rawHeard}». ${next}`;
+                    fcStatusText.style.color = "var(--success-green)"; updateMasteredProgress(vocab);
                     setTimeout(() => {
                         if (AppState.currentCardIdx < vocab.length - 1) { AppState.currentCardIdx++; renderFlashcard(vocab, 'next'); }
                         else { fcStatusText.textContent = "🎉 Все слова пройдены!"; }
@@ -2411,10 +2469,12 @@
     launch.innerHTML = 'Практика: мысль по-китайски <span id="recallDueBadge"></span>';
     tutorBox.insertBefore(launch, tutorBox.firstChild);
     const overlay = document.createElement("div"); overlay.id = "recallOverlay"; overlay.className = "recall-overlay"; overlay.setAttribute("role", "dialog"); overlay.setAttribute("aria-modal", "true"); overlay.setAttribute("aria-labelledby", "recallTitle");
-    overlay.innerHTML = '<section class="recall-dialog"><div class="recall-head"><div><div style="font-size:11px;font-weight:800;color:var(--chao-purple);text-transform:uppercase">Активное припоминание</div><h2 id="recallTitle" style="font-size:20px">Сформулируй мысль по-китайски</h2></div><button id="recallClose" class="recall-close" type="button" aria-label="Закрыть">✕</button></div><div id="recallPrompt" class="recall-prompt"></div><div id="recallVocab" class="recall-vocab"></div><textarea id="recallAnswer" class="recall-input" lang="zh" placeholder="Напиши свой вариант по-китайски. Можно использовать голосовой ввод клавиатуры."></textarea><div class="recall-actions"><button id="recallCheck" type="button">Проверить и получить подсказку</button><button id="recallTryAgain" class="secondary" type="button" style="display:none">Попробовать ещё раз</button></div><div id="recallFeedback" class="recall-feedback" aria-live="polite"></div><div id="recallSchedule" class="recall-actions recall-schedule"><button id="recallEasy" type="button">Понятно — запомнить</button><button id="recallHard" class="secondary" type="button">Пока трудно</button></div><div id="recallStatus" style="font-size:12px;color:var(--ink-gray)"></div></section>';
+    overlay.innerHTML = '<section class="recall-dialog"><div class="recall-head"><div><div style="font-size:11px;font-weight:800;color:var(--chao-purple);text-transform:uppercase">Активное припоминание</div><h2 id="recallTitle" style="font-size:20px">Сформулируй мысль по-китайски</h2></div><button id="recallClose" class="recall-close" type="button" aria-label="Закрыть">✕</button></div><div id="recallPrompt" class="recall-prompt"></div><div id="recallVocab" class="recall-vocab"></div><textarea id="recallAnswer" class="recall-input" lang="zh" placeholder="Напиши свой вариант по-китайски. Можно использовать голосовой ввод клавиатуры."></textarea><div class="recall-actions"><button id="recallCheck" type="button">Проверить и получить подсказку</button><button id="recallTryAgain" class="secondary" type="button" style="display:none">Попробовать ещё раз</button><button id="recallPeek" class="secondary" type="button" style="display:none">Подсмотреть исправление</button></div><div id="recallFeedback" class="recall-feedback" aria-live="polite"></div><div id="recallSchedule" class="recall-actions recall-schedule"><button id="recallEasy" type="button">Понятно — запомнить</button><button id="recallHard" class="secondary" type="button">Пока трудно</button></div><div id="recallStatus" style="font-size:12px;color:var(--ink-gray)"></div></section>';
     document.body.appendChild(overlay);
     const storeKey = "chao_active_recall_v1";
-    let practice = null, attempt = 0, reference = "", previewOnly = false;
+    // retrying: the second attempt is written from memory with the correction folded away;
+    // peeked: the learner opened it anyway, so that attempt does not count as their own.
+    let practice = null, attempt = 0, reference = "", previewOnly = false, retrying = false, peeked = false, solo = null;
     const el = id => document.getElementById(id);
     const esc = value => String(value == null ? "" : value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
     function records() { try { const data = JSON.parse(localStorage.getItem(storeKey) || "[]"); return Array.isArray(data) ? data : []; } catch (_) { return []; } }
@@ -2428,7 +2488,7 @@
         return {lessonId:String(lesson.lessonId),theme:theme,prompt:"Сформулируй одну свою мысль по-китайски на тему «" + theme + "». Напиши естественное короткое предложение." + hint,vocab:vocab,level:page.level || (page.type === "hsk1_dialogues" ? "HSK 1" : (foundLevel ? foundLevel[0] : "HSK 5"))};
     }
     function setPractice(item, preview) {
-        practice=item; attempt=0; reference=""; previewOnly=!!preview;
+        practice=item; attempt=0; reference=""; previewOnly=!!preview; retrying=false; peeked=false; solo=null; el("recallPeek").style.display="none";
         el("recallPrompt").textContent=item.theme + " — " + item.prompt;
         el("recallVocab").innerHTML=(item.vocab || []).map(w=>'<span class="recall-chip chinese-sans">'+esc(w)+"</span>").join("");
         el("recallAnswer").value=""; el("recallAnswer").placeholder="Напиши свой вариант по-китайски. Можно использовать голосовой ввод клавиатуры.";
@@ -2453,7 +2513,9 @@
         try {
             const response=await fetch("/api/practice/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lang:uiLang(),answer:answer,prompt:practice.prompt,theme:practice.theme,level:practice.level,vocab:practice.vocab,reference:reference})});
             const result=await response.json(); if(!response.ok)throw new Error(result.detail || "Не удалось проверить ответ.");
-            const feedback=el("recallFeedback"); feedback.innerHTML='<div style="font-weight:800;color:'+(result.understood?"var(--success-green)":"var(--tea-gold)")+ ';margin-bottom:5px">'+(result.understood?"✓ Смысл понятен":"Есть что улучшить — это нормально")+'</div><div style="display:flex;align-items:center;gap:8px"><div class="recall-hanzi chinese-sans">'+esc(result.corrected_sentence)+'</div><button id="recallSpeak" class="sound-icon-btn" type="button" title="Озвучить исправленную фразу">🔊</button></div>'+(result.natural_alternative?'<div style="margin-top:7px"><strong>Ещё естественный вариант:</strong><div class="chinese-sans" style="font-size:17px;font-weight:700">'+esc(result.natural_alternative)+'</div></div>':"")+'<div style="margin-top:7px">'+esc(result.explanation)+'</div>';
+            if(retrying && !peeked) solo=!!result.understood;
+            el("recallPeek").style.display="none";
+            const feedback=el("recallFeedback"); feedback.innerHTML='<div style="font-weight:800;color:'+(result.understood?"var(--success-green)":"var(--tea-gold)")+ ';margin-bottom:5px">'+(result.understood?(solo?"✓ Сам, без подсказки — смысл понятен":"✓ Смысл понятен"):"Есть что улучшить — это нормально")+'</div><div style="display:flex;align-items:center;gap:8px"><div class="recall-hanzi chinese-sans">'+esc(result.corrected_sentence)+'</div><button id="recallSpeak" class="sound-icon-btn" type="button" title="Озвучить исправленную фразу">🔊</button></div>'+(result.natural_alternative?'<div style="margin-top:7px"><strong>Ещё естественный вариант:</strong><div class="chinese-sans" style="font-size:17px;font-weight:700">'+esc(result.natural_alternative)+'</div></div>':"")+'<div style="margin-top:7px">'+esc(result.explanation)+'</div>';
             feedback.classList.add("visible"); reference=result.corrected_sentence || ""; attempt++;
             el("recallSpeak").addEventListener("click",()=>{if(typeof speakChinese==="function")speakChinese(result.corrected_sentence);});
             el("recallTryAgain").style.display=attempt<2?"inline-block":"none"; el("recallSchedule").classList.add("visible");
@@ -2461,15 +2523,137 @@
         } catch(error) { el("recallStatus").textContent=error.message; }
         finally { button.disabled=false; button.textContent=attempt?"Проверить ещё раз":"Проверить и получить подсказку"; }
     });
-    el("recallTryAgain").addEventListener("click",()=>{el("recallAnswer").value="";el("recallAnswer").placeholder="Теперь попробуй написать фразу ещё раз своими словами…";el("recallAnswer").focus();el("recallStatus").textContent="Опирайся на исправленный вариант выше и попробуй ещё раз.";});
+    // The retry is from memory: the correction is folded away (an attempt before the answer is seen
+    // is what makes it stick — Kornell, Hays & Bjork 2009); it can still be opened if it is too hard.
+    el("recallTryAgain").addEventListener("click",()=>{retrying=true;peeked=false;el("recallFeedback").classList.remove("visible");el("recallTryAgain").style.display="none";el("recallPeek").style.display="inline-block";el("recallAnswer").value="";el("recallAnswer").placeholder="Напиши фразу ещё раз по памяти…";el("recallAnswer").focus();el("recallStatus").textContent="Исправление спрятано — попробуй написать фразу сам. Если совсем трудно, его можно подсмотреть.";});
+    el("recallPeek").addEventListener("click",()=>{peeked=true;el("recallFeedback").classList.add("visible");el("recallPeek").style.display="none";el("recallStatus").textContent="Посмотри исправление и напиши фразу ещё раз.";});
     function schedule(easy) {
         if(previewOnly){closePractice();return;}
         const list=records(), index=list.findIndex(x=>x.lessonId===practice.lessonId), prior=index>=0?list[index]:null;
         const stage=easy?Math.min(2,(prior && prior.stage || 0)+(prior?1:0)):(prior && prior.stage || 0), days=easy?[1,3,7][stage]:1;
-        const item=Object.assign({},practice,{stage:stage,dueAt:Date.now()+days*86400000,attempts:(prior && prior.attempts || 0)+attempt,updatedAt:Date.now()});
+        // soloTries/soloOk: retries written from memory, and how many of them Meili understood — what the learner can do on their own.
+        const item=Object.assign({},practice,{stage:stage,dueAt:Date.now()+days*86400000,attempts:(prior && prior.attempts || 0)+attempt,soloTries:(prior && prior.soloTries || 0)+(solo===null?0:1),soloOk:(prior && prior.soloOk || 0)+(solo?1:0),updatedAt:Date.now()});
         if(index>=0)list[index]=item;else list.push(item);save(list);badge();el("recallStatus").textContent="Сохранено. Напоминание появится примерно через "+days+" дн.";setTimeout(closePractice,900);
     }
     el("recallEasy").addEventListener("click",()=>schedule(true)); el("recallHard").addEventListener("click",()=>schedule(false)); badge();
+})();
+// «Тоны на слух»: a word of the lesson is read by one of five voices and the learner picks the tones.
+// Listening training with several voices is the best supported tone practice (79 studies, SSLA 2025);
+// tones 2 and 3 stay the hardest pair for speakers of non-tonal languages, so they are drilled most.
+(function () {
+    const tutorBox = document.getElementById("tutorSection") || document.querySelector(".companion-panel");
+    if (!tutorBox || document.getElementById("toneGameOpen")) return;
+    const VOICES = ["longanlingxin", "longanlufeng", "longanlingxi", "longanxiaoxin", "longanhuan_v3.6"];   // server.py TTS_NAMED
+    const MARKS = { a: "āáǎà", e: "ēéěè", i: "īíǐì", o: "ōóǒò", u: "ūúǔù", "ü": "ǖǘǚǜ" };
+    const TONE_OF = {}; Object.keys(MARKS).forEach(base => [...MARKS[base]].forEach((ch, i) => { TONE_OF[ch] = { base: base, tone: i + 1 }; }));
+    const ROUNDS = 10, storeKey = "chao_tone_game_v1";
+    const el = id => document.getElementById(id);
+    const esc = value => String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const shuffle = list => { const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const tonesOf = py => [...py].map(ch => TONE_OF[ch.toLowerCase()]).filter(Boolean).map(t => t.tone);
+    // The same pinyin with other tones: only the tone marks change, so syllables need no splitting.
+    function withTones(py, tones) {
+        let k = 0;
+        return [...py].map(ch => { const t = TONE_OF[ch.toLowerCase()]; if (!t) return ch; const m = MARKS[t.base][tones[k++] - 1]; return ch === ch.toLowerCase() ? m : m.toUpperCase(); }).join("");
+    }
+    // Words that sound as written: one or two syllables, each with its tone mark (no neutral tone),
+    // no 3+3 pair (the first is said as tone 2) and no 一 or 不 (their tones change in speech too).
+    function eligible(v) {
+        const word = String(v.word || ""), py = String(v.py || ""), chars = [...word];
+        if (!chars.length || chars.length > 2 || !chars.every(c => /[㐀-鿿]/.test(c)) || /[一不]/.test(word)) return null;
+        const tones = tonesOf(py);
+        if (tones.length !== chars.length || (tones[0] === 3 && tones[1] === 3)) return null;
+        return { word: word, py: py, tones: tones, trans: vocabText(v, "trans") };
+    }
+    function wordPool() {
+        const lesson = hskDatabase[AppState.currentLessonIdx]; if (!lesson) return [];   // lessons still loading
+        const section = lesson.section || lesson.unit;
+        let words = uniqueWords(lesson.pages.flatMap(pageWords)).map(eligible).filter(Boolean);
+        if (words.length < 6) words = uniqueWords(hskDatabase.filter(l => (l.section || l.unit) === section).flatMap(l => l.pages.flatMap(pageWords))).map(eligible).filter(Boolean);
+        return words;
+    }
+    // Four choices: the right tones, the 2↔3 swap first, then other single changes.
+    function choices(item) {
+        const key = t => t.join(""), seen = new Set([key(item.tones)]), out = [item.tones];
+        const add = t => { if (out.length < 4 && !seen.has(key(t)) && !(t[0] === 3 && t[1] === 3)) { seen.add(key(t)); out.push(t); } };
+        item.tones.forEach((t, i) => { if (t === 2 || t === 3) add(item.tones.map((x, j) => j === i ? 5 - t : x)); });
+        const pool = [];
+        item.tones.forEach((t, i) => [1, 2, 3, 4].forEach(n => { if (n !== t) pool.push(item.tones.map((x, j) => j === i ? n : x)); }));
+        [1, 2, 3, 4].forEach(a => [1, 2, 3, 4].forEach(b => pool.push(item.tones.length === 2 ? [a, b] : [a])));
+        shuffle(pool).forEach(add);
+        return shuffle(out);
+    }
+    const toneUrl = (word, voice) => "/api/tts?v=2&voice=" + encodeURIComponent(voice) + "&text=" + encodeURIComponent(word);
+    let rounds = [], index = 0, correct = 0, errors23 = 0, audio = null;
+    function play() {
+        const r = rounds[index]; if (!r) return;
+        if (typeof stopSpeaking === "function") stopSpeaking();
+        if (audio) audio.pause();
+        if (typeof SERVER_MODE === "undefined" || !SERVER_MODE) { speakChinese(r.word); return; }
+        audio = new Audio(toneUrl(r.word, r.voice));
+        audio.play().catch(() => speakChinese(r.word));
+    }
+    function showRound() {
+        const r = rounds[index];
+        el("toneProgress").textContent = "Слово " + (index + 1) + " из " + rounds.length + " · верно: " + correct;
+        el("toneFeedback").classList.remove("visible"); el("toneNext").style.display = "none";
+        el("toneOptions").innerHTML = r.options.map((t, i) => '<button type="button" class="tone-option" data-i="' + i + '">' + esc(withTones(r.py, t)) + "</button>").join("");
+        const next = rounds[index + 1]; if (next && SERVER_MODE) fetch(toneUrl(next.word, next.voice)).catch(() => {});   // ready before it is needed
+        play();
+    }
+    function answer(i) {
+        const r = rounds[index]; if (r.done) return; r.done = true;
+        const picked = r.options[i], right = picked.join("") === r.tones.join("");
+        if (right) { correct++; if (typeof addPoints === "function") addPoints(2); }
+        else if (picked.length === r.tones.length && picked.every((t, j) => t === r.tones[j] || (t + r.tones[j] === 5 && t !== 1 && t !== 4))) errors23++;
+        el("toneOptions").querySelectorAll(".tone-option").forEach((b, j) => {
+            b.disabled = true;
+            if (r.options[j].join("") === r.tones.join("")) b.classList.add("right"); else if (j === i) b.classList.add("wrong");
+        });
+        el("toneFeedback").innerHTML = '<div style="font-weight:800;color:' + (right ? "var(--success-green)" : "var(--tea-gold)") + '">' + (right ? "✓ Верно" : "Не совсем — послушай ещё раз") + '</div><div style="display:flex;align-items:baseline;gap:10px;margin-top:4px"><span class="recall-hanzi chinese-serif">' + esc(r.word) + '</span><span class="chinese-sans" style="font-weight:700;color:var(--hsk5-teal)">' + esc(r.py) + "</span><span>" + esc(r.trans) + "</span></div>";
+        el("toneFeedback").classList.add("visible");
+        el("toneProgress").textContent = "Слово " + (index + 1) + " из " + rounds.length + " · верно: " + correct;
+        el("toneNext").textContent = index + 1 < rounds.length ? "Дальше" : "Итог"; el("toneNext").style.display = "inline-block";
+    }
+    function finish() {
+        el("toneOptions").innerHTML = ""; el("toneNext").style.display = "none";
+        el("toneProgress").textContent = "";
+        let history = []; try { history = JSON.parse(localStorage.getItem(storeKey) || "[]"); } catch (_) {}
+        history.push({ at: Date.now(), correct: correct, total: rounds.length, errors23: errors23 });
+        try { localStorage.setItem(storeKey, JSON.stringify(history.slice(-100))); } catch (_) {}
+        el("toneFeedback").innerHTML = '<div style="font-size:18px;font-weight:800">Верно ' + correct + " из " + rounds.length + "</div>" +
+            (errors23 ? "<div style=\"margin-top:6px\">Путаница 2-го и 3-го тона: " + errors23 + ". Второй тон поднимается вверх, третий опускается вниз и почти не поднимается.</div>" : "") +
+            '<div class="recall-actions" style="margin-top:10px"><button id="toneAgain" type="button">Ещё раз</button></div>';
+        el("toneFeedback").classList.add("visible");
+        el("toneAgain").addEventListener("click", start);
+    }
+    function start() {
+        const pool = wordPool();
+        if (!pool.length) { el("toneFeedback").innerHTML = "В этом уроке пока нет подходящих слов."; el("toneFeedback").classList.add("visible"); el("toneOptions").innerHTML = ""; return; }
+        let picks = shuffle(pool); while (picks.length < ROUNDS) picks = picks.concat(shuffle(pool));
+        let lastVoice = "";
+        rounds = picks.slice(0, ROUNDS).map(item => { const voice = shuffle(VOICES.filter(v => v !== lastVoice))[0]; lastVoice = voice; return Object.assign({}, item, { voice: voice, options: choices(item) }); });
+        index = 0; correct = 0; errors23 = 0; showRound();
+    }
+    const css = document.createElement("style");
+    css.textContent = ".tone-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tone-option{border:1px solid var(--hsk5-border);border-radius:10px;background:var(--paper-white);color:var(--ink-black);padding:14px 8px;font-size:20px;font-weight:700;cursor:pointer}.tone-option:hover:not(:disabled){border-color:var(--hsk5-teal)}.tone-option.right{border-color:var(--success-green);background:var(--success-light)}.tone-option.wrong{border-color:var(--recording-red);opacity:.75}.tone-option:disabled{cursor:default}";
+    document.head.appendChild(css);
+    const launch = document.createElement("button");
+    launch.id = "toneGameOpen"; launch.type = "button"; launch.className = "active-recall-launch"; launch.style.marginTop = "6px";
+    launch.textContent = "Тоны на слух";
+    const recallLaunch = el("activeRecallOpen");
+    tutorBox.insertBefore(launch, recallLaunch ? recallLaunch.nextSibling : tutorBox.firstChild);
+    const overlay = document.createElement("div"); overlay.id = "toneOverlay"; overlay.className = "recall-overlay"; overlay.setAttribute("role", "dialog"); overlay.setAttribute("aria-modal", "true"); overlay.setAttribute("aria-labelledby", "toneTitle");
+    overlay.innerHTML = '<section class="recall-dialog"><div class="recall-head"><div><div style="font-size:11px;font-weight:800;color:var(--chao-purple);text-transform:uppercase">Тоны на слух</div><h2 id="toneTitle" style="font-size:20px">Какие тоны ты слышишь?</h2></div><button id="toneClose" class="recall-close" type="button" aria-label="Закрыть">✕</button></div><div class="recall-prompt" style="display:flex;align-items:center;gap:10px"><button id="tonePlay" class="sound-icon-btn" type="button" title="Послушать ещё раз">🔊</button><span>Слово звучит разными голосами. Послушай и выбери тоны.</span></div><div id="toneProgress" style="font-size:12px;color:var(--ink-gray)"></div><div id="toneOptions" class="tone-options"></div><div id="toneFeedback" class="recall-feedback" aria-live="polite"></div><div class="recall-actions"><button id="toneNext" type="button" style="display:none">Дальше</button></div></section>';
+    document.body.appendChild(overlay);
+    const close = () => { overlay.classList.remove("open"); if (audio) audio.pause(); };
+    launch.addEventListener("click", () => { overlay.classList.add("open"); start(); });
+    el("toneClose").addEventListener("click", close);
+    overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && overlay.classList.contains("open")) close(); });
+    el("tonePlay").addEventListener("click", play);
+    el("toneOptions").addEventListener("click", e => { const b = e.target.closest(".tone-option"); if (b) answer(Number(b.dataset.i)); });
+    el("toneNext").addEventListener("click", () => { if (index + 1 < rounds.length) { index++; showRound(); } else finish(); });
 })();
 </script>
 </body>

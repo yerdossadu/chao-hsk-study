@@ -21,7 +21,8 @@ for (const [target, heard, accepted] of [
             cardRecognition: {}, getActiveVocab: () => [{ word: target }],
             AppState: { currentCardIdx: 0 },
             document: { getElementById: () => ({ classList: { add: c => classes.push(c), remove() {} } }) },
-            fcStatusText: { style: {} }, markWordAsMastered: word => marked.push(word),
+            // A word said right is scheduled to come back (cardKnown), not learned at once.
+            fcStatusText: { style: {} }, cardKnown: word => { marked.push(word); return ''; }, updateMasteredProgress() {},
             setTimeout() {},
         };
         vm.runInNewContext(html.slice(start, end), context);
