@@ -542,6 +542,11 @@
             .toolbar .book-kind.has-covers button { position: relative; display: flex; align-items: flex-end; justify-content: center; aspect-ratio: 210 / 297; min-height: 0; flex: 1 1 0; padding: 6px 4px; border-radius: 8px; overflow: hidden; background: var(--cover, none) center top / cover no-repeat, var(--chao-purple-light, #eef0f4); color: #fff; opacity: .55; white-space: normal; transition: opacity .15s, box-shadow .15s; }
             .toolbar .book-kind.has-covers button:hover:not(:disabled) { opacity: .85; }
             .toolbar .book-kind.has-covers button[aria-selected="true"] { opacity: 1; box-shadow: 0 0 0 2px var(--chao-teal, #1d5c57); }
+            /* the chosen book slides a little over the other one, like a book picked up from a pair */
+            .toolbar .book-kind.has-covers button { transition: transform .3s cubic-bezier(.3,1.4,.5,1), opacity .2s, box-shadow .2s; transform: scale(.94); z-index: 1; }
+            .toolbar .book-kind.has-covers button[aria-selected="true"] { z-index: 2; box-shadow: 0 0 0 2px var(--chao-teal, #1d5c57), 0 8px 18px rgba(0,0,0,.28); }
+            .toolbar .book-kind.has-covers button[aria-selected="true"]:first-child { transform: translateX(22%) scale(1.06); }
+            .toolbar .book-kind.has-covers button[aria-selected="true"]:last-child { transform: translateX(-22%) scale(1.06); }
             .toolbar .book-kind.has-covers button:disabled { opacity: .25; cursor: default; }
             .toolbar .book-kind.has-covers button span { background: rgba(0,0,0,.6); border-radius: 6px; padding: 2px 6px; font-size: 11px; line-height: 1.25; text-align: center; }
             .toolbar .side-stats { flex-direction: column; }
