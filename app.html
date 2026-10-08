@@ -690,7 +690,7 @@
          a compact bar on phones. -->
     <header class="toolbar">
         <div class="brand-group">
-            <div class="brand-row"><span class="logo-tag">Meili HSK</span><span class="level-chip" id="levelChip">HSK</span></div>
+            <div class="brand-row"><span class="logo-tag">Meili HSK</span><span class="level-chip" id="levelChip">HSK</span></div>
             <label class="side-field"><span class="side-label">Курс</span><select id="courseSelect" class="lesson-dropdown" aria-label="Курс HSK"></select></label>
             <label class="side-field"><span class="side-label">Урок</span><select id="lessonSelect" class="lesson-dropdown"></select></label>
             <label class="side-field"><span class="side-label">Страница</span><select id="pageSelect" class="page-dropdown"></select></label>
@@ -1187,10 +1187,15 @@
             addCss(FORMA_FONTS, 'formaFonts'); addCss(forma.css, 'formaCss');
             // Pages share one runtime, except pages made by another converter, which bring their own:
             // the runtime is loaded again only when the file (not its ?v=) differs from the one loaded.
+            // Loads go one after another, so a slow previous page cannot put its runtime over this one's.
             const file = String(forma.script || '').split('?')[0];
-            if (window.FormaPage && window.__formaScript === file) return Promise.resolve();
-            return new Promise(resolve => { const s = document.createElement('script'); s.src = forma.script; s.onload = () => { window.__formaScript = file; resolve(); }; s.onerror = resolve; document.head.append(s); });
+            formaRuntimeLoad = formaRuntimeLoad.catch(() => {}).then(() => {
+                if (window.FormaPage && window.__formaScript === file) return;
+                return new Promise(resolve => { const s = document.createElement('script'); s.src = forma.script; s.onload = () => { window.__formaScript = file; resolve(); }; s.onerror = () => { s.remove(); resolve(); }; document.head.append(s); });
+            });
+            return formaRuntimeLoad;
         }
+        let formaRuntimeLoad = Promise.resolve();
         // Cropping: the page inside is wider than the sheet and shifted left,
         // so the blank strip stays outside the sheet's visible area.
         function formaCropStyle(f) {
@@ -1508,18 +1513,21 @@
             return (FormaView.lang === 'kz' && v[key + '_kz']) || (FormaView.lang === 'orig' && v[key + '_en']) || v[key] || '';
         }
         // Kazakh is the Russian layer with its texts swapped (FormaPage.setLang); a page without it stays Russian.
+        // EN shows the page's English layer when it has one (pages from GPT's converter), else the original.
         function applyFormaLang(sheet) {
-            if (window.FormaPage && window.FormaPage.setLang) window.FormaPage.setLang(sheet, FormaView.lang);
-            else sheet.dataset.lang = FormaView.lang === 'kz' ? 'ru' : FormaView.lang;
+            const lang = FormaView.lang === 'orig' && sheet.querySelector('[data-en]') ? 'en' : FormaView.lang;
+            if (window.FormaPage && window.FormaPage.setLang) window.FormaPage.setLang(sheet, lang);
+            else sheet.dataset.lang = lang === 'kz' || lang === 'en' ? 'ru' : lang;
         }
         function mountFormaPage(stage, page) {
+            const mounted = stage.querySelector('.hsk-page');
             sizeFormaPage(stage, page.forma);
             if (formaResize) formaResize.disconnect();
             formaResize = new ResizeObserver(() => sizeFormaPage(stage, page.forma));
             formaResize.observe(stage);
             ensureFormaRuntime(page.forma).then(() => {
                 const sheet = stage.querySelector('.hsk-page');
-                if (!sheet) return;
+                if (!sheet || sheet !== mounted || !sheet.isConnected) return;   // another page was opened meanwhile
                 applyFormaLang(sheet); sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
                 linkFormaVocab(sheet, getActiveVocab());
                 if (window.FormaPage) window.FormaPage.autoFit(sheet);
