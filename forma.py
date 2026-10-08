@@ -162,6 +162,10 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                     "title": lesson["title"], "subtitle": lesson.get("subtitle", ""), "i18n": lesson.get("i18n") or {},
                     "pages": [m["platformPage"] for m in items],
                 }
+                # The book's cover (sent by the studio once), shown on the textbook / workbook switch.
+                cover = books / slug / "cover.webp"
+                if cover.is_file():
+                    payload["cover"] = f"/forma/books/{slug}/cover.webp?v={int(cover.stat().st_mtime)}"
                 db.execute("INSERT INTO lessons(id,book_id,title,level,payload,sort_key) VALUES(?,?,?,?,?,?)",
                            (lesson_id, f"forma:{slug}", lesson["title"], book["level"],
                             json.dumps(payload, ensure_ascii=False), f"forma|{book['section']}|{number:04}"))
@@ -237,6 +241,20 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         return {"ok": True, "lessonId": f"forma-{slug}-{data['lesson']['number']:03}", "page": n,
                 "publishedAt": record["publishedAt"]}
 
+    @app.put("/api/forma/books/{slug}/cover")
+    async def book_cover(slug: str, request: Request, cover: UploadFile = File(...)):
+        """The book's cover (a WebP image), for the reader's textbook / workbook switch."""
+        require_publisher(request)
+        if not SLUG.fullmatch(slug):
+            raise HTTPException(404, "Книга не найдена")
+        content = await cover.read(5 * 1024 * 1024 + 1)
+        if not content or len(content) > 5 * 1024 * 1024 or content[:4] != b"RIFF" or content[8:12] != b"WEBP":
+            raise HTTPException(400, "Обложка: WebP до 5 МБ.")
+        (books / slug).mkdir(parents=True, exist_ok=True)
+        (books / slug / "cover.webp").write_bytes(content)
+        rebuild_lessons(slug)
+        return {"ok": True}
+
     @app.delete("/api/forma/pages/{slug}/{n}")
     def unpublish_page(slug: str, n: int, request: Request):
         require_publisher(request)
@@ -275,7 +293,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         """Published pages' files, the shared runtime and cast portraits."""
         if path in ("components.css", "forma-page.js"):
             target = root / path
-        elif re.fullmatch(r"books/[a-z0-9][a-z0-9-]{0,63}/(?:" + FILE_PATH.pattern + r"|pages/[0-9]{3}/page\.(?:css|js))", path):
+        elif re.fullmatch(r"books/[a-z0-9][a-z0-9-]{0,63}/(?:" + FILE_PATH.pattern + r"|pages/[0-9]{3}/page\.(?:css|js)|cover\.webp)", path):
             target = root / path
         else:
             raise HTTPException(404, "Файл не найден")

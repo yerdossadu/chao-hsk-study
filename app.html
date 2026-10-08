@@ -537,6 +537,13 @@
             .toolbar .brand-group { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 12px; height: 100%; }
             .toolbar .lesson-dropdown, .toolbar .page-dropdown { width: 100%; max-width: none; padding: 6px 8px; font-size: 12px; }
             .toolbar .side-label { display: block; }
+            /* the book switch shows the books' covers (their scans); the chosen one bright and outlined */
+            .toolbar .book-kind.has-covers { flex: 0 0 auto; align-items: flex-start; gap: 6px; padding: 0; background: none; }
+            .toolbar .book-kind.has-covers button { position: relative; display: flex; align-items: flex-end; justify-content: center; aspect-ratio: 210 / 297; min-height: 0; flex: 1 1 0; padding: 6px 4px; border-radius: 8px; overflow: hidden; background: var(--cover, none) center top / cover no-repeat, var(--chao-purple-light, #eef0f4); color: #fff; opacity: .55; white-space: normal; transition: opacity .15s, box-shadow .15s; }
+            .toolbar .book-kind.has-covers button:hover:not(:disabled) { opacity: .85; }
+            .toolbar .book-kind.has-covers button[aria-selected="true"] { opacity: 1; box-shadow: 0 0 0 2px var(--chao-teal, #1d5c57); }
+            .toolbar .book-kind.has-covers button:disabled { opacity: .25; cursor: default; }
+            .toolbar .book-kind.has-covers button span { background: rgba(0,0,0,.6); border-radius: 6px; padding: 2px 6px; font-size: 11px; line-height: 1.25; text-align: center; }
             .toolbar .side-stats { flex-direction: column; }
             .toolbar .side-stats .reward-badge, .toolbar .side-stats .timer-badge-header { justify-content: flex-start; border-radius: 8px; }
             .toolbar .side-spacer { display: block; flex: 1; }
@@ -1052,6 +1059,14 @@
             switcher.hidden = kinds.size < 2;
             if (!kinds.has(AppState.bookKind)) AppState.bookKind = kinds.has('textbook') ? 'textbook' : [...kinds][0] || 'textbook';
             switcher.querySelectorAll('button').forEach(b => { b.setAttribute('aria-selected', String(b.dataset.kind === AppState.bookKind)); b.disabled = !kinds.has(b.dataset.kind); });
+            // Each book of this course on its cover (when the studio has sent one).
+            let covers = 0;
+            switcher.querySelectorAll('button').forEach(b => {
+                const cover = (hskDatabase.find(l => inCourse(l) && bookKindOf(l) === b.dataset.kind && l.cover) || {}).cover;
+                if (!b.querySelector('span')) b.innerHTML = `<span>${b.textContent}</span>`;
+                b.style.setProperty('--cover', cover ? `url("${cover}")` : 'none'); if (cover) covers++;
+            });
+            switcher.classList.toggle('has-covers', covers > 0);
             const current = hskDatabase[AppState.currentLessonIdx];
             if (!current || !inCourse(current) || bookKindOf(current) !== AppState.bookKind) { const first = hskDatabase.findIndex(l => inCourse(l) && bookKindOf(l) === AppState.bookKind); if (first >= 0) AppState.currentLessonIdx = first; }
             hskDatabase.forEach((les, i) => { if (bookKindOf(les) !== AppState.bookKind || !inCourse(les)) return; const name = les.section || ''; let g = groups.find(x => x.name === name); if (!g) groups.push(g = { name, items: [] }); g.items.push(option(les, i)); });
@@ -1269,7 +1284,7 @@
             'Загрузка перевода...': ['Loading translation...', 'Аударма жүктелуде...'],
             'В карточки': ['To flashcards', 'Карточкаларға'],
             'Спросить Мейли': ['Ask Meili', 'Мейлиден сұрау'],
-            'Урок': ['Lesson', 'Сабақ'], 'Учебник': ['Textbook', 'Оқулық'], 'Рабочая тетрадь': ['Workbook', 'Жұмыс дәптері'], 'Урок:': ['Lesson:', 'Сабақ:'], 'Страница': ['Page', 'Бет'], 'Раздел': ['Section', 'Бөлім'], 'Всего': ['Total', 'Барлығы'],
+            'Урок': ['Lesson', 'Сабақ'], 'Курс': ['Course', 'Курс'], 'Учебник': ['Textbook', 'Оқулық'], 'Рабочая тетрадь': ['Workbook', 'Жұмыс дәптері'], 'Урок:': ['Lesson:', 'Сабақ:'], 'Страница': ['Page', 'Бет'], 'Раздел': ['Section', 'Бөлім'], 'Всего': ['Total', 'Барлығы'],
             'Прогресс и отчёт': ['Progress and report', 'Үлгерім және есеп'],
             'Тёмная тема': ['Dark theme', 'Қараңғы тақырып'], 'Светлая тема': ['Light theme', 'Ашық тақырып'], 'Сменить тему': ['Change theme', 'Тақырыпты ауыстыру'],
             'Словарь урока': ['Lesson dictionary', 'Сабақ сөздігі'],
