@@ -679,6 +679,7 @@
         <div class="brand-group">
             <div class="brand-row"><span class="logo-tag">Meili HSK</span><span class="level-chip" id="levelChip">HSK</span></div>
             <div class="book-kind" id="bookKind" role="tablist" aria-label="Книга" hidden><button type="button" role="tab" data-kind="textbook">Учебник</button><button type="button" role="tab" data-kind="workbook">Рабочая тетрадь</button></div>
+            <label class="side-field"><span class="side-label">Курс</span><select id="courseSelect" class="lesson-dropdown" aria-label="Курс HSK"></select></label>
             <label class="side-field"><span class="side-label">Урок</span><select id="lessonSelect" class="lesson-dropdown"></select></label>
             <label class="side-field"><span class="side-label">Страница</span><select id="pageSelect" class="page-dropdown"></select></label>
             <div class="side-stats">
@@ -983,7 +984,8 @@
                 // Nothing published yet: say where lessons come from.
                 document.getElementById('lessonSelect').innerHTML = '<option>Уроков пока нет</option>';
                 document.getElementById('pageSelect').innerHTML = '<option>—</option>';
-                ['lessonSelect', 'pageSelect', 'prevPageBtn', 'nextPageBtn'].forEach(id => document.getElementById(id).disabled = true);
+                document.getElementById('courseSelect').innerHTML = '<option>Курсов пока нет</option>';
+                ['courseSelect', 'lessonSelect', 'pageSelect', 'prevPageBtn', 'nextPageBtn'].forEach(id => document.getElementById(id).disabled = true);
                 document.getElementById('lessonTitle').textContent = 'Уроков пока нет';
                 document.getElementById('lessonBadge').textContent = 'Meili HSK';
                 ['lessonSubTitle', 'bookUnit', 'bookPageNum', 'pageNavIndicator'].forEach(id => document.getElementById(id).textContent = '');
@@ -997,6 +999,7 @@
             const lastLesson = hskDatabase.findIndex(l => String(l.lessonId) === localStorage.getItem('chao_last_lesson'));
             if (lastLesson >= 0) AppState.currentLessonIdx = lastLesson;
             AppState.bookKind = lastLesson >= 0 ? bookKindOf(hskDatabase[lastLesson]) : (localStorage.getItem('chao_book_kind') || 'textbook');
+            AppState.course = lastLesson >= 0 ? courseOf(hskDatabase[lastLesson]) : (localStorage.getItem('chao_course') || '');
             loadState(); initSelectors();
             document.getElementById('lessonSelect').value = AppState.currentLessonIdx;
             populatePageSelector();
@@ -1038,11 +1041,20 @@
             // Lessons of the chosen book (textbook / workbook), grouped by section (e.g. "HSK 1 v3.0" from Forma Studio).
             const option = (les, i) => { const sub = localized(les, 'subtitle'); return `<option value="${i}">${escapeHtml(les.badge)}: ${escapeHtml(les.title)}${sub ? ` (${escapeHtml(sub)})` : ''}</option>`; };
             const groups = [];
-            const kinds = new Set(hskDatabase.map(bookKindOf)), switcher = document.getElementById('bookKind');
+            // The course (HSK level) comes first: it is set by the book the page was published from (its level).
+            const courses = [...new Set(hskDatabase.map(courseOf).filter(Boolean))].sort((a, b) => Number((/\d+/.exec(a) || [0])[0]) - Number((/\d+/.exec(b) || [0])[0]));
+            if (!courses.includes(AppState.course)) AppState.course = courseOf(hskDatabase[AppState.currentLessonIdx]) || courses[0] || '';
+            const courseSelect = document.getElementById('courseSelect');
+            courseSelect.innerHTML = courses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+            courseSelect.value = AppState.course;
+            const inCourse = les => courseOf(les) === AppState.course;
+            const kinds = new Set(hskDatabase.filter(inCourse).map(bookKindOf)), switcher = document.getElementById('bookKind');
             switcher.hidden = kinds.size < 2;
-            if (!kinds.has(AppState.bookKind)) AppState.bookKind = bookKindOf(hskDatabase[AppState.currentLessonIdx] || hskDatabase[0]);
-            switcher.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.kind === AppState.bookKind)));
-            hskDatabase.forEach((les, i) => { if (bookKindOf(les) !== AppState.bookKind) return; const name = les.section || ''; let g = groups.find(x => x.name === name); if (!g) groups.push(g = { name, items: [] }); g.items.push(option(les, i)); });
+            if (!kinds.has(AppState.bookKind)) AppState.bookKind = kinds.has('textbook') ? 'textbook' : [...kinds][0] || 'textbook';
+            switcher.querySelectorAll('button').forEach(b => { b.setAttribute('aria-selected', String(b.dataset.kind === AppState.bookKind)); b.disabled = !kinds.has(b.dataset.kind); });
+            const current = hskDatabase[AppState.currentLessonIdx];
+            if (!current || !inCourse(current) || bookKindOf(current) !== AppState.bookKind) { const first = hskDatabase.findIndex(l => inCourse(l) && bookKindOf(l) === AppState.bookKind); if (first >= 0) AppState.currentLessonIdx = first; }
+            hskDatabase.forEach((les, i) => { if (bookKindOf(les) !== AppState.bookKind || !inCourse(les)) return; const name = les.section || ''; let g = groups.find(x => x.name === name); if (!g) groups.push(g = { name, items: [] }); g.items.push(option(les, i)); });
             document.getElementById('lessonSelect').innerHTML = groups.map(g => g.name ? `<optgroup label="${escapeHtml(g.name)}">${g.items.join('')}</optgroup>` : g.items.join('')).join('');
             populatePageSelector();
         }
@@ -1053,13 +1065,32 @@
         }
         // Textbook or workbook: a Forma lesson says which; older lessons are textbook.
         function bookKindOf(les) { return les && les.kind === 'workbook' ? 'workbook' : 'textbook'; }
+        // The HSK course of a lesson: «HSK 1», «HSK 5» — from its level (or section / badge).
+        function courseOf(les) {
+            const m = /HSK\s*([1-9])/i.exec([les && les.level, les && les.section, les && les.badge].filter(Boolean).join(' '));
+            return m ? `HSK ${m[1]}` : String(les && les.level || '').trim();
+        }
+        // The lesson the learner was on in this course and book, else the first one.
+        const lastIn = (course, kind) => {
+            const kept = hskDatabase.findIndex(l => String(l.lessonId) === localStorage.getItem(`chao_last_lesson_${course}_${kind}`));
+            return kept >= 0 ? kept : hskDatabase.findIndex(l => courseOf(l) === course && bookKindOf(l) === kind);
+        };
+        const rememberLesson = () => { const les = hskDatabase[AppState.currentLessonIdx]; if (les) localStorage.setItem(`chao_last_lesson_${courseOf(les)}_${bookKindOf(les)}`, String(les.lessonId)); };
+        document.getElementById('courseSelect').addEventListener('change', (e) => {
+            rememberLesson();
+            AppState.course = e.target.value; localStorage.setItem('chao_course', AppState.course);
+            const kinds = new Set(hskDatabase.filter(l => courseOf(l) === AppState.course).map(bookKindOf));
+            if (!kinds.has(AppState.bookKind)) AppState.bookKind = kinds.has('textbook') ? 'textbook' : [...kinds][0];
+            const idx = lastIn(AppState.course, AppState.bookKind); if (idx < 0) return;
+            AppState.currentLessonIdx = idx; loadState(); initSelectors(); document.getElementById('lessonSelect').value = idx; loadPage(0);
+        });
         document.getElementById('bookKind').addEventListener('click', (e) => {
             const kind = e.target.closest('[data-kind]')?.dataset.kind;
             if (!kind || kind === AppState.bookKind) return;
-            localStorage.setItem('chao_last_lesson_' + AppState.bookKind, String(hskDatabase[AppState.currentLessonIdx]?.lessonId || ''));
+            const idx = lastIn(AppState.course, kind); if (idx < 0) return;
+            rememberLesson();
             AppState.bookKind = kind; localStorage.setItem('chao_book_kind', kind);
-            const remembered = hskDatabase.findIndex(l => String(l.lessonId) === localStorage.getItem('chao_last_lesson_' + kind));
-            AppState.currentLessonIdx = remembered >= 0 ? remembered : hskDatabase.findIndex(l => bookKindOf(l) === kind);
+            AppState.currentLessonIdx = idx;
             loadState(); initSelectors(); document.getElementById('lessonSelect').value = AppState.currentLessonIdx; loadPage(0);
         });
         document.getElementById('lessonSelect').addEventListener('change', (e) => {
