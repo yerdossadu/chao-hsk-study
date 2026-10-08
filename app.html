@@ -537,6 +537,7 @@
             .toolbar .brand-group { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 12px; height: 100%; }
             .toolbar .lesson-dropdown, .toolbar .page-dropdown { width: 100%; max-width: none; padding: 6px 8px; font-size: 12px; }
             .toolbar .side-label { display: block; }
+            .toolbar .book-kind { order: 0; }   /* in the rail: under «Прогресс и отчёт», as in the markup */
             /* the book switch shows the books' covers (their scans); the chosen one bright and outlined */
             .toolbar .book-kind.has-covers { flex: 0 0 auto; align-items: flex-start; gap: 6px; padding: 0; background: none; }
             .toolbar .book-kind.has-covers button { position: relative; display: flex; align-items: flex-end; justify-content: center; aspect-ratio: 210 / 297; min-height: 0; flex: 1 1 0; padding: 6px 4px; border-radius: 8px; overflow: hidden; background: var(--cover, none) center top / cover no-repeat, var(--chao-purple-light, #eef0f4); color: #fff; opacity: .55; white-space: normal; transition: opacity .15s, box-shadow .15s; }
@@ -689,8 +690,7 @@
          a compact bar on phones. -->
     <header class="toolbar">
         <div class="brand-group">
-            <div class="brand-row"><span class="logo-tag">Meili HSK</span><span class="level-chip" id="levelChip">HSK</span></div>
-            <div class="book-kind" id="bookKind" role="tablist" aria-label="Книга" hidden><button type="button" role="tab" data-kind="textbook">Учебник</button><button type="button" role="tab" data-kind="workbook">Рабочая тетрадь</button></div>
+            <div class="brand-row"><span class="logo-tag">Meili HSK</span><span class="level-chip" id="levelChip">HSK</span></div>
             <label class="side-field"><span class="side-label">Курс</span><select id="courseSelect" class="lesson-dropdown" aria-label="Курс HSK"></select></label>
             <label class="side-field"><span class="side-label">Урок</span><select id="lessonSelect" class="lesson-dropdown"></select></label>
             <label class="side-field"><span class="side-label">Страница</span><select id="pageSelect" class="page-dropdown"></select></label>
@@ -699,6 +699,7 @@
                 <button type="button" class="timer-badge-header" id="openParentModalBtn" title="Прогресс и отчёт для родителей"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span id="studyTimerDisplay">00:00</span></button>
             </div>
             <button type="button" class="side-action" id="openProgressBtn" title="Дашборд прогресса и отчёт для родителей"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Прогресс и отчёт</span></button>
+            <div class="book-kind" id="bookKind" role="tablist" aria-label="Книга" hidden><button type="button" role="tab" data-kind="textbook">Учебник</button><button type="button" role="tab" data-kind="workbook">Рабочая тетрадь</button></div>
             <span class="side-spacer"></span>
             <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">
                 <span id="themeIcon" aria-hidden="true"></span> <span id="themeLabel">Тёмная тема</span>
