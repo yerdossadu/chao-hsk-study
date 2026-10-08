@@ -1133,8 +1133,11 @@
         function ensureFormaRuntime(forma) {
             const addCss = (href, id) => { if (document.getElementById(id)?.getAttribute('href') === href) return; document.getElementById(id)?.remove(); const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.id = id; document.head.append(l); };
             addCss(FORMA_FONTS, 'formaFonts'); addCss(forma.css, 'formaCss');
-            if (window.FormaPage) return Promise.resolve();
-            return new Promise(resolve => { const s = document.createElement('script'); s.src = forma.script; s.onload = resolve; s.onerror = resolve; document.head.append(s); });
+            // Pages share one runtime, except pages made by another converter, which bring their own:
+            // the runtime is loaded again only when the file (not its ?v=) differs from the one loaded.
+            const file = String(forma.script || '').split('?')[0];
+            if (window.FormaPage && window.__formaScript === file) return Promise.resolve();
+            return new Promise(resolve => { const s = document.createElement('script'); s.src = forma.script; s.onload = () => { window.__formaScript = file; resolve(); }; s.onerror = resolve; document.head.append(s); });
         }
         // Cropping: the page inside is wider than the sheet and shifted left,
         // so the blank strip stays outside the sheet's visible area.

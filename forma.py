@@ -177,7 +177,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
 
     @app.post("/api/forma/pages")
     async def publish_page(request: Request, meta: str = Form(...), html: str = Form(...),
-                           css: str = Form(""), script: str = Form(""),
+                           css: str = Form(""), script: str = Form(""), pageCss: str = Form(""), pageScript: str = Form(""),
                            files: list[UploadFile] = File(default=[])):
         require_publisher(request)
         try:
@@ -202,6 +202,15 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(content)
             base = f"/forma/books/{slug}/pages/{n:03}/"
+            # A page made by another converter (GPT's copy of the studio) brings its own styles: they would
+            # break the other pages as the shared components.css, so they stay with the page.
+            own_css = pageCss.strip() and len(pageCss) < 512 * 1024
+            if own_css:
+                (staging / "page.css").write_text(pageCss, encoding="utf-8")
+            # Its text fitting too (it knows that converter's blocks); the reader swaps runtimes between pages.
+            own_js = pageScript.strip() and len(pageScript) < 256 * 1024 and "</script" not in pageScript.lower()
+            if own_js:
+                (staging / "page.js").write_text(pageScript, encoding="utf-8")
             p = data["page"]
             platform_page = {
                 "type": "forma", "level": data["book"]["level"], "pageNum": p["pageNum"], "navLabel": p["navLabel"],
@@ -209,7 +218,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                 "systemPrompt": p["systemPrompt"], "content": {"vocab": p["vocab"]}, "i18n": p.get("i18n") or {},
                 "forma": {"html": html, "aspect": p["aspect"], "crop": p.get("crop", {}), "base": base, "sourcePage": n,
                           **({"scan": base + p["scan"]} if p.get("scan") else {}),
-                          "css": f"/forma/components.css?v={int(time.time())}", "script": f"/forma/forma-page.js?v={int(time.time())}"},
+                          "css": f"{base}page.css?v={int(time.time())}" if own_css else f"/forma/components.css?v={int(time.time())}", "script": f"{base}page.js?v={int(time.time())}" if own_js else f"/forma/forma-page.js?v={int(time.time())}"},
             }
             record = {**data, "platformPage": platform_page, "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
             (staging / "page.json").write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
@@ -266,7 +275,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         """Published pages' files, the shared runtime and cast portraits."""
         if path in ("components.css", "forma-page.js"):
             target = root / path
-        elif re.fullmatch(r"books/[a-z0-9][a-z0-9-]{0,63}/" + FILE_PATH.pattern, path):
+        elif re.fullmatch(r"books/[a-z0-9][a-z0-9-]{0,63}/(?:" + FILE_PATH.pattern + r"|pages/[0-9]{3}/page\.(?:css|js))", path):
             target = root / path
         else:
             raise HTTPException(404, "Файл не найден")
