@@ -17,10 +17,20 @@ Qwen получает только распознанный текст и зап
 - **manager.html** — загрузка, просмотр и публикация урока.
 - **server.py** — FastAPI, OCR, хранение библиотеки и обработка с Qwen.
 - **Dockerfile**, **requirements.txt** — образ сервера.
-- **render.yaml** — конфигурация Render с постоянным диском.
+- **railway.json** — сборка и проверка сервиса на Railway (основной хостинг с 8 октября 2026).
+- **render.yaml** — прежняя конфигурация Render (не используется).
 
 
-## Развёртывание на Render
+## Развёртывание на Railway
+
+1. В Railway: New Project → Deploy from GitHub repo → `chao-hsk-study`, ветка для сборки указывается в Settings → Source. Railway читает `railway.json` и собирает `Dockerfile`; порт приходит в переменной `PORT`.
+2. Settings → Volumes: подключите том с путём **/var/data** — там хранятся опубликованные страницы, уроки и кэш озвучки. Без тома они пропадают при каждой пересборке.
+3. Variables: `CHAO_DATA_DIR=/var/data`, `OCR_LANG=chi_sim+rus+eng` и секреты `ADMIN_PASSWORD`, `ALI_TOKEN_PLAN_API_KEY`, `FORMA_PUBLISH_TOKEN`. Секреты вводятся только в Railway, не в код и не в чат.
+4. Settings → Networking → Generate Domain. Проверка: `<домен>/api/health` отвечает `{"ok": true, ...}`.
+5. В Forma Studio → «Платформа Meili HSK Study» → «Настройки» укажите этот домен и `FORMA_PUBLISH_TOKEN`, затем опубликуйте страницы.
+
+
+## Развёртывание на Render (прежнее)
 
 1. Создайте приватный GitHub-репозиторий и загрузите в него все файлы этой папки.
 2. В Render выберите New → Blueprint, подключите репозиторий и подтвердите сервис chao-hsk-study.

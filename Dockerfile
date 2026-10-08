@@ -16,5 +16,6 @@ COPY server.py lesson_validation.py layout.py forma.py app.html manager.html ./
 COPY hanzi ./hanzi
 RUN mkdir -p /var/data
 
+# Railway (and Render) pass the port in $PORT; 10000 when run by hand.
 EXPOSE 10000
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "10000"]
+CMD ["sh", "-c", "exec uvicorn server:app --host 0.0.0.0 --port ${PORT:-10000}"]
