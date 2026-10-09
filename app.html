@@ -541,11 +541,11 @@
             .toolbar .lesson-dropdown, .toolbar .page-dropdown { width: 100%; max-width: none; padding: 6px 8px; font-size: 12px; }
             .toolbar .side-label { display: block; }
             .toolbar .book-kind { order: 0; }
-            .hsk-page .hsk-cue { cursor: pointer; border-radius: .4cqw; transition: background .15s; }
-            .hsk-page .hsk-cue:hover { background: rgba(29, 92, 87, .12); }
-            .hsk-page .hsk-cue.playing { background: rgba(29, 92, 87, .25); }
+            /* as GPT marks a syllable that sounds: a thin teal frame and a light teal-grey fill */
+            .hsk-page .hsk-cue { cursor: pointer; border-radius: 2px; }
+            .hsk-page .hsk-cue:hover, .hsk-page .hsk-cue.playing { outline: 1px solid #287366; background: #2e987822; }
             .hsk-page .hsk-track-mark { cursor: pointer; border-radius: .4cqw; }
-            .hsk-page .hsk-track-mark:hover { background: rgba(226, 96, 74, .15); }
+            .hsk-page .hsk-track-mark:hover { outline: 1px solid #287366; background: #2e987822; }
             .toolbar .lesson-audio:not([hidden]) { display: grid; gap: 5px; }
             .toolbar .lesson-audio-list { display: grid; gap: 4px; }
             .toolbar .lesson-audio-btn { text-align: left; border: 1px solid var(--line, #d9dde3); border-radius: 8px; background: var(--paper-white, #fff); color: inherit; font: inherit; font-size: 11.5px; padding: 6px 8px; cursor: pointer; }
