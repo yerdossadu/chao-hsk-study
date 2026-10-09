@@ -37,6 +37,8 @@ MAX_HTML = 2 * 1024 * 1024
 MAX_FILE = 200 * 1024 * 1024
 MAX_FILES = 80
 SLUG = re.compile(r"[a-z0-9][a-z0-9-]{0,63}")
+# a lesson's recording: L<nn>-<kind> (HSK 1 workbook) or L<nn>-<part> (HSK 5 listening parts)
+AUDIO_NAME = re.compile(r"L[0-9]{2}-(?:yuyin|tingdu|moni|[1-9])\.mp3")
 # SHA-256 fingerprints of the studio's publish tokens (one per line); the tokens themselves are never stored here.
 _PUBLISHERS = Path(__file__).with_name("publisher_tokens.txt")
 PUBLISHER_HASHES = [line.strip().lower() for line in _PUBLISHERS.read_text(encoding="utf-8").splitlines()
@@ -156,7 +158,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         for n, cues in (data.get("pages") or {}).items():
             for c in cues if isinstance(cues, list) else []:
                 name = str(c.get("file", ""))
-                if re.fullmatch(r"L[0-9]{2}-(?:yuyin|tingdu|moni)\.mp3", name) and (books / slug / "audio" / name).is_file():
+                if AUDIO_NAME.fullmatch(name) and (books / slug / "audio" / name).is_file():
                     out.setdefault(str(n), []).append({**c, "url": f"/forma/books/{slug}/audio/{name}"})
         return out
 
@@ -194,6 +196,8 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                 # The lesson's recordings from the book's CD (workbook: phonetics, listen-and-read, mock test),
                 # sent by the studio as audio/L<nn>-<kind>.mp3; shown as the lesson's audio in the reader.
                 kinds = {"yuyin": "语音 · Фонетика", "tingdu": "听读练 · Слушаем и читаем", "moni": "模拟测练 · Пробный тест"}
+                # HSK 5 numbers a lesson's listening parts instead (the printed «01-1», «01-2»): L<nn>-<part>.mp3
+                kinds.update({str(k): f"听力 · 第{'一二三四五六七八九'[k - 1]}部分 · Аудирование, часть {k}" for k in range(1, 10)})
                 audio_dir = books / slug / "audio"
                 if number and audio_dir.is_dir():
                     tracks = []
@@ -310,9 +314,9 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
 
     @app.put("/api/forma/books/{slug}/audio/{name}")
     async def book_audio(slug: str, name: str, request: Request, audio: UploadFile = File(...)):
-        """A lesson's recording for the whole lesson (L<nn>-<kind>.mp3), from the book's CD."""
+        """A lesson's recording for the whole lesson (L<nn>-<kind>.mp3 or L<nn>-<part>.mp3), from the book's CD."""
         require_publisher(request)
-        if not SLUG.fullmatch(slug) or not re.fullmatch(r"L[0-9]{2}-(?:yuyin|tingdu|moni)\.mp3", name):
+        if not SLUG.fullmatch(slug) or not AUDIO_NAME.fullmatch(name):
             raise HTTPException(404, "Неверное имя записи")
         content = await audio.read(MAX_FILE + 1)
         if not content or len(content) > MAX_FILE or not (content[:3] == b"ID3" or content[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2")):
@@ -377,7 +381,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         """Published pages' files, the shared runtime and cast portraits."""
         if path in ("components.css", "forma-page.js") or re.fullmatch(r"(?:components-[a-f0-9]{20}\.css|forma-page-[a-f0-9]{20}\.js)", path):
             target = root / path
-        elif re.fullmatch(r"books/[a-z0-9][a-z0-9-]{0,63}/(?:" + FILE_PATH.pattern + r"|pages/[0-9]{3}/page\.(?:css|js)|cover\.webp|audio/L[0-9]{2}-(?:yuyin|tingdu|moni)\.mp3)", path):
+        elif re.fullmatch(r"books/[a-z0-9][a-z0-9-]{0,63}/(?:" + FILE_PATH.pattern + r"|pages/[0-9]{3}/page\.(?:css|js)|cover\.webp|audio/" + AUDIO_NAME.pattern + ")", path):
             target = root / path
         else:
             raise HTTPException(404, "Файл не найден")

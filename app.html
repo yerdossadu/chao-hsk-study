@@ -1539,9 +1539,12 @@
         // rail's player (the lesson's recordings in CD order: phonetics, listen-and-read, mock test).
         function applyTrackMarks(sheet, lesson) {
             const tracks = (lesson && lesson.audio) || [];
-            sheet.querySelectorAll('span.hsk-track').forEach(mark => {
+            // HSK 1 marks are span.hsk-track «1-2»; HSK 5 prints the listening part as plain text «01-1» (its recording L01-1.mp3)
+            const marks = [...sheet.querySelectorAll('span.hsk-track'), ...[...sheet.querySelectorAll('.hsk-document-original')].filter(s => /^\s*\d{2}-\d\s*$/.test(s.textContent))];
+            marks.forEach(mark => {
                 if (mark.closest('button') || mark.dataset.bound) return;
-                const m = /(\d+)\s*-\s*(\d+)/.exec(mark.textContent), t = m && tracks[Number(m[2]) - 1];
+                const m = /(\d+)\s*-\s*(\d+)/.exec(mark.textContent);
+                const t = m && (tracks.find(x => x.url.includes(`/L${m[1].padStart(2, '0')}-${m[2]}.mp3`)) || tracks[Number(m[2]) - 1]);
                 if (!t || Number(m[1]) !== Number(String(lesson.badge || '').replace(/\D/g, ''))) return;
                 mark.dataset.bound = '1'; mark.classList.add('hsk-track-mark'); mark.title = 'Прослушать: ' + t.title;
                 mark.addEventListener('click', ev => {
