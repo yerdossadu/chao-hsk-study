@@ -1183,8 +1183,18 @@
         const FORMA_FONTS = 'https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,700;1,400&family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@500;700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap';
         const FormaView = { lang: localStorage.getItem('forma_lang') || 'ru', pinyin: localStorage.getItem('forma_pinyin') !== 'off' };
         function ensureFormaRuntime(forma) {
-            const addCss = (href, id) => { if (document.getElementById(id)?.getAttribute('href') === href) return; document.getElementById(id)?.remove(); const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.id = id; document.head.append(l); };
-            addCss(FORMA_FONTS, 'formaFonts'); addCss(forma.css, 'formaCss');
+            // resolves when the stylesheet is in force (at once if it already is)
+            const addCss = (href, id) => {
+                const old = document.getElementById(id);
+                if (old?.getAttribute('href') === href) return old.dataset.loaded ? Promise.resolve() : new Promise(r => { old.addEventListener('load', r, { once: true }); old.addEventListener('error', r, { once: true }); });
+                return new Promise(resolve => {
+                    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.id = id;
+                    // the old sheet goes only once the new one applies, so nothing is left unstyled in between
+                    const done = () => { l.dataset.loaded = '1'; if (old && old !== l) old.remove(); resolve(); };
+                    l.onload = done; l.onerror = done; document.head.append(l);
+                });
+            };
+            const styles = Promise.all([addCss(FORMA_FONTS, 'formaFonts'), addCss(forma.css, 'formaCss')]);
             // Pages share one runtime, except pages made by another converter, which bring their own:
             // the runtime is loaded again only when the file (not its ?v=) differs from the one loaded.
             // Loads go one after another, so a slow previous page cannot put its runtime over this one's.
@@ -1193,7 +1203,7 @@
                 if (window.FormaPage && window.__formaScript === file) return;
                 return new Promise(resolve => { const s = document.createElement('script'); s.src = forma.script; s.onload = () => { window.__formaScript = file; resolve(); }; s.onerror = () => { s.remove(); resolve(); }; document.head.append(s); });
             });
-            return formaRuntimeLoad;
+            return Promise.all([styles, formaRuntimeLoad]);
         }
         let formaRuntimeLoad = Promise.resolve();
         // Cropping: the page inside is wider than the sheet and shifted left,
@@ -1569,6 +1579,10 @@
         }
         function mountFormaPage(stage, page) {
             const mounted = stage.querySelector('.hsk-page');
+            // The page stays invisible until its styles, language, pinyin and text fitting are in place —
+            // otherwise for a moment all its layers show at once, unstyled («хаос из букв»).
+            const show = () => { if (mounted) mounted.style.visibility = ''; };
+            if (mounted) { mounted.style.visibility = 'hidden'; setTimeout(show, 3000); }   // never stays hidden on a slow network
             sizeFormaPage(stage, page.forma);
             if (formaResize) formaResize.disconnect();
             formaResize = new ResizeObserver(() => sizeFormaPage(stage, page.forma));
@@ -1580,7 +1594,12 @@
                 applyFormaLang(sheet); sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
                 linkFormaVocab(sheet, getActiveVocab());
                 if (window.FormaPage) window.FormaPage.autoFit(sheet);
-            });
+                // fonts first (fitting measures with them), then one frame for the fitted layout
+                Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1200))]).then(() => {
+                    if (window.FormaPage && sheet.isConnected) window.FormaPage.autoFit(sheet);
+                    requestAnimationFrame(show);
+                });
+            }, show);
         }
         document.getElementById('pageContentStage').addEventListener('click', e => {
             const scan = e.target.closest('[data-forma-scan]');
