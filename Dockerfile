@@ -14,6 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY server.py lesson_validation.py layout.py forma.py app.html manager.html publisher_tokens.txt ./
 COPY hanzi ./hanzi
+COPY icons ./icons
 RUN mkdir -p /var/data
 
 # Railway (and Render) pass the port in $PORT; 10000 when run by hand.

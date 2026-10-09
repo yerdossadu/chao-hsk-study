@@ -81,6 +81,13 @@ def require_teacher(credentials: HTTPBasicCredentials = Depends(security)):
 def home():
     return FileResponse(APP_DIR / "app.html")
 
+# Meili's round logo as the tab and home-screen icon.
+@app.get("/icons/{name}")
+def icon(name: str):
+    if not re.fullmatch(r"meili-icon-(?:32|64|180|192)\.png", name):
+        raise HTTPException(404, "Нет такого значка")
+    return FileResponse(APP_DIR / "icons" / name, media_type="image/png", headers={"Cache-Control": "public, max-age=604800"})
+
 # «Письмо» (hanzi/): the writing exercise and its stroke data (Make Me a Hanzi, Arphic PL — licences alongside),
 # and «Прописные» with its handwritten font subsets (Liu Jian Mao Cao, Long Cang — SIL OFL alongside).
 HANZI_FILES = {"hanzi-write.js": "text/javascript", "strokes.json": "application/json",
