@@ -2102,7 +2102,16 @@
             const wordSpan = e.target.closest('.hsk-word-inline');
             const dialogueLine = e.target.closest('.dialogue-text-line');
             const scanWord = e.target.closest('.scan-word');
+            const photo = e.target.closest('.forma-sheet .hsk-photo[data-hsk-speak]');
             const bubble = e.target.closest('.forma-sheet .hsk-bubble');
+            if (photo && !wordSpan) {
+                // A picture card (cup, student, teacher…) says its word; a lesson word also opens in the dictionary.
+                document.querySelectorAll('.forma-sheet .hsk-photo.playing').forEach(b => b.classList.remove('playing'));
+                const word = photo.dataset.hskSpeak, match = getActiveVocab().find(item => item.word === word);
+                if (match) selectVocabWord(match.word, photo);
+                else speakChinese(word, photo);
+                return;
+            }
             if (bubble && !wordSpan) {
                 // A reply in a Forma dialogue: read the whole line aloud.
                 const hz = bubble.querySelector('.hz');
