@@ -1,8 +1,10 @@
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -21,7 +23,8 @@ class AccessTests(unittest.TestCase):
         tmp = Path(tempfile.mkdtemp())
         (tmp / "access_users.json").write_text(json.dumps({"users": users}), encoding="utf-8")
         app = FastAPI()
-        access.mount(app, tmp, tmp)
+        with patch.dict(os.environ, {"MEILI_ACCESS_USERS": str(tmp / "access_users.json")}):
+            access.mount(app, tmp, tmp)
 
         @app.get("/")
         def home():

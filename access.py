@@ -8,6 +8,7 @@ Forma Studio's publishing (Bearer token on /api/forma/…) and the health check 
 import hashlib
 import hmac
 import json
+import os
 import secrets
 import time
 from collections import defaultdict, deque
@@ -21,7 +22,7 @@ DAYS = 90
 
 
 def load_users(app_dir: Path) -> dict:
-    f = app_dir / "access_users.json"
+    f = Path(os.environ.get("MEILI_ACCESS_USERS") or app_dir / "access_users.json")   # tests point it at an empty list
     try:
         data = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
     except (OSError, ValueError):

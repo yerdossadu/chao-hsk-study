@@ -12,7 +12,8 @@ from fastapi.testclient import TestClient
 # Keep all test data outside the real library, including import-time DB setup.
 _data = tempfile.TemporaryDirectory()
 _env = patch.dict(os.environ, {"CHAO_DATA_DIR": _data.name, "ADMIN_PASSWORD": "test",
-                               "ALI_TOKEN_PLAN_API_KEY": "fake-test-key"})
+                               "ALI_TOKEN_PLAN_API_KEY": "fake-test-key",
+                               "MEILI_ACCESS_USERS": os.path.join(_data.name, "no-users.json")})
 _env.start()
 import server
 from layout import group_ocr_lines

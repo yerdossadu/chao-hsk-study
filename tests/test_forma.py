@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 os.environ.setdefault("CHAO_DATA_DIR", tempfile.mkdtemp(prefix="chao-test-"))
 os.environ["FORMA_PUBLISH_TOKEN"] = "test-token-for-unit-tests"
+os.environ["MEILI_ACCESS_USERS"] = str(Path(tempfile.mkdtemp()) / "none.json")   # the site's real learners don't gate tests
 
 from fastapi.testclient import TestClient  # noqa: E402
 
