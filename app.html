@@ -544,8 +544,8 @@
             .hsk-page .hsk-cue { cursor: pointer; border-radius: .4cqw; transition: background .15s; }
             .hsk-page .hsk-cue:hover { background: rgba(29, 92, 87, .12); }
             .hsk-page .hsk-cue.playing { background: rgba(29, 92, 87, .25); }
-            .hsk-page .hsk-cue-all { position: absolute; right: 0; top: -0.2cqw; width: 3.2cqw; height: 3.2cqw; border: 0; border-radius: 50%; background: #e2604a; color: #fff; font-size: 1.5cqw; line-height: 3.2cqw; padding: 0; cursor: pointer; box-shadow: 0 .2cqw .6cqw rgba(0,0,0,.2); }
-            .hsk-page .hsk-cue-all.playing { background: #1d5c57; }
+            .hsk-page .hsk-track-mark { cursor: pointer; border-radius: .4cqw; }
+            .hsk-page .hsk-track-mark:hover { background: rgba(226, 96, 74, .15); }
             .toolbar .lesson-audio:not([hidden]) { display: grid; gap: 5px; }
             .toolbar .lesson-audio-list { display: grid; gap: 4px; }
             .toolbar .lesson-audio-btn { text-align: left; border: 1px solid var(--line, #d9dde3); border-radius: 8px; background: var(--paper-white, #fff); color: inherit; font: inherit; font-size: 11.5px; padding: 6px 8px; cursor: pointer; }
@@ -1539,22 +1539,33 @@
             el.classList.add('playing');
             cueStop = setInterval(() => { if (cuePlayer.currentTime >= to || cuePlayer.paused && cuePlayer.currentTime > from) { cuePlayer.pause(); el.classList.remove('playing'); clearInterval(cueStop); } }, 80);
         }
+        // A printed track mark in the workbook («🔊 1-2»: lesson 1, recording 2) plays that recording of the lesson in the
+        // rail's player (the lesson's recordings in CD order: phonetics, listen-and-read, mock test).
+        function applyTrackMarks(sheet, lesson) {
+            const tracks = (lesson && lesson.audio) || [];
+            sheet.querySelectorAll('span.hsk-track').forEach(mark => {
+                if (mark.closest('button') || mark.dataset.bound) return;
+                const m = /(\d+)\s*-\s*(\d+)/.exec(mark.textContent), t = m && tracks[Number(m[2]) - 1];
+                if (!t || Number(m[1]) !== Number(String(lesson.badge || '').replace(/\D/g, ''))) return;
+                mark.dataset.bound = '1'; mark.classList.add('hsk-track-mark'); mark.title = 'Прослушать: ' + t.title;
+                mark.addEventListener('click', ev => {
+                    ev.stopPropagation();
+                    const btn = document.querySelector(`#lessonAudioList button[data-i="${tracks.indexOf(t)}"]`);
+                    if (btn) btn.click();
+                });
+            });
+        }
         function applyCues(sheet, cues) {
             for (const c of cues || []) {
                 const box = sheet.querySelector(`[data-block="${c.block}"]`); if (!box || box.dataset.cued) continue;
                 box.dataset.cued = '1';
-                const cells = [...box.querySelectorAll('.hsk-gcell, .hsk-tone-grid-cell button')].filter(e => e.textContent.trim());
+                // grid cells in reading order, empty ones too (a blank to write into is still the item heard there)
+                const cells = [...box.querySelectorAll('.hsk-gcell')];
                 cells.forEach((el, i) => {
                     const seg = c.items && c.items[i]; if (!seg) return;
                     el.classList.add('hsk-cue'); el.title = 'Прослушать запись';
                     el.addEventListener('click', ev => { ev.stopPropagation(); playCue(c.url, seg[0], seg[1], el); });
                 });
-                const last = c.items && c.items[c.items.length - 1];
-                if (last) {
-                    const all = document.createElement('button'); all.type = 'button'; all.className = 'hsk-cue-all'; all.textContent = '▶'; all.title = c.title || 'Прослушать упражнение';
-                    all.addEventListener('click', ev => { ev.stopPropagation(); playCue(c.url, (c.intro || c.items[0])[0], last[1], all); });
-                    box.appendChild(all);
-                }
             }
         }
         // EN shows the page's English layer when it has one (pages from GPT's converter), else the original.
@@ -1572,7 +1583,7 @@
             ensureFormaRuntime(page.forma).then(() => {
                 const sheet = stage.querySelector('.hsk-page');
                 if (!sheet || sheet !== mounted || !sheet.isConnected) return;   // another page was opened meanwhile
-                applyCues(sheet, page.forma.cues);
+                applyCues(sheet, page.forma.cues); applyTrackMarks(sheet, hskDatabase[AppState.currentLessonIdx]);
                 applyFormaLang(sheet); sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
                 linkFormaVocab(sheet, getActiveVocab());
                 if (window.FormaPage) window.FormaPage.autoFit(sheet);
