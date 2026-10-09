@@ -1,4 +1,11 @@
 {
-  "about": "Learners of the site: name, salt and PBKDF2-SHA256 of the password (written by the owner's tool, never the password).",
-  "users": []
+    "about":  "Learners of the site: name, salt and PBKDF2-SHA256 of the password (written by the owner\u0027s tool, never the password).",
+    "users":  [
+                  {
+                      "user":  "assem",
+                      "salt":  "bb819b9fd91d076416184c20caac207c",
+                      "hash":  "c514f78d865adc2208b8eb2c0c7e6bc578a1cc460e8215a4300efe0df21756ca",
+                      "iterations":  200000
+                  }
+              ]
 }
