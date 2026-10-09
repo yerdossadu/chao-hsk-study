@@ -537,7 +537,12 @@
             .toolbar .brand-group { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 12px; height: 100%; }
             .toolbar .lesson-dropdown, .toolbar .page-dropdown { width: 100%; max-width: none; padding: 6px 8px; font-size: 12px; }
             .toolbar .side-label { display: block; }
-            .toolbar .book-kind { order: 0; }   /* in the rail: under «Прогресс и отчёт», as in the markup */
+            .toolbar .book-kind { order: 0; }
+            .toolbar .lesson-audio:not([hidden]) { display: grid; gap: 5px; }
+            .toolbar .lesson-audio-list { display: grid; gap: 4px; }
+            .toolbar .lesson-audio-btn { text-align: left; border: 1px solid var(--line, #d9dde3); border-radius: 8px; background: var(--paper-white, #fff); color: inherit; font: inherit; font-size: 11.5px; padding: 6px 8px; cursor: pointer; }
+            .toolbar .lesson-audio-btn.on { border-color: var(--chao-teal, #1d5c57); box-shadow: 0 0 0 1px var(--chao-teal, #1d5c57); }
+            .toolbar .lesson-audio audio { width: 100%; height: 32px; }   /* in the rail: under «Прогресс и отчёт», as in the markup */
             /* the book switch shows the books' covers (their scans); the chosen one bright and outlined */
             .toolbar .book-kind.has-covers { flex: 0 0 auto; align-items: flex-start; gap: 6px; padding: 0; background: none; }
             .toolbar .book-kind.has-covers button { position: relative; display: flex; align-items: flex-end; justify-content: center; aspect-ratio: 210 / 297; min-height: 0; flex: 1 1 0; padding: 6px 4px; border-radius: 8px; overflow: hidden; background: var(--cover, none) center top / cover no-repeat, var(--chao-purple-light, #eef0f4); color: #fff; opacity: .55; white-space: normal; transition: opacity .15s, box-shadow .15s; }
@@ -700,6 +705,7 @@
             </div>
             <button type="button" class="side-action" id="openProgressBtn" title="Дашборд прогресса и отчёт для родителей"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Прогресс и отчёт</span></button>
             <div class="book-kind" id="bookKind" role="tablist" aria-label="Книга" hidden><button type="button" role="tab" data-kind="textbook">Учебник</button><button type="button" role="tab" data-kind="workbook">Рабочая тетрадь</button></div>
+            <div class="lesson-audio" id="lessonAudio" hidden><span class="side-label">Аудио урока</span><div class="lesson-audio-list" id="lessonAudioList"></div><audio id="lessonAudioPlayer" controls preload="none"></audio></div>
             <span class="side-spacer"></span>
             <button id="themeToggleBtn" class="theme-toggle-btn" title="Сменить тему">
                 <span id="themeIcon" aria-hidden="true"></span> <span id="themeLabel">Тёмная тема</span>
@@ -1295,7 +1301,7 @@
             'Загрузка перевода...': ['Loading translation...', 'Аударма жүктелуде...'],
             'В карточки': ['To flashcards', 'Карточкаларға'],
             'Спросить Мейли': ['Ask Meili', 'Мейлиден сұрау'],
-            'Урок': ['Lesson', 'Сабақ'], 'Курс': ['Course', 'Курс'], 'Учебник': ['Textbook', 'Оқулық'], 'Рабочая тетрадь': ['Workbook', 'Жұмыс дәптері'], 'Урок:': ['Lesson:', 'Сабақ:'], 'Страница': ['Page', 'Бет'], 'Раздел': ['Section', 'Бөлім'], 'Всего': ['Total', 'Барлығы'],
+            'Урок': ['Lesson', 'Сабақ'], 'Аудио урока': ['Lesson audio', 'Сабақ аудиосы'], 'Курс': ['Course', 'Курс'], 'Учебник': ['Textbook', 'Оқулық'], 'Рабочая тетрадь': ['Workbook', 'Жұмыс дәптері'], 'Урок:': ['Lesson:', 'Сабақ:'], 'Страница': ['Page', 'Бет'], 'Раздел': ['Section', 'Бөлім'], 'Всего': ['Total', 'Барлығы'],
             'Прогресс и отчёт': ['Progress and report', 'Үлгерім және есеп'],
             'Тёмная тема': ['Dark theme', 'Қараңғы тақырып'], 'Светлая тема': ['Light theme', 'Ашық тақырып'], 'Сменить тему': ['Change theme', 'Тақырыпты ауыстыру'],
             'Словарь урока': ['Lesson dictionary', 'Сабақ сөздігі'],
@@ -1644,8 +1650,25 @@
                 node.style.fontSize = `max(7px,${showOriginal ? node.dataset.sourceSize : node.dataset.translationSize})`;
             });
         }
+        // The lesson's recordings for the whole lesson (workbook: phonetics, listen-and-read, mock test).
+        function renderLessonAudio(lesson) {
+            const box = document.getElementById('lessonAudio'), list = document.getElementById('lessonAudioList'), player = document.getElementById('lessonAudioPlayer');
+            const tracks = (lesson && lesson.audio) || [];
+            if (box.dataset.lesson === String(lesson && lesson.lessonId)) return;   // same lesson: keep what plays
+            box.dataset.lesson = String(lesson && lesson.lessonId);
+            player.pause(); player.removeAttribute('src'); player.load();
+            box.hidden = !tracks.length;
+            list.innerHTML = tracks.map((t, i) => `<button type="button" class="lesson-audio-btn" data-i="${i}">🎧 ${escapeHtml(t.title)}</button>`).join('');
+            list.querySelectorAll('button').forEach(b => b.onclick = () => {
+                const t = tracks[Number(b.dataset.i)];
+                list.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+                if (player.getAttribute('src') !== t.url) player.src = t.url;
+                player.play().catch(() => {});
+            });
+        }
         function loadPage(idx) {
             const lesson = hskDatabase[AppState.currentLessonIdx]; AppState.activePageIndex = idx; const data = lesson.pages[idx];
+            renderLessonAudio(lesson);
             document.getElementById('bookUnit').textContent = lesson.unit;
             document.getElementById('bookPageNum').textContent = data.pageNum;
             document.getElementById('lessonBadge').textContent = lesson.badge;

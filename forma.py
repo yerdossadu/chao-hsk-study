@@ -173,6 +173,18 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                     "title": lesson["title"], "subtitle": lesson.get("subtitle", ""), "i18n": lesson.get("i18n") or {},
                     "pages": [m["platformPage"] for m in items],
                 }
+                # The lesson's recordings from the book's CD (workbook: phonetics, listen-and-read, mock test),
+                # sent by the studio as audio/L<nn>-<kind>.mp3; shown as the lesson's audio in the reader.
+                kinds = {"yuyin": "语音 · Фонетика", "tingdu": "听读练 · Слушаем и читаем", "moni": "模拟测练 · Пробный тест"}
+                audio_dir = books / slug / "audio"
+                if number and audio_dir.is_dir():
+                    tracks = []
+                    for kind, title in kinds.items():
+                        f = audio_dir / f"L{number:02}-{kind}.mp3"
+                        if f.is_file():
+                            tracks.append({"title": title, "url": f"/forma/books/{slug}/audio/{f.name}?v={int(f.stat().st_mtime)}"})
+                    if tracks:
+                        payload["audio"] = tracks
                 # The book's cover (sent by the studio once), shown on the textbook / workbook switch.
                 cover = books / slug / "cover.webp"
                 if cover.is_file():
@@ -278,6 +290,20 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         rebuild_lessons(slug)
         return {"ok": True}
 
+    @app.put("/api/forma/books/{slug}/audio/{name}")
+    async def book_audio(slug: str, name: str, request: Request, audio: UploadFile = File(...)):
+        """A lesson's recording for the whole lesson (L<nn>-<kind>.mp3), from the book's CD."""
+        require_publisher(request)
+        if not SLUG.fullmatch(slug) or not re.fullmatch(r"L[0-9]{2}-(?:yuyin|tingdu|moni)\.mp3", name):
+            raise HTTPException(404, "Неверное имя записи")
+        content = await audio.read(MAX_FILE + 1)
+        if not content or len(content) > MAX_FILE or not (content[:3] == b"ID3" or content[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2")):
+            raise HTTPException(400, "Запись: MP3 до 200 МБ.")
+        (books / slug / "audio").mkdir(parents=True, exist_ok=True)
+        (books / slug / "audio" / name).write_bytes(content)
+        rebuild_lessons(slug)
+        return {"ok": True}
+
     @app.delete("/api/forma/pages/{slug}/{n}")
     def unpublish_page(slug: str, n: int, request: Request):
         require_publisher(request)
@@ -316,7 +342,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         """Published pages' files, the shared runtime and cast portraits."""
         if path in ("components.css", "forma-page.js") or re.fullmatch(r"(?:components-[a-f0-9]{20}\.css|forma-page-[a-f0-9]{20}\.js)", path):
             target = root / path
-        elif re.fullmatch(r"books/[a-z0-9][a-z0-9-]{0,63}/(?:" + FILE_PATH.pattern + r"|pages/[0-9]{3}/page\.(?:css|js)|cover\.webp)", path):
+        elif re.fullmatch(r"books/[a-z0-9][a-z0-9-]{0,63}/(?:" + FILE_PATH.pattern + r"|pages/[0-9]{3}/page\.(?:css|js)|cover\.webp|audio/L[0-9]{2}-(?:yuyin|tingdu|moni)\.mp3)", path):
             target = root / path
         else:
             raise HTTPException(404, "Файл не найден")
