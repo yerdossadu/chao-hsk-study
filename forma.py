@@ -37,6 +37,10 @@ MAX_HTML = 2 * 1024 * 1024
 MAX_FILE = 200 * 1024 * 1024
 MAX_FILES = 80
 SLUG = re.compile(r"[a-z0-9][a-z0-9-]{0,63}")
+# SHA-256 fingerprints of the studio's publish tokens (one per line); the tokens themselves are never stored here.
+_PUBLISHERS = Path(__file__).with_name("publisher_tokens.txt")
+PUBLISHER_HASHES = [line.strip().lower() for line in _PUBLISHERS.read_text(encoding="utf-8").splitlines()
+                    if re.fullmatch(r"[0-9a-fA-F]{64}", line.strip())] if _PUBLISHERS.is_file() else []
 # Paths a publish may write, relative to the book folder.
 FILE_PATH = re.compile(r"(?:pages/[0-9]{3}/(?:assets/)?|cast/)[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.(?:webp|png|jpe?g|mp4|webm|mov|mp3|m4a|aac|ogg|wav)")
 MEDIA = {".webp": "image/webp", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -120,6 +124,12 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         token = os.environ.get("FORMA_PUBLISH_TOKEN", "")
         if token and header.startswith("Bearer ") and secrets.compare_digest(header[7:].strip(), token):
             return True
+        # Or a token whose SHA-256 is listed in publisher_tokens.txt (beside this file): the hosted platform knows
+        # the studio's token by its fingerprint only, so no secret has to be typed into the host's settings.
+        if header.startswith("Bearer ") and PUBLISHER_HASHES:
+            given = hashlib.sha256(header[7:].strip().encode("utf-8")).hexdigest()
+            if any(secrets.compare_digest(given, h) for h in PUBLISHER_HASHES):
+                return True
         if header.startswith("Basic "):
             try:
                 user, _, password = base64.b64decode(header[6:]).decode("utf-8").partition(":")

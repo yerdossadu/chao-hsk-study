@@ -1,0 +1,2 @@
+# SHA-256 of the studio's publish tokens (Forma Studio -> this platform). Tokens themselves live only on the studio's computer.
+165c4757d1fc85a15f3d0b6bc7cef7a483813c58434fe52f48faf597ca951869
