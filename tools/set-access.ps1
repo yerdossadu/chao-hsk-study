@@ -1,4 +1,4 @@
-# Meili HSK Study — who may sign in to the site. Run by the owner on his own computer: the password is typed
+﻿# Meili HSK Study — who may sign in to the site. Run by the owner on his own computer: the password is typed
 # here (hidden) and only its salted PBKDF2-SHA256 goes into access_users.json; then the change is committed and
 # pushed, and Railway redeploys the site (about 2 minutes).
 $ErrorActionPreference = 'Stop'
