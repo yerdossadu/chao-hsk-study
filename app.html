@@ -104,6 +104,12 @@
         .side-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
         .book-kind { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--chao-purple-light, #eef0f4); }
         .book-kind[hidden] { display: none; }
+        /* THE style for anything on a page that sounds when tapped (a syllable, an exercise item, a track mark), as GPT
+           marks a sounding syllable: a thin dark teal frame and a light teal fill (grey-blue on the pink pages),
+           on hover and while it plays. Use it for every new sounding element. */
+        :root { --hsk-sound-frame: #287366; --hsk-sound-fill: #2e987822; }
+        .hsk-page .hsk-cue, .hsk-page .hsk-track-mark { cursor: pointer; border-radius: 2px; }
+        .hsk-page .hsk-cue:hover, .hsk-page .hsk-cue.playing, .hsk-page .hsk-track-mark:hover, .hsk-page .hsk-track-mark.playing { outline: 1px solid var(--hsk-sound-frame); background: var(--hsk-sound-fill); }
         .book-kind button { flex: 1 1 0; border: 0; border-radius: 8px; padding: 7px 6px; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
         .book-kind button[aria-selected="true"] { background: var(--paper-white, #fff); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
         .toolbar .book-kind { order: 4; flex: 1 1 100%; }
@@ -541,11 +547,6 @@
             .toolbar .lesson-dropdown, .toolbar .page-dropdown { width: 100%; max-width: none; padding: 6px 8px; font-size: 12px; }
             .toolbar .side-label { display: block; }
             .toolbar .book-kind { order: 0; }
-            /* as GPT marks a syllable that sounds: a thin teal frame and a light teal-grey fill */
-            .hsk-page .hsk-cue { cursor: pointer; border-radius: 2px; }
-            .hsk-page .hsk-cue:hover, .hsk-page .hsk-cue.playing { outline: 1px solid #287366; background: #2e987822; }
-            .hsk-page .hsk-track-mark { cursor: pointer; border-radius: .4cqw; }
-            .hsk-page .hsk-track-mark:hover { outline: 1px solid #287366; background: #2e987822; }
             .toolbar .lesson-audio:not([hidden]) { display: grid; gap: 5px; }
             .toolbar .lesson-audio-list { display: grid; gap: 4px; }
             .toolbar .lesson-audio-btn { text-align: left; border: 1px solid var(--line, #d9dde3); border-radius: 8px; background: var(--paper-white, #fff); color: inherit; font: inherit; font-size: 11.5px; padding: 6px 8px; cursor: pointer; }
@@ -1550,8 +1551,10 @@
                 mark.dataset.bound = '1'; mark.classList.add('hsk-track-mark'); mark.title = 'Прослушать: ' + t.title;
                 mark.addEventListener('click', ev => {
                     ev.stopPropagation();
-                    const btn = document.querySelector(`#lessonAudioList button[data-i="${tracks.indexOf(t)}"]`);
-                    if (btn) btn.click();
+                    const btn = document.querySelector(`#lessonAudioList button[data-i="${tracks.indexOf(t)}"]`), player = document.getElementById('lessonAudioPlayer');
+                    if (!btn) return;
+                    btn.click(); mark.classList.add('playing');
+                    player.addEventListener('pause', () => mark.classList.remove('playing'), { once: true });
                 });
             });
         }
