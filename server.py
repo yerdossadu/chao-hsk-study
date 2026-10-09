@@ -39,6 +39,8 @@ OCR_LANG = os.environ.get("OCR_LANG", "chi_sim+rus+eng")
 MAX_UPLOAD_BYTES = 300 * 1024 * 1024
 MAX_LESSON_PAGES = 20
 app = FastAPI(title="Meili HSK Study Studio")
+import access
+access.mount(app, APP_DIR, DATA_DIR)   # learners sign in (users in access_users.json); open while none are listed
 security = HTTPBasic()
 ai_calls = deque()
 ai_calls_lock = threading.Lock()

@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY server.py lesson_validation.py layout.py forma.py app.html manager.html publisher_tokens.txt ./
+COPY server.py lesson_validation.py layout.py forma.py access.py app.html manager.html publisher_tokens.txt access_users.json ./
 COPY hanzi ./hanzi
 COPY icons ./icons
 RUN mkdir -p /var/data
