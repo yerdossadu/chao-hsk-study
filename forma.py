@@ -18,6 +18,7 @@ regular `lessons` table, so /api/lessons delivers them with all other lessons.
 
 import base64
 import binascii
+import hashlib
 import json
 import os
 import re
@@ -215,6 +216,18 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
             own_js = pageScript.strip() and len(pageScript) < 256 * 1024 and "</script" not in pageScript.lower()
             if own_js:
                 (staging / "page.js").write_text(pageScript, encoding="utf-8")
+            # The studio's engine (taken from GPT's copy) sends each page's runtime as css + script: the page
+            # pins it by its content (components-<hash>.css, forma-page-<hash>.js), so publishing one page never
+            # restyles another; the shared files stay frozen for the older pages.
+            pinned = None
+            if not own_css and css.strip() and script.strip() and len(css) < 512 * 1024 and len(script) < 256 * 1024:
+                digest = hashlib.sha256((css + "\n" + script).encode("utf-8")).hexdigest()[:20]
+                pinned = (f"components-{digest}.css", f"forma-page-{digest}.js")
+                (root / pinned[0]).write_text(css, encoding="utf-8")
+                (root / pinned[1]).write_text(script, encoding="utf-8")
+            stamp = int(time.time())
+            css_url = f"{base}page.css?v={stamp}" if own_css else f"/forma/{pinned[0]}" if pinned else f"/forma/components.css?v={stamp}"
+            script_url = f"{base}page.js?v={stamp}" if own_js else f"/forma/{pinned[1]}" if pinned else f"/forma/forma-page.js?v={stamp}"
             p = data["page"]
             platform_page = {
                 "type": "forma", "level": data["book"]["level"], "pageNum": p["pageNum"], "navLabel": p["navLabel"],
@@ -222,7 +235,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                 "systemPrompt": p["systemPrompt"], "content": {"vocab": p["vocab"]}, "i18n": p.get("i18n") or {},
                 "forma": {"html": html, "aspect": p["aspect"], "crop": p.get("crop", {}), "base": base, "sourcePage": n,
                           **({"scan": base + p["scan"]} if p.get("scan") else {}),
-                          "css": f"{base}page.css?v={int(time.time())}" if own_css else f"/forma/components.css?v={int(time.time())}", "script": f"{base}page.js?v={int(time.time())}" if own_js else f"/forma/forma-page.js?v={int(time.time())}"},
+                          "css": css_url, "script": script_url},
             }
             record = {**data, "platformPage": platform_page, "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
             (staging / "page.json").write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
@@ -232,10 +245,10 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         finally:
             if staging.exists():
                 shutil.rmtree(staging, ignore_errors=True)
-        # Runtime shared by all Forma pages: styles and the text-fitting script.
-        if css.strip() and len(css) < 512 * 1024:
+        # The shared runtime (older pages) is written only once, never replaced by a newer engine's.
+        if css.strip() and len(css) < 512 * 1024 and not (root / "components.css").exists():
             (root / "components.css").write_text(css, encoding="utf-8")
-        if script.strip() and len(script) < 256 * 1024:
+        if script.strip() and len(script) < 256 * 1024 and not (root / "forma-page.js").exists():
             (root / "forma-page.js").write_text(script, encoding="utf-8")
         rebuild_lessons(slug)
         return {"ok": True, "lessonId": f"forma-{slug}-{data['lesson']['number']:03}", "page": n,
@@ -291,7 +304,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
     @app.get("/forma/{path:path}")
     def forma_file(path: str):
         """Published pages' files, the shared runtime and cast portraits."""
-        if path in ("components.css", "forma-page.js"):
+        if path in ("components.css", "forma-page.js") or re.fullmatch(r"(?:components-[a-f0-9]{20}\.css|forma-page-[a-f0-9]{20}\.js)", path):
             target = root / path
         elif re.fullmatch(r"books/[a-z0-9][a-z0-9-]{0,63}/(?:" + FILE_PATH.pattern + r"|pages/[0-9]{3}/page\.(?:css|js)|cover\.webp)", path):
             target = root / path
