@@ -541,6 +541,11 @@
             .toolbar .lesson-dropdown, .toolbar .page-dropdown { width: 100%; max-width: none; padding: 6px 8px; font-size: 12px; }
             .toolbar .side-label { display: block; }
             .toolbar .book-kind { order: 0; }
+            .hsk-page .hsk-cue { cursor: pointer; border-radius: .4cqw; transition: background .15s; }
+            .hsk-page .hsk-cue:hover { background: rgba(29, 92, 87, .12); }
+            .hsk-page .hsk-cue.playing { background: rgba(29, 92, 87, .25); }
+            .hsk-page .hsk-cue-all { position: absolute; right: 0; top: -0.2cqw; width: 3.2cqw; height: 3.2cqw; border: 0; border-radius: 50%; background: #e2604a; color: #fff; font-size: 1.5cqw; line-height: 3.2cqw; padding: 0; cursor: pointer; box-shadow: 0 .2cqw .6cqw rgba(0,0,0,.2); }
+            .hsk-page .hsk-cue-all.playing { background: #1d5c57; }
             .toolbar .lesson-audio:not([hidden]) { display: grid; gap: 5px; }
             .toolbar .lesson-audio-list { display: grid; gap: 4px; }
             .toolbar .lesson-audio-btn { text-align: left; border: 1px solid var(--line, #d9dde3); border-radius: 8px; background: var(--paper-white, #fff); color: inherit; font: inherit; font-size: 11.5px; padding: 6px 8px; cursor: pointer; }
@@ -1522,6 +1527,36 @@
             return (FormaView.lang === 'kz' && v[key + '_kz']) || (FormaView.lang === 'orig' && v[key + '_en']) || v[key] || '';
         }
         // Kazakh is the Russian layer with its texts swapped (FormaPage.setLang); a page without it stays Russian.
+        // Exercises heard in the lesson's CD recording (cues from the studio): each printed item plays its own piece of the
+        // recording (tones are heard, not shown), and ▶ plays the task's intro with all items.
+        const cuePlayer = new Audio(); let cueStop = null;
+        function playCue(url, from, to, el) {
+            document.querySelectorAll('.hsk-cue.playing, .hsk-cue-all.playing').forEach(x => x.classList.remove('playing'));
+            if (window.hskAudio) window.hskAudio.pause();
+            clearInterval(cueStop);
+            const go = () => { cuePlayer.currentTime = from; cuePlayer.play().catch(() => {}); };
+            if (cuePlayer.getAttribute('src') !== url) { cuePlayer.src = url; cuePlayer.addEventListener('loadedmetadata', go, { once: true }); cuePlayer.load(); } else go();
+            el.classList.add('playing');
+            cueStop = setInterval(() => { if (cuePlayer.currentTime >= to || cuePlayer.paused && cuePlayer.currentTime > from) { cuePlayer.pause(); el.classList.remove('playing'); clearInterval(cueStop); } }, 80);
+        }
+        function applyCues(sheet, cues) {
+            for (const c of cues || []) {
+                const box = sheet.querySelector(`[data-block="${c.block}"]`); if (!box || box.dataset.cued) continue;
+                box.dataset.cued = '1';
+                const cells = [...box.querySelectorAll('.hsk-gcell, .hsk-tone-grid-cell button')].filter(e => e.textContent.trim());
+                cells.forEach((el, i) => {
+                    const seg = c.items && c.items[i]; if (!seg) return;
+                    el.classList.add('hsk-cue'); el.title = 'Прослушать запись';
+                    el.addEventListener('click', ev => { ev.stopPropagation(); playCue(c.url, seg[0], seg[1], el); });
+                });
+                const last = c.items && c.items[c.items.length - 1];
+                if (last) {
+                    const all = document.createElement('button'); all.type = 'button'; all.className = 'hsk-cue-all'; all.textContent = '▶'; all.title = c.title || 'Прослушать упражнение';
+                    all.addEventListener('click', ev => { ev.stopPropagation(); playCue(c.url, (c.intro || c.items[0])[0], last[1], all); });
+                    box.appendChild(all);
+                }
+            }
+        }
         // EN shows the page's English layer when it has one (pages from GPT's converter), else the original.
         function applyFormaLang(sheet) {
             const lang = FormaView.lang === 'orig' && sheet.querySelector('[data-en]') ? 'en' : FormaView.lang;
@@ -1537,6 +1572,7 @@
             ensureFormaRuntime(page.forma).then(() => {
                 const sheet = stage.querySelector('.hsk-page');
                 if (!sheet || sheet !== mounted || !sheet.isConnected) return;   // another page was opened meanwhile
+                applyCues(sheet, page.forma.cues);
                 applyFormaLang(sheet); sheet.dataset.pinyin = FormaView.pinyin ? 'on' : 'off';
                 linkFormaVocab(sheet, getActiveVocab());
                 if (window.FormaPage) window.FormaPage.autoFit(sheet);

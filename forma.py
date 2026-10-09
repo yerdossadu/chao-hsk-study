@@ -144,6 +144,22 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
     def page_dir(slug: str, n: int) -> Path:
         return books / slug / "pages" / f"{n:03}"
 
+    def page_cues(slug: str) -> dict:
+        """Exercises heard in the lesson recordings (cues.json beside the book's audio): page number → its cues,
+        each cue's recording as a URL of this platform."""
+        f = books / slug / "audio" / "cues.json"
+        try:
+            data = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
+        except (OSError, ValueError):
+            return {}
+        out = {}
+        for n, cues in (data.get("pages") or {}).items():
+            for c in cues if isinstance(cues, list) else []:
+                name = str(c.get("file", ""))
+                if re.fullmatch(r"L[0-9]{2}-(?:yuyin|tingdu|moni)\.mp3", name) and (books / slug / "audio" / name).is_file():
+                    out.setdefault(str(n), []).append({**c, "url": f"/forma/books/{slug}/audio/{name}"})
+        return out
+
     def rebuild_lessons(slug: str):
         """Lessons of a book from its published pages, one row per lesson."""
         pages = []
@@ -156,6 +172,7 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
         by_lesson: dict[int, list] = {}
         for meta in pages:
             by_lesson.setdefault(meta["lesson"]["number"], []).append(meta)
+        cues = page_cues(slug)
         with connect_db() as db:
             # By book, not by id prefix: «forma-hsk1-v3-%» also matched the workbook's «forma-hsk1-v3-workbook-…»,
             # so publishing a textbook page wiped the workbook's lessons.
@@ -171,7 +188,8 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
                     "unit": book["section"], "level": book["level"],
                     "badge": f"第 {number} 课" if number else book["section"],
                     "title": lesson["title"], "subtitle": lesson.get("subtitle", ""), "i18n": lesson.get("i18n") or {},
-                    "pages": [m["platformPage"] for m in items],
+                    "pages": [({**m["platformPage"], "forma": {**m["platformPage"]["forma"], "cues": cues[str(m["page"]["n"])]}}
+                               if str(m["page"]["n"]) in cues else m["platformPage"]) for m in items],
                 }
                 # The lesson's recordings from the book's CD (workbook: phonetics, listen-and-read, mock test),
                 # sent by the studio as audio/L<nn>-<kind>.mp3; shown as the lesson's audio in the reader.
@@ -301,6 +319,23 @@ def mount(app: FastAPI, data_dir: Path, connect_db, require_teacher):
             raise HTTPException(400, "Запись: MP3 до 200 МБ.")
         (books / slug / "audio").mkdir(parents=True, exist_ok=True)
         (books / slug / "audio" / name).write_bytes(content)
+        rebuild_lessons(slug)
+        return {"ok": True}
+
+    @app.put("/api/forma/books/{slug}/cues")
+    async def book_cues(slug: str, request: Request):
+        """Where exercises are heard in the lesson recordings (JSON from the studio)."""
+        require_publisher(request)
+        if not SLUG.fullmatch(slug):
+            raise HTTPException(404, "Книга не найдена")
+        body = await request.body()
+        try:
+            data = json.loads(body.decode("utf-8")) if len(body) < 256 * 1024 else None
+            assert isinstance(data, dict) and isinstance(data.get("pages"), dict)
+        except Exception:
+            raise HTTPException(400, "Метки: JSON до 256 КБ с полем pages") from None
+        (books / slug / "audio").mkdir(parents=True, exist_ok=True)
+        (books / slug / "audio" / "cues.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         rebuild_lessons(slug)
         return {"ok": True}
 
