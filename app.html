@@ -1550,9 +1550,14 @@
                 // grid cells in reading order, empty ones too (a blank to write into is still the item heard there)
                 const cells = [...box.querySelectorAll('.hsk-gcell')];
                 cells.forEach((el, i) => {
-                    const seg = c.items && c.items[i]; if (!seg) return;
-                    el.classList.add('hsk-cue'); el.title = 'Прослушать запись';
-                    el.addEventListener('click', ev => { ev.stopPropagation(); playCue(c.url, seg[0], seg[1], el); });
+                    // a character with the heard tone → the platform's voice (Alibaba); else the CD's own piece
+                    const say = c.speak && c.speak[i], seg = c.items && c.items[i]; if (!say && !seg) return;
+                    el.classList.add('hsk-cue'); el.title = 'Прослушать';
+                    el.addEventListener('click', ev => {
+                        ev.stopPropagation();
+                        if (say) { document.querySelectorAll('.hsk-cue.playing').forEach(x => x.classList.remove('playing')); cuePlayer.pause(); speakChinese(say, el); el.classList.add('playing'); setTimeout(() => el.classList.remove('playing'), 1200); }
+                        else playCue(c.url, seg[0], seg[1], el);
+                    });
                 });
             }
         }
