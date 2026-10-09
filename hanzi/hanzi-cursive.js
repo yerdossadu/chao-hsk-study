@@ -23,7 +23,7 @@
   const STEPS = [['order', 'Порядок черт'], ['observe', 'Рассмотреть'], ['trace', 'Обвести'], ['copy', 'Переписать'], ['rest', 'Пауза Мейли'], ['memory', 'По памяти'], ['compare', 'Оценить']];
   const BEAT = 1.1;
   const TEXT = {
-    order: ['Порядок черт', 'Светящаяся точка показывает, в какой последовательности и в каком направлении пишутся черты. В прописи порядок тот же — черты лишь сокращаются и соединяются. Рядом — рукописная форма.', 'Дальше: сравнить формы'],
+    order: ['Порядок черт', 'Рукописная форма прописывается черта за чертой, светящаяся точка ведёт по ней в направлении письма. Порядок тот же, что у печатного знака, — черты лишь сокращаются и соединяются. Рядом — печатный знак.', 'Дальше: сравнить формы'],
     observe: ['Сравните две формы', 'На поле — рукописная форма, над ним — печатный знак. Рассмотрите сокращения и соединения.', 'Начать обводку'],
     trace: ['Обводка образца', 'Обведите бледный рукописный образец в своём темпе. Поднимайте перо там, где это нужно.', 'Писать без подложки'],
     copy: ['Копирование без подложки', 'Перепишите форму с образца в ряду выше в пустую клетку. Линии остаются вашими — эталон их не подменяет.', 'Пауза → по памяти'],
@@ -180,36 +180,85 @@
       ctx.moveTo(x + size / 2, y); ctx.lineTo(x + size / 2, y + size); ctx.moveTo(x, y + size / 2); ctx.lineTo(x + size, y + size / 2);
       ctx.moveTo(x, y); ctx.lineTo(x + size, y + size); ctx.moveTo(x + size, y); ctx.lineTo(x, y + size); ctx.stroke(); ctx.setLineDash([]);
     }
-    // «Порядок черт»: the printed form, its strokes filled in one by one, a glowing dot running along the current one;
-    // beside it, where the field is wide enough, the handwritten form for comparison.
+    // «Порядок черт» on the handwritten form itself. A font outline has no stroke order, so the order of the printed
+    // stroke data is carried over: the printed centre lines are fitted onto the handwritten ink, and every ink pixel
+    // belongs to the nearest point of a centre line (which stroke, how far along it). The handwritten form then
+    // fills in stroke by stroke, a glowing dot running over its own ink. Joins go with the stroke they lie nearest.
+    let reveal = null;
+    function revealOf(d) {
+      const S = Math.round(size), key = `${item().glyph}|${style}|${S}`;
+      if (reveal && reveal.key === key) return reveal;
+      const off = document.createElement('canvas'); off.width = off.height = S;
+      const o = off.getContext('2d'), g = item().glyph;
+      o.font = `${S * 1.24}px ${style}`;
+      const m = o.measureText(g), inkW = m.actualBoundingBoxLeft + m.actualBoundingBoxRight, inkH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+      const fit = Math.min(S * .88 / (inkW || 1), S * .88 / (inkH || 1));
+      o.translate(S / 2, S / 2); o.scale(fit, fit); o.fillStyle = '#000';
+      o.fillText(g, -inkW / 2 + m.actualBoundingBoxLeft, inkH / 2 - m.actualBoundingBoxDescent);
+      const alpha = o.getImageData(0, 0, S, S).data, ink = [];
+      let x0 = S, y0 = S, x1 = 0, y1 = 0;
+      for (let p = 0; p < S * S; p++) if (alpha[p * 4 + 3] > 60) { const x = p % S, y = (p / S) | 0; ink.push(p); if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      // the printed centre lines, stretched onto the box of the handwritten ink
+      const lines = d.medians.map(l => l.map(([x, y]) => [x, 900 - y]));
+      const all = lines.flat(), mx0 = Math.min(...all.map(p => p[0])), mx1 = Math.max(...all.map(p => p[0])), my0 = Math.min(...all.map(p => p[1])), my1 = Math.max(...all.map(p => p[1]));
+      const sx = (x1 - x0) / ((mx1 - mx0) || 1), sy = (y1 - y0) / ((my1 - my0) || 1);
+      const samples = [];   // [x, y, stroke, t]
+      lines.forEach((l, j) => {
+        const pts = l.map(([x, y]) => [x0 + (x - mx0) * sx, y0 + (y - my0) * sy]), lens = [0];
+        for (let q = 1; q < pts.length; q++) lens.push(lens[q - 1] + Math.hypot(pts[q][0] - pts[q - 1][0], pts[q][1] - pts[q - 1][1]));
+        const total = lens[lens.length - 1] || 1;
+        samples.push([pts[0][0], pts[0][1], j, 0]);
+        for (let q = 1; q < pts.length; q++) {
+          const seg = lens[q] - lens[q - 1], steps = Math.max(1, Math.ceil(seg / 2));
+          for (let r = 1; r <= steps; r++) { const f = r / steps; samples.push([pts[q - 1][0] + (pts[q][0] - pts[q - 1][0]) * f, pts[q - 1][1] + (pts[q][1] - pts[q - 1][1]) * f, j, (lens[q - 1] + seg * f) / total]); }
+        }
+      });
+      const stroke = new Int16Array(ink.length), along = new Float32Array(ink.length);
+      const BINS = 16, n = lines.length, sumX = new Float32Array(n * BINS), sumY = new Float32Array(n * BINS), cnt = new Uint32Array(n * BINS);
+      ink.forEach((p, a) => {
+        const x = p % S, y = (p / S) | 0;
+        let best = Infinity, bj = 0, bt = 0;
+        for (const s of samples) { const dd = (s[0] - x) ** 2 + (s[1] - y) ** 2; if (dd < best) { best = dd; bj = s[2]; bt = s[3]; } }
+        stroke[a] = bj; along[a] = bt;
+        const bin = bj * BINS + Math.min(BINS - 1, (bt * BINS) | 0); sumX[bin] += x; sumY[bin] += y; cnt[bin]++;
+      });
+      // where the dot is on each stroke: the middle of that stroke's ink at that point of its way
+      const track = Array.from({ length: n }, (_, j) => Array.from({ length: BINS }, (_, b) => cnt[j * BINS + b] ? [sumX[j * BINS + b] / cnt[j * BINS + b], sumY[j * BINS + b] / cnt[j * BINS + b]] : null).filter(Boolean));
+      const out = document.createElement('canvas'); out.width = out.height = S;
+      return reveal = { key, S, ink, stroke, along, track, out, octx: out.getContext('2d'), img: null };
+    }
+    const rgb = c => { const m = /^#?([0-9a-f]{6})/i.exec(String(c).trim()); const v = m ? parseInt(m[1], 16) : 0x1F5F61; return [v >> 16 & 255, v >> 8 & 255, v & 255]; };
     function order(k, dt) {
       const d = data(), b = box();
       if (!d) return;
       orderTime += dt;
       const n = d.medians.length, i = Math.floor(orderTime / BEAT) % n, t = (orderTime % BEAT) / BEAT;
-      const pt = ([x, y]) => ({ x: b.x + x / 1024 * size, y: b.y + (900 - y) / 1024 * size });
-      ctx.save(); ctx.translate(b.x, b.y); ctx.scale(size / 1024, -size / 1024); ctx.translate(0, -900);
-      d.paths.forEach((p, j) => { ctx.fillStyle = j < i ? k.teal : k.border; ctx.globalAlpha = j < i ? .85 : .5; ctx.fill(new Path2D(p)); });
-      ctx.restore();
-      const m = d.medians[i].map(pt), lens = [0];
-      for (let j = 1; j < m.length; j++) lens.push(lens[j - 1] + dist(m[j - 1], m[j]));
-      const goal = lens[lens.length - 1] * t, path = [m[0]];
-      let head = m[0];
-      for (let j = 1; j < m.length; j++) {
-        if (lens[j] <= goal) { path.push(m[j]); head = m[j]; continue; }
-        const f = (goal - lens[j - 1]) / ((lens[j] - lens[j - 1]) || 1);
-        head = { x: m[j - 1].x + (m[j].x - m[j - 1].x) * f, y: m[j - 1].y + (m[j].y - m[j - 1].y) * f }; path.push(head); break;
+      const r = revealOf(d), [tr, tg, tb] = rgb(k.teal), [gr, gg, gb] = rgb(k.border);
+      if (!r.img) r.img = r.octx.createImageData(r.S, r.S);
+      const px = r.img.data;
+      for (let a = 0; a < r.ink.length; a++) {
+        const p = r.ink[a] * 4, done = r.stroke[a] < i || (r.stroke[a] === i && r.along[a] <= t);
+        px[p] = done ? tr : gr; px[p + 1] = done ? tg : gg; px[p + 2] = done ? tb : gb; px[p + 3] = done ? 235 : 150;
       }
-      ctx.strokeStyle = k.gold; ctx.lineWidth = Math.max(4, size * .03); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath(); path.forEach((p, j) => j ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
-      ctx.fillStyle = k.gold; ctx.shadowColor = k.gold; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(head.x, head.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      r.octx.putImageData(r.img, 0, 0);
+      ctx.drawImage(r.out, b.x, b.y, size, size);
+      const way = r.track[i];
+      if (way && way.length) {
+        const f = t * (way.length - 1), q = Math.min(way.length - 2, Math.floor(f)), e = way.length > 1 ? f - q : 0;
+        const at = way.length > 1 ? [way[q][0] + (way[q + 1][0] - way[q][0]) * e, way[q][1] + (way[q + 1][1] - way[q][1]) * e] : way[0];
+        const hx = b.x + at[0] * size / r.S, hy = b.y + at[1] * size / r.S;
+        ctx.fillStyle = k.gold; ctx.shadowColor = k.gold; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      }
       ctx.font = '12px system-ui, sans-serif'; ctx.fillStyle = k.gray; ctx.textAlign = 'center';
       ctx.fillText(`черта ${i + 1} из ${n}`, b.x + size / 2, Math.min(h - 4, b.y + size + 14));
+      // beside it, where the field is wide enough, the printed form for comparison
       const side = (w - size) / 2, s = Math.min(side - 24, size * .62);
       if (s >= 60) {
         const at = { x: b.x + size + side / 2, y: b.y + size / 2 };
-        template(k.ink, .9, at, s);
-        ctx.fillStyle = k.gray; ctx.fillText('пропись', at.x, at.y + s / 2 + 16);
+        ctx.save(); ctx.translate(at.x - s / 2, at.y - s / 2); ctx.scale(s / 1024, s / 1024);
+        d.paths.forEach((p, j) => { ctx.fillStyle = j < i ? k.teal : k.border; ctx.globalAlpha = j <= i ? .9 : .5; ctx.save(); ctx.translate(0, 900); ctx.scale(1, -1); ctx.fill(new Path2D(p)); ctx.restore(); });
+        ctx.restore();
+        ctx.fillStyle = k.gray; ctx.fillText('печатный', at.x, at.y + s / 2 + 16);
       }
       ctx.textAlign = 'start';
     }
