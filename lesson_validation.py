@@ -23,8 +23,8 @@ def list_at(value, path, *, minimum=0, maximum=None):
     return value
 
 
-def validate_vocab(value, path):
-    for i, item in enumerate(list_at(value, path, maximum=20)):
+def validate_vocab(value, path, *, maximum=20):
+    for i, item in enumerate(list_at(value, path, maximum=maximum)):
         entry = object_at(item, f"{path}[{i}]")
         for key in ("word", "py", "pos", "trans"):
             text_at(entry.get(key), f"{path}[{i}].{key}", allow_empty=(key == "pos"))

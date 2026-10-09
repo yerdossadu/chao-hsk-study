@@ -95,7 +95,7 @@ def validate_forma_meta(meta: Any):
     words = page.get("builderWords")
     if not isinstance(words, list) or len(words) > 12 or not all(isinstance(w, str) and 0 < len(w) <= 40 for w in words):
         raise ValueError("page.builderWords: до 12 непустых строк")
-    validate_vocab(page.get("vocab"), "page.vocab")
+    validate_vocab(page.get("vocab"), "page.vocab", maximum=200)   # a Forma page can list many words (GPT: up to 200)
     lesson = meta.get("lesson")
     if not isinstance(lesson, dict) or type(lesson.get("number")) is not int or not 0 <= lesson["number"] <= 999:
         raise ValueError("lesson.number: номер урока")
